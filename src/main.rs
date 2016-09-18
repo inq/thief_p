@@ -6,7 +6,8 @@ use ui::event::Event;
 use std::str::FromStr;
 
 fn main() {
-    io::input::nonblock_init().unwrap();
+    io::input::init().unwrap();
+    io::term::init().unwrap();
     let mut ev = io::event::Event::new().unwrap();
     let chan = ui::handler::launch();
     ev.init().unwrap();

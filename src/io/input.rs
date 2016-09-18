@@ -25,23 +25,7 @@ impl error::Error for InputError {
     }
 }
 
-pub fn read(buf: &mut Vec<u8>) -> Result<isize, InputError> {
-    let res = unsafe {
-        libc::read(
-            libc::STDIN_FILENO,
-            buf.as_mut_ptr() as *mut libc::c_void,
-            buf.capacity() as usize)
-    };
-    if res < 0 {
-        return Err(InputError::ReadError);
-    }
-    unsafe {
-        buf.set_len(res as usize);
-    }
-    Ok(res)
-}
-
-pub fn nonblock_init() -> Result<(), InputError> {
+pub fn init() -> Result<(), InputError> {
     let prev = unsafe {
         libc::fcntl(libc::STDIN_FILENO, libc::F_GETFL)
     };
@@ -56,4 +40,20 @@ pub fn nonblock_init() -> Result<(), InputError> {
         return Err(InputError::FSetflError);
     }
     Ok(())
+}
+
+pub fn read(buf: &mut Vec<u8>) -> Result<isize, InputError> {
+    let res = unsafe {
+        libc::read(
+            libc::STDIN_FILENO,
+            buf.as_mut_ptr() as *mut libc::c_void,
+            buf.capacity() as usize)
+    };
+    if res < 0 {
+        return Err(InputError::ReadError);
+    }
+    unsafe {
+        buf.set_len(res as usize);
+    }
+    Ok(res)
 }
