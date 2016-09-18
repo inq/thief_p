@@ -1,5 +1,6 @@
 use std::os::unix::io::{RawFd};
 use std::error::{self, Error};
+use std::convert::From;
 use std::fmt;
 use libc;
 
@@ -71,8 +72,8 @@ impl Event {
         Ok(())
     }
 
-    pub fn handle<T>(&mut self, handler: T) -> Result<(), String>
-        where T : Fn(&libc::kevent) -> Result<(), String> {
+    pub fn handle<T>(&mut self, handler: T) -> Result<(), Box<Error>>
+        where T : Fn(&libc::kevent) -> Result<(), Box<Error>> {
         let res = unsafe {
             libc::kevent(
                 self.kq,
@@ -83,7 +84,7 @@ impl Event {
                 &libc::timespec { tv_sec: 10, tv_nsec: 0 })
         };
         if res == -1 {
-            return Err(EventError::KeventError.to_string());
+            return Err(From::from(EventError::KeventError));
         }
         unsafe {
             self.events.set_len(res as usize);
