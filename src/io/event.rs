@@ -1,5 +1,7 @@
-use libc;
 use std::os::unix::io::{RawFd};
+use std::error::{self, Error};
+use std::fmt;
+use libc;
 
 pub struct Event {
     pub kq: RawFd,
@@ -7,11 +9,32 @@ pub struct Event {
     pub events: Vec<libc::kevent>,
 }
 
+#[derive(Debug)]
+pub enum EventError {
+    KqueueError,
+    KeventError,
+}
+
+impl fmt::Display for EventError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl error::Error for EventError {
+    fn description(&self) -> &str {
+        match *self {
+            EventError::KqueueError => "kqueue returned -1",
+            EventError::KeventError => "kevent returned -1",
+        }
+    }
+}
+
 impl Event {
-    pub fn new() -> Result<Event, &'static str> {
+    pub fn new() -> Result<Event, EventError> {
         let res = unsafe { libc::kqueue() };
         if res == -1 {
-            return Err("kqueue returned -1");
+            return Err(EventError::KqueueError);
         }
         Ok(Event {
             kq: res,
@@ -31,7 +54,7 @@ impl Event {
         })
     }
 
-    pub fn init(&mut self) -> Result<(), &'static str> {
+    pub fn init(&mut self) -> Result<(), EventError> {
         self.add_fd(libc::STDIN_FILENO);
         let res = unsafe {
             libc::kevent(
@@ -43,13 +66,13 @@ impl Event {
                 &libc::timespec { tv_sec: 10, tv_nsec: 0})
         };
         if res == -1 {
-            return Err("kevent returned -1");
+            return Err(EventError::KeventError);
         }
         Ok(())
     }
 
-    pub fn handle<T>(&mut self, handler: T) -> Result<(), &'static str>
-        where T : Fn(&libc::kevent) -> Result<(), &'static str> {
+    pub fn handle<T>(&mut self, handler: T) -> Result<(), String>
+        where T : Fn(&libc::kevent) -> Result<(), String> {
         let res = unsafe {
             libc::kevent(
                 self.kq,
@@ -60,7 +83,7 @@ impl Event {
                 &libc::timespec { tv_sec: 10, tv_nsec: 0 })
         };
         if res == -1 {
-            return Err("kevent returned -1");
+            return Err(EventError::KeventError.to_string());
         }
         unsafe {
             self.events.set_len(res as usize);
