@@ -1,8 +1,11 @@
 use std::os::unix::io::{RawFd};
 use std::error::{self, Error};
-use std::convert::From;
+use std::convert::{From};
+use std::sync::mpsc;
+use std::str;
 use std::fmt;
 use libc;
+use io::input;
 
 pub struct Event {
     pub kq: RawFd,
@@ -72,26 +75,30 @@ impl Event {
         Ok(())
     }
 
-    pub fn handle<T>(&mut self, handler: T) -> Result<(), Box<Error>>
-        where T : Fn(&libc::kevent) -> Result<(), Box<Error>> {
-        let res = unsafe {
-            libc::kevent(
-                self.kq,
-                ::std::ptr::null(),
-                0,
-                self.events.as_mut_ptr(),
-                self.events.capacity() as i32,
-                &libc::timespec { tv_sec: 10, tv_nsec: 0 })
-        };
-        if res == -1 {
-            return Err(From::from(EventError::KeventError));
+    pub fn handle(&mut self, chan: mpsc::Sender<String>) -> Result<(), Box<Error>> {
+        let mut buf = Vec::with_capacity(32);
+        loop {
+            let res = unsafe {
+                libc::kevent(
+                    self.kq,
+                    ::std::ptr::null(),
+                    0,
+                    self.events.as_mut_ptr(),
+                    self.events.capacity() as i32,
+                    &libc::timespec { tv_sec: 10, tv_nsec: 0 })
+            };
+            if res == -1 {
+                return Err(From::from(EventError::KeventError));
+            }
+            unsafe {
+                self.events.set_len(res as usize);
+            }
+
+            for _ in &self.events {
+                try!(input::read(&mut buf));
+                let s = try!(String::from_utf8(buf.clone()));
+                try!(chan.send(s));
+            }
         }
-        unsafe {
-            self.events.set_len(res as usize);
-        }
-        for ev in &self.events {
-            try!(handler(ev));
-        }
-        Ok(())
     }
 }
