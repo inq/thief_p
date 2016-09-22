@@ -1,5 +1,5 @@
 use std::os::unix::io::{RawFd};
-use std::error::{self, Error};
+use std::error;
 use std::convert::{From};
 use std::sync::mpsc;
 use std::str;
@@ -13,32 +13,11 @@ pub struct Event {
     pub events: Vec<libc::kevent>,
 }
 
-#[derive(Debug)]
-pub enum EventError {
-    KqueueError,
-    KeventError,
-}
-
-impl fmt::Display for EventError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl error::Error for EventError {
-    fn description(&self) -> &str {
-        match *self {
-            EventError::KqueueError => "kqueue returned -1",
-            EventError::KeventError => "kevent returned -1",
-        }
-    }
-}
-
 impl Event {
-    pub fn new() -> Result<Event, EventError> {
+    pub fn new() -> Result<Event, Error> {
         let res = unsafe { libc::kqueue() };
         if res == -1 {
-            return Err(EventError::KqueueError);
+            return Err(Error::Kqueue);
         }
         Ok(Event {
             kq: res,
@@ -58,7 +37,7 @@ impl Event {
         })
     }
 
-    pub fn init(&mut self) -> Result<(), EventError> {
+    pub fn init(&mut self) -> Result<(), Error> {
         self.add_fd(libc::STDIN_FILENO);
         let res = unsafe {
             libc::kevent(
@@ -70,12 +49,12 @@ impl Event {
                 &libc::timespec { tv_sec: 10, tv_nsec: 0})
         };
         if res == -1 {
-            return Err(EventError::KeventError);
+            return Err(Error::Kevent);
         }
         Ok(())
     }
 
-    pub fn handle(&mut self, chan: mpsc::Sender<String>) -> Result<(), Box<Error>> {
+    pub fn handle(&mut self, chan: mpsc::Sender<String>) -> Result<(), Box<error::Error>> {
         let mut buf = Vec::with_capacity(32);
         loop {
             let res = unsafe {
@@ -88,7 +67,7 @@ impl Event {
                     &libc::timespec { tv_sec: 10, tv_nsec: 0 })
             };
             if res == -1 {
-                return Err(From::from(EventError::KeventError));
+                return Err(From::from(Error::Kevent));
             }
             unsafe {
                 self.events.set_len(res as usize);
@@ -99,6 +78,28 @@ impl Event {
                 let s = try!(String::from_utf8(buf.clone()));
                 try!(chan.send(s));
             }
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub enum Error {
+    Kqueue,
+    Kevent,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        error::Error::description(self).fmt(f)
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Kqueue => "kqueue returned -1",
+            Error::Kevent => "kevent returned -1",
         }
     }
 }
