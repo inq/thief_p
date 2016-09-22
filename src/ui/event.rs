@@ -1,38 +1,37 @@
-use std::error::{self, Error};
-use std::fmt;
-use std::str;
+use std::{error, fmt, str};
 
 #[derive(Debug)]
 pub enum Event {
     Char{ c: char }
 }
 
-#[derive(Debug)]
-pub enum ParseEventError {
-    ParseError,
-}
+impl str::FromStr for Event {
+    type Err = Error;
 
-impl fmt::Display for ParseEventError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl error::Error for ParseEventError {
-    fn description(&self) -> &str {
-        match *self {
-            ParseEventError::ParseError => "parse error"
+    fn from_str(s: &str) -> Result<Event, Error> {
+        match s {
+            "c" => Ok(Event::Char { c: 'c' }),
+            _ => Err(Error::Parse),
         }
     }
 }
 
-impl str::FromStr for Event {
-    type Err = ParseEventError;
 
-    fn from_str(s: &str) -> Result<Event, ParseEventError> {
-        match s {
-            "c" => Ok(Event::Char { c: 'c' }),
-            _ => Err(ParseEventError::ParseError),
+#[derive(Debug)]
+pub enum Error {
+    Parse,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        error::Error::description(self).fmt(f)
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Parse => "parse error"
         }
     }
 }
