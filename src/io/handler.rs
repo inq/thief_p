@@ -1,14 +1,16 @@
-use std::os::unix::io::{RawFd};
-use std::convert::{From};
+use std::os::unix::io::RawFd;
+use std::convert::From;
 use std::sync::mpsc;
 use std::{error, str, fmt};
 use libc;
-use io::input;
+use io::{event, input};
+
 
 pub struct Handler {
     pub kq: RawFd,
-    pub changes: Vec<libc::kevent>,
-    pub events: Vec<libc::kevent>,
+    pub kq_changes: Vec<libc::kevent>,
+    pub kq_events: Vec<libc::kevent>,
+    buf: String,
 }
 
 impl Handler {
@@ -19,13 +21,14 @@ impl Handler {
         }
         Ok(Handler {
             kq: res,
-            changes: Vec::with_capacity(16),
-            events: Vec::with_capacity(16),
+            kq_changes: Vec::with_capacity(16),
+            kq_events: Vec::with_capacity(16),
+            buf: String::with_capacity(32),
         })
     }
 
     fn add_fd(&mut self, fd: RawFd) {
-        self.changes.push(libc::kevent {
+        self.kq_changes.push(libc::kevent {
             ident: fd as libc::uintptr_t,
             filter: libc::EVFILT_READ,
             flags: libc::EV_ADD,
@@ -40,8 +43,8 @@ impl Handler {
         let res = unsafe {
             libc::kevent(
                 self.kq,
-                self.changes.as_ptr(),
-                self.changes.len() as i32,
+                self.kq_changes.as_ptr(),
+                self.kq_changes.len() as i32,
                 ::std::ptr::null_mut(),
                 0,
                 &libc::timespec { tv_sec: 10, tv_nsec: 0})
@@ -52,7 +55,8 @@ impl Handler {
         Ok(())
     }
 
-    pub fn handle(&mut self, chan: mpsc::Sender<String>) -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self, chan: mpsc::Sender<event::Event>)
+                  -> Result<(), Box<error::Error>> {
         let mut buf = Vec::with_capacity(32);
         loop {
             let res = unsafe {
@@ -60,24 +64,45 @@ impl Handler {
                     self.kq,
                     ::std::ptr::null(),
                     0,
-                    self.events.as_mut_ptr(),
-                    self.events.capacity() as i32,
+                    self.kq_events.as_mut_ptr(),
+                    self.kq_events.capacity() as i32,
                     &libc::timespec { tv_sec: 10, tv_nsec: 0 })
             };
             if res == -1 {
                 return Err(From::from(Error::Kevent));
             }
             unsafe {
-                self.events.set_len(res as usize);
+                self.kq_events.set_len(res as usize);
             }
 
-            for _ in &self.events {
+            for _ in &self.kq_events {
                 try!(input::read(&mut buf));
-                let s = try!(String::from_utf8(buf.clone()));
-                try!(chan.send(s));
+                let ipt = try!(String::from_utf8(buf.clone()));
+                try!(process(&mut self.buf, &chan, ipt));
             }
         }
     }
+}
+
+fn process(buf: &mut String, chan: &mpsc::Sender<event::Event>, ipt: String)
+           -> Result<(), Box<error::Error>> {
+    if buf.len() + ipt.len() > buf.capacity() {
+        return Err(From::from(Error::OutOfCapacity));
+    }
+    buf.push_str(&ipt);
+    let mut cur = buf.clone();
+    let mut done = false;
+    while !done {
+        let (res, next) = event::Event::from_string(cur);
+        match res {
+            Some(e) => try!(chan.send(e)),
+            None => done = true,
+        }
+        cur = next.clone();
+    }
+    buf.clear();
+    buf.push_str(&cur);
+    Ok(())
 }
 
 
@@ -85,6 +110,7 @@ impl Handler {
 pub enum Error {
     Kqueue,
     Kevent,
+    OutOfCapacity,
 }
 
 impl fmt::Display for Error {
@@ -98,6 +124,7 @@ impl error::Error for Error {
         match *self {
             Error::Kqueue => "kqueue returned -1",
             Error::Kevent => "kevent returned -1",
+            Error::OutOfCapacity => "out of the capacity",
         }
     }
 }
