@@ -1,10 +1,10 @@
 use std::error::{Error};
 
-mod event;
+mod handler;
 mod term;
 mod input;
 
-pub use io::event::{Event};
+pub use io::handler::{Handler};
 
 pub fn init() -> Result<(), Box<Error>> {
     try!(input::init());

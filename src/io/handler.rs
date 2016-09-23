@@ -1,25 +1,23 @@
 use std::os::unix::io::{RawFd};
-use std::error;
 use std::convert::{From};
 use std::sync::mpsc;
-use std::str;
-use std::fmt;
+use std::{error, str, fmt};
 use libc;
 use io::input;
 
-pub struct Event {
+pub struct Handler {
     pub kq: RawFd,
     pub changes: Vec<libc::kevent>,
     pub events: Vec<libc::kevent>,
 }
 
-impl Event {
-    pub fn new() -> Result<Event, Error> {
+impl Handler {
+    pub fn new() -> Result<Handler, Error> {
         let res = unsafe { libc::kqueue() };
         if res == -1 {
             return Err(Error::Kqueue);
         }
-        Ok(Event {
+        Ok(Handler {
             kq: res,
             changes: Vec::with_capacity(16),
             events: Vec::with_capacity(16),
