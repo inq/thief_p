@@ -3,9 +3,7 @@ use std::fmt;
 use libc;
 
 pub fn init() -> Result<(), Error> {
-    let res = unsafe {
-        libc::signal(libc::SIGINT, libc::SIG_IGN)
-    };
+    let res = unsafe { libc::signal(libc::SIGINT, libc::SIG_IGN) };
     if res == libc::SIG_ERR {
         return Err(Error::SigErr);
     }

@@ -1,4 +1,4 @@
-use std::{thread};
+use std::thread;
 use std::sync::mpsc::{self, channel};
 use io::Event;
 
@@ -22,7 +22,7 @@ pub fn launch() -> mpsc::Sender<Event> {
         loop {
             let res = rx.recv().unwrap();
             handler.handle(res);
-        };
+        }
     });
     tx
 }

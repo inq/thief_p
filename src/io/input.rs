@@ -3,16 +3,12 @@ use std::fmt;
 use libc;
 
 pub fn init() -> Result<(), Error> {
-    let prev = unsafe {
-        libc::fcntl(libc::STDIN_FILENO, libc::F_GETFL)
-    };
+    let prev = unsafe { libc::fcntl(libc::STDIN_FILENO, libc::F_GETFL) };
     if prev == -1 {
         return Err(Error::FGetfl);
     }
 
-    let res = unsafe {
-        libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev | libc::O_NONBLOCK)
-    };
+    let res = unsafe { libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev | libc::O_NONBLOCK) };
     if res == -1 {
         return Err(Error::FSetfl);
     }
@@ -21,10 +17,9 @@ pub fn init() -> Result<(), Error> {
 
 pub fn read(buf: &mut Vec<u8>) -> Result<isize, Error> {
     let res = unsafe {
-        libc::read(
-            libc::STDIN_FILENO,
-            buf.as_mut_ptr() as *mut libc::c_void,
-            buf.capacity() as usize)
+        libc::read(libc::STDIN_FILENO,
+                   buf.as_mut_ptr() as *mut libc::c_void,
+                   buf.capacity() as usize)
     };
     if res < 0 {
         return Err(Error::Read);

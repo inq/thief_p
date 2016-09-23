@@ -34,7 +34,7 @@ impl Handler {
             flags: libc::EV_ADD,
             fflags: 0,
             data: 0,
-            udata: ::std::ptr::null_mut()
+            udata: ::std::ptr::null_mut(),
         })
     }
 
@@ -45,7 +45,7 @@ impl Handler {
             flags: libc::EV_ADD,
             fflags: 0,
             data: 0,
-            udata: ::std::ptr::null_mut()
+            udata: ::std::ptr::null_mut(),
         })
     }
 
@@ -53,13 +53,15 @@ impl Handler {
         self.add_fd(libc::STDIN_FILENO);
         self.add_signal(libc::SIGWINCH);
         let res = unsafe {
-            libc::kevent(
-                self.kq,
-                self.kq_changes.as_ptr(),
-                self.kq_changes.len() as i32,
-                ::std::ptr::null_mut(),
-                0,
-                &libc::timespec { tv_sec: 10, tv_nsec: 0})
+            libc::kevent(self.kq,
+                         self.kq_changes.as_ptr(),
+                         self.kq_changes.len() as i32,
+                         ::std::ptr::null_mut(),
+                         0,
+                         &libc::timespec {
+                             tv_sec: 10,
+                             tv_nsec: 0,
+                         })
         };
         if res == -1 {
             return Err(Error::Kevent);
@@ -67,18 +69,19 @@ impl Handler {
         Ok(())
     }
 
-    pub fn handle(&mut self, chan: mpsc::Sender<event::Event>)
-                  -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self, chan: mpsc::Sender<event::Event>) -> Result<(), Box<error::Error>> {
         let mut buf = Vec::with_capacity(32);
         loop {
             let res = unsafe {
-                libc::kevent(
-                    self.kq,
-                    ::std::ptr::null(),
-                    0,
-                    self.kq_events.as_mut_ptr(),
-                    self.kq_events.capacity() as i32,
-                    &libc::timespec { tv_sec: 10, tv_nsec: 0 })
+                libc::kevent(self.kq,
+                             ::std::ptr::null(),
+                             0,
+                             self.kq_events.as_mut_ptr(),
+                             self.kq_events.capacity() as i32,
+                             &libc::timespec {
+                                 tv_sec: 10,
+                                 tv_nsec: 0,
+                             })
             };
             if res == -1 {
                 return Err(From::from(Error::Kevent));
@@ -93,18 +96,20 @@ impl Handler {
                         try!(input::read(&mut buf));
                         let ipt = try!(String::from_utf8(buf.clone()));
                         try!(process(&mut self.buf, &chan, ipt));
-                    },
+                    }
                     libc::SIGWINCH => {
                         println!("SIGWINCH");
-                    },
-                    _ => ()
+                    }
+                    _ => (),
                 }
             }
         }
     }
 }
 
-fn process(buf: &mut String, chan: &mpsc::Sender<event::Event>, ipt: String)
+fn process(buf: &mut String,
+           chan: &mpsc::Sender<event::Event>,
+           ipt: String)
            -> Result<(), Box<error::Error>> {
     if buf.len() + ipt.len() > buf.capacity() {
         return Err(From::from(Error::OutOfCapacity));
