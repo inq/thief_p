@@ -38,8 +38,20 @@ impl Handler {
         })
     }
 
+    fn add_signal(&mut self, signal: libc::c_int) {
+        self.kq_changes.push(libc::kevent {
+            ident: signal as usize,
+            filter: libc::EVFILT_SIGNAL,
+            flags: libc::EV_ADD,
+            fflags: 0,
+            data: 0,
+            udata: ::std::ptr::null_mut()
+        })
+    }
+
     pub fn init(&mut self) -> Result<(), Error> {
         self.add_fd(libc::STDIN_FILENO);
+        self.add_signal(libc::SIGWINCH);
         let res = unsafe {
             libc::kevent(
                 self.kq,
@@ -75,10 +87,18 @@ impl Handler {
                 self.kq_events.set_len(res as usize);
             }
 
-            for _ in &self.kq_events {
-                try!(input::read(&mut buf));
-                let ipt = try!(String::from_utf8(buf.clone()));
-                try!(process(&mut self.buf, &chan, ipt));
+            for e in &self.kq_events {
+                match e.ident as libc::c_int {
+                    libc::STDIN_FILENO => {
+                        try!(input::read(&mut buf));
+                        let ipt = try!(String::from_utf8(buf.clone()));
+                        try!(process(&mut self.buf, &chan, ipt));
+                    },
+                    libc::SIGWINCH => {
+                        println!("SIGWINCH");
+                    },
+                    _ => ()
+                }
             }
         }
     }
