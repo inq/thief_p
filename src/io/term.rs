@@ -1,38 +1,37 @@
-use std::error::{self, Error};
-use std::fmt;
-use std::mem;
+use std::{error, fmt, mem};
 use libc;
 
-#[derive(Debug)]
-pub enum TermError {
-    TcgetattrError,
-    TcsetattrError,
-}
-
-impl fmt::Display for TermError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl error::Error for TermError {
-    fn description(&self) -> &str {
-        match *self {
-            TermError::TcgetattrError => "tcgetattr returned -1",
-            TermError::TcsetattrError => "tcsetattr returned -1",
-        }
-    }
-}
-
-pub fn init() -> Result<(), TermError> {
+pub fn init() -> Result<(), Error> {
     let mut termios = unsafe { mem::uninitialized() };
     if unsafe { libc::tcgetattr(0, &mut termios) } == -1 {
-        return Err(TermError::TcgetattrError);
+        return Err(Error::Tcgetattr);
     }
     termios.c_lflag &= !(libc::ICANON);
     termios.c_lflag &= !(libc::ECHO);
     if unsafe { libc::tcsetattr(0, libc::TCSANOW, &termios) } == -1 {
-        return Err(TermError::TcsetattrError);
+        return Err(Error::Tcsetattr);
     }
     Ok(())
+}
+
+
+#[derive(Debug)]
+pub enum Error {
+    Tcgetattr,
+    Tcsetattr,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        error::Error::description(self).fmt(f)
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Tcgetattr => "tcgetattr returned -1",
+            Error::Tcsetattr => "tcsetattr returned -1",
+        }
+    }
 }

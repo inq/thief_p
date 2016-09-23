@@ -1,14 +1,28 @@
-use std::thread;
+use std::{thread};
 use std::sync::mpsc::{self, channel};
-use ui::event::Event;
+use io::Event;
+
+struct Handler {}
+
+impl Handler {
+    pub fn new() -> Handler {
+        Handler {}
+    }
+
+    pub fn handle(&self, e: Event) {
+        println!("{:?}", e);
+    }
+}
+
 
 pub fn launch() -> mpsc::Sender<Event> {
     let (tx, rx) = channel();
     thread::spawn(move || {
+        let handler = Handler::new();
         loop {
-            let e = rx.recv().unwrap();
-            println!("{:?}", e);
-        }
+            let res = rx.recv().unwrap();
+            handler.handle(res);
+        };
     });
     tx
 }
