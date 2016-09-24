@@ -14,7 +14,7 @@ impl Screen {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
 
         let (w, h) = try!(term::get_size());
-        let buffer = Buffer::blank(&b, w, h);
+        let buffer = Buffer::bordered(&b, &b.invert(), w, h);
         buffer.print(&mut buf, &b.invert());
         Ok(())
     }
