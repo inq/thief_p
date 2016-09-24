@@ -9,10 +9,7 @@ mod line;
 use libc;
 
 pub fn init() {
-    term::smcup();
-
     unsafe {
         libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
     }
-    println!("{:?}", term::get_size());
 }

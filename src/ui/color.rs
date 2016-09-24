@@ -22,12 +22,12 @@ impl Brush {
         Brush { fg: fg, bg: bg }
     }
 
-    pub fn change(&self, to: &Brush) {
+    pub fn change(&self, buf: &mut String, to: &Brush) {
         if self.fg != to.fg {
-            print!("\u{1b}[38;2;{};{};{}m", to.fg.r, to.fg.g, to.fg.b);
+            buf.push_str(&format!("\u{1b}[38;2;{};{};{}m", to.fg.r, to.fg.g, to.fg.b));
         }
         if self.bg != to.bg {
-            print!("\u{1b}[48;2;{};{};{}m", to.bg.r, to.bg.g, to.bg.b);
+            buf.push_str(&format!("\u{1b}[48;2;{};{};{}m", to.bg.r, to.bg.g, to.bg.b));
         }
     }
 

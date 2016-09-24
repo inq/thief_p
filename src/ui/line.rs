@@ -15,14 +15,14 @@ impl Line {
         }
     }
 
-    pub fn print(&self, brush: &Brush) -> Brush {
+    pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
         for c in &self.chars {
             if c.brush != cur {
-                cur.change(&c.brush);
+                cur.change(&mut buf, &c.brush);
                 cur = c.brush.clone();
             }
-            print!("{}", c.chr);
+            buf.push_str(&format!("{}", c.chr));
         }
         cur
     }
