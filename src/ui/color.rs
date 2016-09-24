@@ -7,7 +7,7 @@ pub struct Color {
 
 impl Color {
     pub fn new(r: u8, g: u8, b: u8) -> Color {
-        Color { r: r, g: g, b: b}
+        Color { r: r, g: g, b: b }
     }
 }
 
@@ -32,6 +32,9 @@ impl Brush {
     }
 
     pub fn invert(&self) -> Brush {
-        Brush { fg: self.bg.clone(), bg: self.fg.clone() }
+        Brush {
+            fg: self.bg.clone(),
+            bg: self.fg.clone(),
+        }
     }
 }
