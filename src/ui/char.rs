@@ -1,5 +1,4 @@
 use ui::color::Brush;
-use libc;
 
 #[derive(Clone, Debug)]
 pub struct Char {
@@ -7,12 +6,13 @@ pub struct Char {
     pub brush: Brush,
 }
 
-extern {
+extern "C" {
     fn wcwidth(chr: u32) -> u32;
 }
 
 impl Char {
-    pub fn width(&self) -> u32 {
-        unsafe { wcwidth(self.chr as u32) }
+    #[allow(dead_code)]
+    pub fn width(&self) -> usize {
+        unsafe { wcwidth(self.chr as u32) as usize }
     }
 }

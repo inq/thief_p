@@ -7,19 +7,22 @@ pub fn smcup() {
     print!("\u{1b}[?47h");
 }
 
+#[allow(dead_code)]
 pub fn rmcup() {
     print!("\u{1b}[?47l");
 }
 
-pub fn get_size() -> Result<(u16, u16), Error> {
+pub fn movexy(x: usize, y: usize) {
+    print!("\u{1b}[{};{}f", y, x);
+}
+
+pub fn get_size() -> Result<(usize, usize), Error> {
     let ws: libc::winsize = unsafe { mem::uninitialized() };
-    let res = unsafe {
-        libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &ws)
-    };
+    let res = unsafe { libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &ws) };
     if res < 0 {
         return Err(Error::Tiocgwinsz);
     }
-    Ok((ws.ws_col, ws.ws_row))
+    Ok((ws.ws_col as usize, ws.ws_row as usize))
 }
 
 

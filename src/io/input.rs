@@ -1,6 +1,5 @@
 use std::error;
 use std::fmt;
-use std::ptr;
 use libc;
 
 pub fn init() -> Result<(), Error> {

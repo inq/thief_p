@@ -1,16 +1,16 @@
-use std::io::{self, Write};
 use ui::char::Char;
 use ui::color::Brush;
 
+#[derive(Debug, Clone)]
 pub struct Line {
     chars: Vec<Char>,
-    width: u32,
+    width: usize,
 }
 
 impl Line {
-    pub fn blank(brush: &Brush, width: u32) -> Line {
+    pub fn blank(brush: &Brush, width: usize) -> Line {
         Line {
-            chars: vec![Char{ chr: ' ', brush: brush.clone() }; width as usize],
+            chars: vec![Char{ chr: ' ', brush: brush.clone() }; width],
             width: width,
         }
     }
@@ -24,8 +24,6 @@ impl Line {
             }
             print!("{}", c.chr);
         }
-        print!("\u{1b}[0m");
-        io::stdout().flush();
         cur
     }
 }

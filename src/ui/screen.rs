@@ -1,5 +1,21 @@
+use std::error;
 use ui::buffer::Buffer;
+use ui::color::{Brush, Color};
+use ui::term;
 
-struct Screen {
-    buf: Buffer,
+pub struct Screen {}
+
+impl Screen {
+    pub fn new() -> Screen {
+        Screen {}
+    }
+
+    pub fn refresh(&self) -> Result<(), Box<error::Error>> {
+        let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
+
+        let (w, h) = try!(term::get_size());
+        let buf = Buffer::blank(&b, w, h);
+        buf.print(&b.invert());
+        Ok(())
+    }
 }

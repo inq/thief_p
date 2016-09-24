@@ -7,7 +7,6 @@ mod term;
 mod line;
 
 use libc;
-use std::ffi::CStr;
 
 pub fn init() {
     term::smcup();
