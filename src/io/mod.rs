@@ -9,9 +9,9 @@ mod term;
 pub use io::handler::Handler;
 pub use io::event::Event;
 
-pub fn init() -> Result<(), Box<Error>> {
+pub fn init() -> Result<(usize, usize), Box<Error>> {
     try!(signal::init());
     try!(input::init());
-    try!(term::init());
-    Ok(())
+    let res = try!(term::init());
+    Ok(res)
 }

@@ -2,8 +2,9 @@ use std::os::unix::io::RawFd;
 use std::convert::From;
 use std::sync::mpsc;
 use std::{error, str, fmt};
+use std::io::{self, Write};
 use libc;
-use io::{event, input};
+use io::{event, input, term};
 
 
 pub struct Handler {
@@ -12,6 +13,8 @@ pub struct Handler {
     pub kq_events: Vec<libc::kevent>,
     buf: String,
 }
+
+const TIMER_IDENT: i32 = 0xbeef;
 
 impl Handler {
     pub fn new() -> Result<Handler, Error> {
@@ -27,31 +30,22 @@ impl Handler {
         })
     }
 
-    fn add_fd(&mut self, fd: RawFd) {
+    fn add_event(&mut self, ident: i32, filter: i16, aux: isize) {
         self.kq_changes.push(libc::kevent {
-            ident: fd as libc::uintptr_t,
-            filter: libc::EVFILT_READ,
+            ident: ident as libc::uintptr_t,
+            filter: filter,
             flags: libc::EV_ADD,
             fflags: 0,
-            data: 0,
-            udata: ::std::ptr::null_mut(),
-        })
-    }
-
-    fn add_signal(&mut self, signal: libc::c_int) {
-        self.kq_changes.push(libc::kevent {
-            ident: signal as usize,
-            filter: libc::EVFILT_SIGNAL,
-            flags: libc::EV_ADD,
-            fflags: 0,
-            data: 0,
+            data: aux,
             udata: ::std::ptr::null_mut(),
         })
     }
 
     pub fn init(&mut self) -> Result<(), Error> {
-        self.add_fd(libc::STDIN_FILENO);
-        self.add_signal(libc::SIGWINCH);
+        self.add_event(libc::STDIN_FILENO, libc::EVFILT_READ, 0);
+        self.add_event(libc::STDOUT_FILENO, libc::EVFILT_WRITE, 0);
+        self.add_event(libc::SIGWINCH, libc::EVFILT_SIGNAL, 0);
+        self.add_event(TIMER_IDENT, libc::EVFILT_TIMER, 100);
         let res = unsafe {
             libc::kevent(self.kq,
                          self.kq_changes.as_ptr(),
@@ -69,8 +63,13 @@ impl Handler {
         Ok(())
     }
 
-    pub fn handle(&mut self, chan: mpsc::Sender<event::Event>) -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self,
+                  chan_output: mpsc::Sender<event::Event>,
+                  chan_input: mpsc::Receiver<String>)
+                  -> Result<(), Box<error::Error>> {
         let mut buf = Vec::with_capacity(32);
+        let mut write_buf = String::new();
+        let mut written = 0usize;
         loop {
             let res = unsafe {
                 libc::kevent(self.kq,
@@ -92,13 +91,30 @@ impl Handler {
 
             for e in &self.kq_events {
                 match e.ident as libc::c_int {
+                    libc::STDOUT_FILENO => {
+                        if write_buf.len() > written {
+                            let (_, v2) = write_buf.split_at(written);
+                            let l = try!(io::stdout().write(v2.as_bytes()));
+                            written += l;
+                            if written == write_buf.len() {
+                                try!(io::stdout().flush());
+                            }
+                        }
+                    }
                     libc::STDIN_FILENO => {
                         try!(input::read(&mut buf));
                         let ipt = try!(String::from_utf8(buf.clone()));
-                        try!(process(&mut self.buf, &chan, ipt));
+                        try!(process(&mut self.buf, &chan_output, ipt));
                     }
                     libc::SIGWINCH => {
-                        println!("SIGWINCH");
+                        let (w, h) = try!(term::get_size());
+                        try!(chan_output.send(event::Event::Resize{w: w, h: h}));
+                    }
+                    8080 => {
+                        if let Ok(buf) = chan_input.try_recv() {
+                            write_buf = buf;
+                            written = 0;
+                        }
                     }
                     _ => (),
                 }
