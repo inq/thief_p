@@ -131,21 +131,21 @@ impl Handler {
                                 try!(io::stdout().flush());
                             }
                         }
-                    },
+                    }
                     libc::STDIN_FILENO => {
                         try!(input::read(&mut buf));
                         let ipt = try!(String::from_utf8(buf.clone()));
                         try!(process(&mut self.buf, &chan_output, ipt));
-                    },
+                    }
                     libc::SIGWINCH => {
                         println!("SIGWINCH");
-                    },
+                    }
                     8080 => {
                         if let Ok(buf) = chan_input.try_recv() {
                             write_buf = buf;
                             written = 0;
                         }
-                    },
+                    }
                     _ => (),
                 }
             }

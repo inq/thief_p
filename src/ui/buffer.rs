@@ -10,6 +10,17 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    pub fn bordered(line: &Brush, fill: &Brush, width: usize, height: usize) -> Buffer {
+        let mut lines = vec![Line::blank(line, width); 1];
+        lines.resize(height - 1, Line::bordered(line, fill, width));
+        lines.resize(height, Line::blank(line, width));
+        Buffer {
+            lines: lines,
+            width: width,
+            height: height,
+        }
+    }
+
     pub fn blank(brush: &Brush, width: usize, height: usize) -> Buffer {
         Buffer {
             lines: vec![Line::blank(brush, width); height],
