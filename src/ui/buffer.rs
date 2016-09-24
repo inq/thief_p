@@ -21,6 +21,7 @@ impl Buffer {
         }
     }
 
+    #[allow(dead_code)]
     pub fn blank(brush: &Brush, width: usize, height: usize) -> Buffer {
         Buffer {
             lines: vec![Line::blank(brush, width); height],

@@ -4,7 +4,7 @@ use std::sync::mpsc;
 use std::{error, str, fmt};
 use std::io::{self, Write};
 use libc;
-use io::{event, input};
+use io::{event, input, term};
 
 
 pub struct Handler {
@@ -138,7 +138,8 @@ impl Handler {
                         try!(process(&mut self.buf, &chan_output, ipt));
                     }
                     libc::SIGWINCH => {
-                        println!("SIGWINCH");
+                        let (w, h) = try!(term::get_size());
+                        try!(chan_output.send(event::Event::Resize{w: w, h: h}));
                     }
                     8080 => {
                         if let Ok(buf) = chan_input.try_recv() {

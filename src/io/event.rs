@@ -6,6 +6,7 @@ pub enum Event {
     Ctrl { c: char },
     Move { x: i8, y: i8 },
     Meta { c: char },
+    Resize { w: usize, h: usize },
     Escape,
 }
 
