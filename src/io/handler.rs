@@ -14,6 +14,8 @@ pub struct Handler {
     buf: String,
 }
 
+const TIMER_IDENT: i32 = 0xbeef;
+
 impl Handler {
     pub fn new() -> Result<Handler, Error> {
         let res = unsafe { libc::kqueue() };
@@ -28,55 +30,22 @@ impl Handler {
         })
     }
 
-    fn add_read_fd(&mut self, fd: RawFd) {
+    fn add_event(&mut self, ident: i32, filter: i16, aux: isize) {
         self.kq_changes.push(libc::kevent {
-            ident: fd as libc::uintptr_t,
-            filter: libc::EVFILT_READ,
+            ident: ident as libc::uintptr_t,
+            filter: filter,
             flags: libc::EV_ADD,
             fflags: 0,
-            data: 0,
-            udata: ::std::ptr::null_mut(),
-        })
-    }
-
-    fn add_write_fd(&mut self, fd: RawFd) {
-        self.kq_changes.push(libc::kevent {
-            ident: fd as libc::uintptr_t,
-            filter: libc::EVFILT_WRITE,
-            flags: libc::EV_ADD,
-            fflags: 0,
-            data: 0,
-            udata: ::std::ptr::null_mut(),
-        })
-    }
-
-    fn add_signal(&mut self, signal: libc::c_int) {
-        self.kq_changes.push(libc::kevent {
-            ident: signal as usize,
-            filter: libc::EVFILT_SIGNAL,
-            flags: libc::EV_ADD,
-            fflags: 0,
-            data: 0,
-            udata: ::std::ptr::null_mut(),
-        })
-    }
-
-    fn add_timer(&mut self, ms: isize) {
-        self.kq_changes.push(libc::kevent {
-            ident: 8080 as usize,
-            filter: libc::EVFILT_TIMER,
-            flags: libc::EV_ADD | libc::EV_ENABLE,
-            fflags: 0,
-            data: ms,
+            data: aux,
             udata: ::std::ptr::null_mut(),
         })
     }
 
     pub fn init(&mut self) -> Result<(), Error> {
-        self.add_read_fd(libc::STDIN_FILENO);
-        self.add_write_fd(libc::STDOUT_FILENO);
-        self.add_signal(libc::SIGWINCH);
-        self.add_timer(100);
+        self.add_event(libc::STDIN_FILENO, libc::EVFILT_READ, 0);
+        self.add_event(libc::STDOUT_FILENO, libc::EVFILT_WRITE, 0);
+        self.add_event(libc::SIGWINCH, libc::EVFILT_SIGNAL, 0);
+        self.add_event(TIMER_IDENT, libc::EVFILT_TIMER, 100);
         let res = unsafe {
             libc::kevent(self.kq,
                          self.kq_changes.as_ptr(),
