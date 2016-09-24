@@ -1,28 +1,60 @@
-use std::thread;
-use std::sync::mpsc::{self, channel};
-use io::Event;
+use std::{error, thread};
+use std::sync::mpsc;
 
-struct Handler {}
+use io::Event;
+use ui::screen::Screen;
+
+struct Handler {
+    screen: Screen,
+}
 
 impl Handler {
-    pub fn new() -> Handler {
-        Handler {}
+    pub fn new(width: usize, height: usize) -> Handler {
+        Handler { screen: Screen::new(width, height) }
     }
 
-    pub fn handle(&self, e: Event) {
-        println!("{:?}", e);
+    pub fn handle(&mut self, mut buf: &mut String, e: Event) -> Result<(), Box<error::Error>> {
+        match e {
+            Event::Resize { w: width, h: height } => {
+                self.screen.resize(width, height);
+                try!(self.screen.refresh(&mut buf));
+            }
+            Event::Char { c: x } => {
+                buf.push_str(&format!("{}", x));
+                try!(self.screen.refresh(&mut buf));
+            }
+            _ => (),
+        }
+        Ok(())
     }
 }
 
+fn do_loop(chan_input: &mpsc::Receiver<Event>,
+           chan_output: &mpsc::Sender<String>,
+           handler: &mut Handler)
+           -> Result<(), Box<error::Error>> {
+    let res = try!(chan_input.recv());
+    let mut buf = String::with_capacity(4096);
+    try!(handler.handle(&mut buf, res));
+    try!(chan_output.send(buf));
 
-pub fn launch() -> mpsc::Sender<Event> {
-    let (tx, rx) = channel();
+    Ok(())
+}
+
+pub fn launch(width: usize, height: usize)
+              -> (mpsc::Sender<Event>, mpsc::Receiver<String>) {
+    let (m_event, u_event) = mpsc::channel();
+    let (u_string, m_string) = mpsc::channel();
     thread::spawn(move || {
-        let handler = Handler::new();
+        let mut handler = Handler::new(width, height);
         loop {
-            let res = rx.recv().unwrap();
-            handler.handle(res);
+            match do_loop(&u_event, &u_string, &mut handler) {
+                Ok(_) => (),
+                Err(e) => {
+                    println!("{:?}", e);
+                }
+            }
         }
     });
-    tx
+    (m_event, m_string)
 }
