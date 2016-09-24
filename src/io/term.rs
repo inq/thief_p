@@ -3,14 +3,15 @@ use libc;
 
 pub fn init() -> Result<(), Error> {
     let mut termios = unsafe { mem::uninitialized() };
-    if unsafe { libc::tcgetattr(0, &mut termios) } == -1 {
+    if unsafe { libc::tcgetattr(libc::STDIN_FILENO, &mut termios) } == -1 {
         return Err(Error::Tcgetattr);
     }
     termios.c_lflag &= !(libc::ICANON);
     termios.c_lflag &= !(libc::ECHO);
-    if unsafe { libc::tcsetattr(0, libc::TCSANOW, &termios) } == -1 {
+    if unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) } == -1 {
         return Err(Error::Tcsetattr);
     }
+
     Ok(())
 }
 
