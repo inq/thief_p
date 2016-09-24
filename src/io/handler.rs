@@ -2,6 +2,7 @@ use std::os::unix::io::RawFd;
 use std::convert::From;
 use std::sync::mpsc;
 use std::{error, str, fmt};
+use std::io::{self, Write};
 use libc;
 use io::{event, input};
 
@@ -27,10 +28,21 @@ impl Handler {
         })
     }
 
-    fn add_fd(&mut self, fd: RawFd) {
+    fn add_read_fd(&mut self, fd: RawFd) {
         self.kq_changes.push(libc::kevent {
             ident: fd as libc::uintptr_t,
             filter: libc::EVFILT_READ,
+            flags: libc::EV_ADD,
+            fflags: 0,
+            data: 0,
+            udata: ::std::ptr::null_mut(),
+        })
+    }
+
+    fn add_write_fd(&mut self, fd: RawFd) {
+        self.kq_changes.push(libc::kevent {
+            ident: fd as libc::uintptr_t,
+            filter: libc::EVFILT_WRITE,
             flags: libc::EV_ADD,
             fflags: 0,
             data: 0,
@@ -49,9 +61,22 @@ impl Handler {
         })
     }
 
+    fn add_timer(&mut self, ms: isize) {
+        self.kq_changes.push(libc::kevent {
+            ident: 8080 as usize,
+            filter: libc::EVFILT_TIMER,
+            flags: libc::EV_ADD | libc::EV_ENABLE,
+            fflags: 0,
+            data: ms,
+            udata: ::std::ptr::null_mut(),
+        })
+    }
+
     pub fn init(&mut self) -> Result<(), Error> {
-        self.add_fd(libc::STDIN_FILENO);
+        self.add_read_fd(libc::STDIN_FILENO);
+        self.add_write_fd(libc::STDOUT_FILENO);
         self.add_signal(libc::SIGWINCH);
+        self.add_timer(100);
         let res = unsafe {
             libc::kevent(self.kq,
                          self.kq_changes.as_ptr(),
@@ -69,8 +94,13 @@ impl Handler {
         Ok(())
     }
 
-    pub fn handle(&mut self, chan: mpsc::Sender<event::Event>) -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self,
+                  chan_output: mpsc::Sender<event::Event>,
+                  chan_input: mpsc::Receiver<String>)
+                  -> Result<(), Box<error::Error>> {
         let mut buf = Vec::with_capacity(32);
+        let mut write_buf = String::new();
+        let mut written = 0usize;
         loop {
             let res = unsafe {
                 libc::kevent(self.kq,
@@ -92,14 +122,30 @@ impl Handler {
 
             for e in &self.kq_events {
                 match e.ident as libc::c_int {
+                    libc::STDOUT_FILENO => {
+                        if write_buf.len() > written {
+                            let (_, v2) = write_buf.split_at(written);
+                            let l = try!(io::stdout().write(v2.as_bytes()));
+                            written += l;
+                            if written == write_buf.len() {
+                                try!(io::stdout().flush());
+                            }
+                        }
+                    },
                     libc::STDIN_FILENO => {
                         try!(input::read(&mut buf));
                         let ipt = try!(String::from_utf8(buf.clone()));
-                        try!(process(&mut self.buf, &chan, ipt));
-                    }
+                        try!(process(&mut self.buf, &chan_output, ipt));
+                    },
                     libc::SIGWINCH => {
                         println!("SIGWINCH");
-                    }
+                    },
+                    8080 => {
+                        if let Ok(buf) = chan_input.try_recv() {
+                            write_buf = buf;
+                            written = 0;
+                        }
+                    },
                     _ => (),
                 }
             }

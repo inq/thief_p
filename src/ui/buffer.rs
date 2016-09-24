@@ -1,4 +1,3 @@
-use std::io::{self, Write};
 use ui::color::Brush;
 use ui::line::Line;
 use ui::term;
@@ -19,14 +18,13 @@ impl Buffer {
         }
     }
 
-    pub fn print(&self, brush: &Brush) -> Brush {
+    pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
         for (i, l) in self.lines.iter().enumerate() {
-            term::movexy(0, i);
-            cur = l.print(&cur);
-            io::stdout().flush().unwrap();
+            term::movexy(&mut buf, 0, i);
+            cur = l.print(&mut buf, &cur);
         }
-        print!("\u{1b}[0m");
+        buf.push_str("\u{1b}[0m");
         cur
     }
 }

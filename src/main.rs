@@ -2,11 +2,20 @@ extern crate libc;
 mod io;
 mod ui;
 
+use std::fs::File;
+use std::io::Write;
+
 fn main() {
     ui::init();
     io::init().unwrap();
-    let chan = ui::handler::launch();
+    let (a, b) = ui::handler::launch();
     let mut ev = io::Handler::new().unwrap();
     ev.init().unwrap();
-    ev.handle(chan).unwrap();
+    match ev.handle(a, b) {
+        Ok(()) => (),
+        Err(e) => {
+            let mut f = File::create("log.txt").unwrap();
+            f.write_all(e.description().as_bytes()).unwrap();
+        }
+    }
 }

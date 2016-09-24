@@ -10,12 +10,12 @@ impl Screen {
         Screen {}
     }
 
-    pub fn refresh(&self) -> Result<(), Box<error::Error>> {
+    pub fn refresh(&self, mut buf: &mut String) -> Result<(), Box<error::Error>> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
 
         let (w, h) = try!(term::get_size());
-        let buf = Buffer::blank(&b, w, h);
-        buf.print(&b.invert());
+        let buffer = Buffer::blank(&b, w, h);
+        buffer.print(&mut buf, &b.invert());
         Ok(())
     }
 }

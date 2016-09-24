@@ -3,17 +3,17 @@ use std::fmt;
 use std::error;
 use libc;
 
-pub fn smcup() {
-    print!("\u{1b}[?47h");
+pub fn smcup(buf: &mut String) {
+    buf.push_str(&format!("\u{1b}[?47h"));
 }
 
 #[allow(dead_code)]
-pub fn rmcup() {
-    print!("\u{1b}[?47l");
+pub fn rmcup(buf: &mut String) {
+    buf.push_str(&format!("\u{1b}[?47l"));
 }
 
-pub fn movexy(x: usize, y: usize) {
-    print!("\u{1b}[{};{}f", y, x);
+pub fn movexy(buf: &mut String, x: usize, y: usize) {
+    buf.push_str(&format!("\u{1b}[{};{}f", y, x));
 }
 
 pub fn get_size() -> Result<(usize, usize), Error> {
