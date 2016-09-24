@@ -1,5 +1,6 @@
 use std::error;
 use std::fmt;
+use std::ptr;
 use libc;
 
 pub fn init() -> Result<(), Error> {
@@ -7,11 +8,11 @@ pub fn init() -> Result<(), Error> {
     if prev == -1 {
         return Err(Error::FGetfl);
     }
-
     let res = unsafe { libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev | libc::O_NONBLOCK) };
     if res == -1 {
         return Err(Error::FSetfl);
     }
+
     Ok(())
 }
 
