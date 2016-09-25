@@ -1,5 +1,5 @@
-use ui::char::Char;
-use ui::color::Brush;
+use ui::prim::char::Char;
+use ui::prim::color::Brush;
 
 #[derive(Debug, Clone)]
 pub struct Line {
@@ -30,6 +30,14 @@ impl Line {
         Line {
             chars: vec![Char{ chr: ' ', brush: brush.clone() }; width],
             width: width,
+        }
+    }
+
+    pub fn draw(&mut self, src: &Line, x: usize) {
+        for (i, chr) in src.chars.iter().enumerate() {
+            if x + i < self.width {
+                self.chars[x + i] = src.chars[i].clone();
+            }
         }
     }
 

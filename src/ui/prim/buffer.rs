@@ -1,6 +1,6 @@
-use ui::color::Brush;
-use ui::line::Line;
-use ui::term;
+use ui::prim::color::Brush;
+use ui::prim::line::Line;
+use ui::prim::term;
 
 #[allow(dead_code)]
 pub struct Buffer {
@@ -27,6 +27,14 @@ impl Buffer {
             lines: vec![Line::blank(brush, width); height],
             width: width,
             height: height,
+        }
+    }
+
+    pub fn draw(&mut self, src: &Buffer, x: usize, y: usize) {
+        for (i, line) in src.lines.iter().enumerate() {
+            if y + i < self.height {
+                self.lines[y + i].draw(line, x);
+            }
         }
     }
 

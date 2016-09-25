@@ -14,7 +14,7 @@ fn main() {
     match ev.handle(a, b) {
         Ok(()) => (),
         Err(e) => {
-            let mut f = File::create("log.txt").unwrap();
+            let mut f = File::create("log/main.log").unwrap();
             f.write_all(e.description().as_bytes()).unwrap();
         }
     }
