@@ -1,6 +1,5 @@
 use std::error;
-use ui::buffer::Buffer;
-use ui::color::{Brush, Color};
+use ui::prim::{Buffer, Brush, Color};
 use ui::window::Window;
 
 pub struct Screen {

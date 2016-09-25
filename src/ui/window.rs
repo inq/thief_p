@@ -1,5 +1,4 @@
-use ui::buffer::Buffer;
-use ui::color::{Brush, Color};
+use ui::prim::{Buffer, Brush, Color};
 
 pub struct Window {
     width: usize,
