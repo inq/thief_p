@@ -1,6 +1,6 @@
-use ui::color::Brush;
-use ui::line::Line;
-use ui::term;
+use ui::prim::color::Brush;
+use ui::prim::line::Line;
+use ui::prim::term;
 
 #[allow(dead_code)]
 pub struct Buffer {

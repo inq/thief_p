@@ -1,4 +1,4 @@
-use ui::color::Brush;
+use ui::prim::color::Brush;
 
 #[derive(Clone, Debug)]
 pub struct Char {
