@@ -110,7 +110,7 @@ impl Handler {
                         let (w, h) = try!(term::get_size());
                         try!(chan_output.send(event::Event::Resize{w: w, h: h}));
                     }
-                    8080 => {
+                    TIMER_IDENT => {
                         if let Ok(buf) = chan_input.try_recv() {
                             write_buf = buf;
                             written = 0;
