@@ -33,6 +33,14 @@ impl Line {
         }
     }
 
+    pub fn draw(&mut self, src: &Line, x: usize) {
+        for (i, chr) in src.chars.iter().enumerate() {
+            if x + i < self.width {
+                self.chars[x + i] = src.chars[i].clone();
+            }
+        }
+    }
+
     pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
         for c in &self.chars {

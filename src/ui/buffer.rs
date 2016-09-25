@@ -30,6 +30,14 @@ impl Buffer {
         }
     }
 
+    pub fn draw(&mut self, src: &Buffer, x: usize, y: usize) {
+        for (i, line) in src.lines.iter().enumerate() {
+            if y + i < self.height {
+                self.lines[y + i].draw(line, x);
+            }
+        }
+    }
+
     pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
         for (i, l) in self.lines.iter().enumerate() {

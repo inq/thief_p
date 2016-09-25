@@ -5,6 +5,7 @@ mod color;
 mod screen;
 mod term;
 mod line;
+mod window;
 
 use libc;
 
