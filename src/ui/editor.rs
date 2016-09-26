@@ -11,6 +11,14 @@ impl Component for Editor {
         self.width = width;
         self.height = height;
     }
+
+    fn refresh(&self) -> Response {
+        let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
+        Response {
+            draw: Some(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
+            cursor: Some(Cursor { x: 0, y: 0 }),
+        }
+    }
 }
 
 impl Editor {
@@ -21,11 +29,4 @@ impl Editor {
         }
     }
 
-    pub fn refresh(&self) -> Response {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
-        Response {
-            draw: Some(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
-            cursor: Some(Cursor { x: 0, y: 0 }),
-        }
-    }
 }
