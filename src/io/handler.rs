@@ -6,6 +6,11 @@ use std::io::{self, Write};
 use libc;
 use io::{event, input, term};
 
+def_error! {
+    Kqueue: "kqueue",
+    Kevent: "kevent",
+    OutOfCapacity: "out_of",
+}
 
 pub struct Handler {
     pub kq: RawFd,
@@ -148,28 +153,4 @@ fn process(buf: &mut String,
     buf.clear();
     buf.push_str(&cur);
     Ok(())
-}
-
-
-#[derive(Debug)]
-pub enum Error {
-    Kqueue,
-    Kevent,
-    OutOfCapacity,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Kqueue => "kqueue returned -1",
-            Error::Kevent => "kevent returned -1",
-            Error::OutOfCapacity => "out of the capacity",
-        }
-    }
 }
