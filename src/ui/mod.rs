@@ -1,8 +1,10 @@
 pub mod handler;
+mod comp;
 mod prim;
 mod editor;
 mod screen;
 mod window;
+mod response;
 
 use libc;
 
