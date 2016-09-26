@@ -1,8 +1,16 @@
 use ui::prim::{Buffer, Brush, Color};
+use ui::comp::{Component, Child};
 
 pub struct Editor {
     width: usize,
     height: usize,
+}
+
+impl Component for Editor {
+    fn resize(&mut self, width: usize, height: usize) {
+        self.width = width;
+        self.height = height;
+    }
 }
 
 impl Editor {
@@ -11,11 +19,6 @@ impl Editor {
             width: width,
             height: height,
         }
-    }
-
-    pub fn resize(&mut self, width: usize, height: usize) {
-        self.width = width;
-        self.height = height;
     }
 
     pub fn refresh(&self) -> Buffer {
