@@ -1,5 +1,6 @@
 pub mod handler;
 mod prim;
+mod editor;
 mod screen;
 mod window;
 
