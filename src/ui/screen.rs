@@ -1,5 +1,5 @@
 use std::error;
-use ui::prim::{Buffer, Brush, Color};
+use ui::prim::{term, Buffer, Brush, Color};
 use ui::window::Window;
 
 pub struct Screen {
@@ -43,8 +43,8 @@ impl Screen {
         for &(ref win, x, y) in self.windows.iter() {
             buffer.draw(&win.refresh(), x, y);
         }
-
         buffer.print(&mut buf, &b.invert());
+        term::movexy(&mut buf, 0, 0);
         Ok(())
     }
 }
