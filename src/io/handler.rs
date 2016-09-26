@@ -70,6 +70,10 @@ impl Handler {
         let mut buf = Vec::with_capacity(32);
         let mut write_buf = String::new();
         let mut written = 0usize;
+        {
+            let (w, h) = try!(term::get_size());
+            try!(chan_output.send(event::Event::Resize { w: w, h: h }));
+        }
         loop {
             let res = unsafe {
                 libc::kevent(self.kq,
