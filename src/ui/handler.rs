@@ -3,6 +3,8 @@ use std::sync::mpsc;
 
 use io::Event;
 use ui::screen::Screen;
+use ui::comp::{Component, Response};
+use ui::prim::{term, Brush, Color};
 
 struct Handler {
     screen: Screen,
@@ -16,8 +18,12 @@ impl Handler {
     pub fn handle(&mut self, mut buf: &mut String, e: Event) -> Result<(), Box<error::Error>> {
         match e {
             Event::Resize { w: width, h: height } => {
+                let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
                 self.screen.resize(width, height);
-                try!(self.screen.refresh(&mut buf));
+                if let Response { draw: Some(b), cursor: Some(c) } = self.screen.refresh() {
+                    b.print(&mut buf, &br.invert());
+                    term::movexy(&mut buf, c.x, c.y);
+                }
             }
             Event::Char { c: x } => {
                 buf.push_str(&format!("{}", x));
