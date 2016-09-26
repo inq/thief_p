@@ -1,5 +1,5 @@
 use ui::prim::{Buffer, Brush, Color};
-use ui::comp::{Component, Child};
+use ui::comp::{Component, Child, Response, Cursor};
 
 pub struct Editor {
     width: usize,
@@ -21,8 +21,11 @@ impl Editor {
         }
     }
 
-    pub fn refresh(&self) -> Buffer {
+    pub fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
-        Buffer::bordered(&b, &b.invert(), self.width, self.height)
+        Response {
+            draw: Some(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
+            cursor: Some(Cursor { x: 0, y: 0 }),
+        }
     }
 }

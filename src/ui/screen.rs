@@ -1,7 +1,7 @@
 use std::error;
 use ui::prim::{term, Buffer, Brush, Color};
 use ui::window::Window;
-use ui::comp::{Child, Component};
+use ui::comp::{Child, Component, Cursor, Response};
 
 pub struct Screen {
     windows: Vec<Child<Window>>,
@@ -41,11 +41,20 @@ impl Screen {
     pub fn refresh(&self, mut buf: &mut String) -> Result<(), Box<error::Error>> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
+        let mut cursor = None;
         for &ref child in self.windows.iter() {
-            buffer.draw(&child.comp.refresh(), child.x, child.y);
+            let r = child.comp.refresh();
+            if let Some(buf) = r.draw {
+                buffer.draw(&buf, child.x, child.y);
+            }
+            if let Some(cur) = r.cursor {
+                cursor = Some(Cursor { x: cur.x + child.x, y: cur.y + child.y } );
+            }
         }
         buffer.print(&mut buf, &b.invert());
-        term::movexy(&mut buf, 0, 0);
+        if let Some(cur) = cursor {
+            term::movexy(&mut buf, cur.x, cur.y);
+        }
         Ok(())
     }
 }

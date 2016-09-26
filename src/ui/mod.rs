@@ -4,7 +4,6 @@ mod prim;
 mod editor;
 mod screen;
 mod window;
-mod response;
 
 use libc;
 

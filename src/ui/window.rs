@@ -1,6 +1,6 @@
 use ui::editor::Editor;
 use ui::prim::{Buffer, Brush, Color};
-use ui::comp::{Component, Child};
+use ui::comp::{Response, Component, Child, Cursor};
 
 pub struct Window {
     editor: Child<Editor>,
@@ -25,10 +25,19 @@ impl Window {
         }
     }
 
-    pub fn refresh(&self) -> Buffer {
+    pub fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 200));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        buffer.draw(&self.editor.comp.refresh(), 1, 1);
-        buffer
+        let res = self.editor.comp.refresh();
+        if let Some(buf) = res.draw {
+            buffer.draw(&buf, 1, 1);
+        }
+        Response {
+            draw: Some(buffer),
+            cursor: match res.cursor {
+                Some(cur) => Some(Cursor { x: cur.x + 1, y: cur.y + 1 }),
+                None => None,
+            }
+        }
     }
 }
