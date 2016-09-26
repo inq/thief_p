@@ -1,15 +1,15 @@
 use std::os::unix::io::RawFd;
 use std::convert::From;
 use std::sync::mpsc;
-use std::{error, str, fmt};
 use std::io::{self, Write};
+use std::error;
 use libc;
 use io::{event, input, term};
 
 def_error! {
-    Kqueue: "kqueue",
-    Kevent: "kevent",
-    OutOfCapacity: "out_of",
+    Kqueue: "kqueue returned -1",
+    Kevent: "kevent returned -1",
+    OutOfCapacity: "out of capacity",
 }
 
 pub struct Handler {
