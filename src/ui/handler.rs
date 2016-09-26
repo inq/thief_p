@@ -21,7 +21,6 @@ impl Handler {
             }
             Event::Char { c: x } => {
                 buf.push_str(&format!("{}", x));
-                try!(self.screen.refresh(&mut buf));
             }
             _ => (),
         }
