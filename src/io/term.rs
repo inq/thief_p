@@ -1,4 +1,4 @@
-use std::{error, fmt, mem};
+use std::{mem};
 use libc;
 
 def_error! {
