@@ -8,11 +8,12 @@ use ui::res::Response;
 
 struct Handler {
     screen: Screen,
+    quit: bool,
 }
 
 impl Handler {
     pub fn new(width: usize, height: usize) -> Handler {
-        Handler { screen: Screen::new(width, height) }
+        Handler { screen: Screen::new(width, height), quit: false }
     }
 
     pub fn handle(&mut self, e: Event) -> Vec<Response> {
@@ -21,7 +22,16 @@ impl Handler {
                 self.screen.resize(width, height);
                 self.screen.refresh()
             }
-            Event::Char { c: x } => vec![Response::Put(format!("{}", x))],
+            Event::Ctrl { c: c } => {
+                match c {
+                    'q' => {
+                        self.quit = true;
+                        vec![Response::Quit]
+                    },
+                    _ => vec![],
+                }
+            }
+            Event::Char { c: c } => vec![Response::Put(format!("{}", c))],
             _ => vec![],
         }
     }
@@ -41,7 +51,7 @@ pub fn launch(width: usize, height: usize) -> (mpsc::Sender<Event>, mpsc::Receiv
     let (u_response, m_response) = mpsc::channel();
     thread::spawn(move || {
         let mut handler = Handler::new(width, height);
-        loop {
+        while !handler.quit {
             match do_loop(&u_event, &u_response, &mut handler) {
                 Ok(_) => (),
                 Err(e) => {
