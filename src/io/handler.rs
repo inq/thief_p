@@ -1,156 +1,111 @@
-use std::os::unix::io::RawFd;
 use std::convert::From;
 use std::sync::mpsc;
 use std::io::{self, Write};
 use std::error;
 use libc;
-use io::{event, input, term};
+use io::{event, input, term, kqueue};
+use ui::{Brush, Color, Response};
 
 def_error! {
-    Kqueue: "kqueue returned -1",
-    Kevent: "kevent returned -1",
     OutOfCapacity: "out of capacity",
 }
 
 pub struct Handler {
-    pub kq: RawFd,
-    pub kq_changes: Vec<libc::kevent>,
-    pub kq_events: Vec<libc::kevent>,
-    buf: String,
+    ipt: mpsc::Receiver<Vec<Response>>,
+    ipt_buf: String,
+    ipt_written: usize,
+    out: mpsc::Sender<event::Event>,
+    out_buf: String,
 }
 
-const TIMER_IDENT: i32 = 0xbeef;
-
 impl Handler {
-    pub fn new() -> Result<Handler, Error> {
-        let res = unsafe { libc::kqueue() };
-        if res == -1 {
-            return Err(Error::Kqueue);
+    pub fn new(out: mpsc::Sender<event::Event>, ipt: mpsc::Receiver<Vec<Response>>) -> Handler {
+        Handler {
+            ipt: ipt,
+            ipt_buf: String::with_capacity(4096),
+            ipt_written: 0,
+            out: out,
+            out_buf: String::with_capacity(32),
         }
-        Ok(Handler {
-            kq: res,
-            kq_changes: Vec::with_capacity(16),
-            kq_events: Vec::with_capacity(16),
-            buf: String::with_capacity(32),
-        })
     }
 
-    fn add_event(&mut self, ident: i32, filter: i16, aux: isize) {
-        self.kq_changes.push(libc::kevent {
-            ident: ident as libc::uintptr_t,
-            filter: filter,
-            flags: libc::EV_ADD,
-            fflags: 0,
-            data: aux,
-            udata: ::std::ptr::null_mut(),
-        })
-    }
-
-    pub fn init(&mut self) -> Result<(), Error> {
-        self.add_event(libc::STDIN_FILENO, libc::EVFILT_READ, 0);
-        self.add_event(libc::STDOUT_FILENO, libc::EVFILT_WRITE, 0);
-        self.add_event(libc::SIGWINCH, libc::EVFILT_SIGNAL, 0);
-        self.add_event(TIMER_IDENT, libc::EVFILT_TIMER, 100);
-        let res = unsafe {
-            libc::kevent(self.kq,
-                         self.kq_changes.as_ptr(),
-                         self.kq_changes.len() as i32,
-                         ::std::ptr::null_mut(),
-                         0,
-                         &libc::timespec {
-                             tv_sec: 10,
-                             tv_nsec: 0,
-                         })
-        };
-        if res == -1 {
-            return Err(Error::Kevent);
+    fn handle_stdout(&mut self) -> Result<(), Box<error::Error>> {
+        if self.ipt_buf.len() > self.ipt_written {
+            let (_, v2) = self.ipt_buf.split_at(self.ipt_written);
+            let l = try!(io::stdout().write(v2.as_bytes()));
+            self.ipt_written += l;
+            if self.ipt_written == self.ipt_buf.len() {
+                try!(io::stdout().flush());
+            }
         }
         Ok(())
     }
 
-    pub fn handle(&mut self,
-                  chan_output: mpsc::Sender<event::Event>,
-                  chan_input: mpsc::Receiver<String>)
-                  -> Result<(), Box<error::Error>> {
-        let mut buf = Vec::with_capacity(32);
-        let mut write_buf = String::new();
-        let mut written = 0usize;
-        {
-            let (w, h) = try!(term::get_size());
-            try!(chan_output.send(event::Event::Resize { w: w, h: h }));
-        }
-        loop {
-            let res = unsafe {
-                libc::kevent(self.kq,
-                             ::std::ptr::null(),
-                             0,
-                             self.kq_events.as_mut_ptr(),
-                             self.kq_events.capacity() as i32,
-                             &libc::timespec {
-                                 tv_sec: 10,
-                                 tv_nsec: 0,
-                             })
-            };
-            if res == -1 {
-                return Err(From::from(Error::Kevent));
-            }
-            unsafe {
-                self.kq_events.set_len(res as usize);
-            }
+    fn handle_stdin(&mut self) -> Result<(), Box<error::Error>> {
+        let ipt = try!(input::read(32));
 
-            for e in &self.kq_events {
-                match e.ident as libc::c_int {
-                    libc::STDOUT_FILENO => {
-                        if write_buf.len() > written {
-                            let (_, v2) = write_buf.split_at(written);
-                            let l = try!(io::stdout().write(v2.as_bytes()));
-                            written += l;
-                            if written == write_buf.len() {
-                                try!(io::stdout().flush());
-                            }
-                        }
+        if self.out_buf.len() + ipt.len() > self.out_buf.capacity() {
+            return Err(From::from(Error::OutOfCapacity));
+        }
+        self.out_buf.push_str(&ipt);
+        let mut cur = self.out_buf.clone();
+        let mut done = false;
+        while !done {
+            let (res, next) = event::Event::from_string(cur);
+            match res {
+                Some(e) => try!(self.out.send(e)),
+                None => done = true,
+            }
+            cur = next.clone();
+        }
+        self.out_buf.clear();
+        self.out_buf.push_str(&cur);
+        Ok(())
+    }
+
+    fn handle_sigwinch(&mut self) -> Result<(), Box<error::Error>> {
+        let (w, h) = try!(term::get_size());
+        try!(self.out.send(event::Event::Resize { w: w, h: h }));
+        Ok(())
+    }
+
+    fn handle_timer(&mut self) -> Result<(), Box<error::Error>> {
+        // TODO: must use brush as a terminal state
+        let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
+
+        if let Ok(resps) = self.ipt.try_recv() {
+            self.ipt_buf.clear();
+            for resp in resps {
+                match resp {
+                    Response::Refresh(b) => {
+                        b.print(&mut self.ipt_buf, &br.invert());
                     }
-                    libc::STDIN_FILENO => {
-                        try!(input::read(&mut buf));
-                        let ipt = try!(String::from_utf8(buf.clone()));
-                        try!(process(&mut self.buf, &chan_output, ipt));
+                    Response::Move(c) => {
+                        self.ipt_buf.push_str(&term::movexy(c.x, c.y));
                     }
-                    libc::SIGWINCH => {
-                        let (w, h) = try!(term::get_size());
-                        try!(chan_output.send(event::Event::Resize{w: w, h: h}));
+                    Response::Put(s) => {
+                        self.ipt_buf.push_str(&s);
                     }
-                    TIMER_IDENT => {
-                        if let Ok(buf) = chan_input.try_recv() {
-                            write_buf = buf;
-                            written = 0;
-                        }
-                    }
-                    _ => (),
                 }
             }
+            self.ipt_written = 0;
         }
+        Ok(())
     }
-}
 
-fn process(buf: &mut String,
-           chan: &mpsc::Sender<event::Event>,
-           ipt: String)
-           -> Result<(), Box<error::Error>> {
-    if buf.len() + ipt.len() > buf.capacity() {
-        return Err(From::from(Error::OutOfCapacity));
+    pub fn init(&mut self) -> Result<(), Box<error::Error>> {
+        let (w, h) = try!(term::get_size());
+        try!(self.out.send(event::Event::Resize { w: w, h: h }));
+        Ok(())
     }
-    buf.push_str(&ipt);
-    let mut cur = buf.clone();
-    let mut done = false;
-    while !done {
-        let (res, next) = event::Event::from_string(cur);
-        match res {
-            Some(e) => try!(chan.send(e)),
-            None => done = true,
+
+    pub fn handle(&mut self, ident: usize) -> Result<(), Box<error::Error>> {
+        match ident as libc::c_int {
+            libc::STDOUT_FILENO => self.handle_stdout(),
+            libc::STDIN_FILENO => self.handle_stdin(),
+            libc::SIGWINCH => self.handle_sigwinch(),
+            kqueue::TIMER_IDENT => self.handle_timer(),
+            _ => Ok(()),
         }
-        cur = next.clone();
     }
-    buf.clear();
-    buf.push_str(&cur);
-    Ok(())
 }

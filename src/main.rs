@@ -13,9 +13,7 @@ fn main() {
     ui::init();
     let (w, h) = io::init().unwrap();
     let (a, b) = ui::handler::launch(w, h);
-    let mut ev = io::Handler::new().unwrap();
-    ev.init().unwrap();
-    match ev.handle(a, b) {
+    match io::run(a, b) {
         Ok(()) => (),
         Err(e) => {
             let mut f = File::create("log/main.log").unwrap();
