@@ -1,6 +1,6 @@
-use ui::prim::{Buffer, Brush, Color};
+use ui::res::{Buffer, Brush, Color, Response};
 use ui::window::Window;
-use ui::comp::{Parent, Child, Component, Response};
+use ui::comp::{Parent, Child, Component};
 
 pub struct Screen {
     windows: Vec<Child<Window>>,
@@ -44,7 +44,6 @@ impl Screen {
         res.resize(width, height);
         res
     }
-
 }
 
 impl Parent<Window> for Screen {

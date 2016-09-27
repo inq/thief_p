@@ -1,6 +1,5 @@
-use ui::prim::color::Brush;
-use ui::prim::line::Line;
-use ui::prim::term;
+use ui::res::color::Brush;
+use ui::res::line::Line;
 
 #[allow(dead_code)]
 pub struct Buffer {
@@ -41,7 +40,6 @@ impl Buffer {
     pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
         for (i, l) in self.lines.iter().enumerate() {
-            term::movexy(&mut buf, 0, i);
             cur = l.print(&mut buf, &cur);
         }
         buf.push_str("\u{1b}[0m");
