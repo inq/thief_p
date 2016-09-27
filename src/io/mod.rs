@@ -9,7 +9,7 @@ mod kqueue;
 
 pub use io::event::Event;
 use std::sync::mpsc;
-use ui::{Brush, Color, Response};
+use ui::Response;
 
 pub fn init() -> Result<(usize, usize), Box<Error>> {
     try!(signal::init());

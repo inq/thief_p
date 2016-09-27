@@ -39,7 +39,7 @@ impl Buffer {
 
     pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
         let mut cur = brush.clone();
-        for (i, l) in self.lines.iter().enumerate() {
+        for l in self.lines.iter() {
             cur = l.print(&mut buf, &cur);
         }
         buf.push_str("\u{1b}[0m");

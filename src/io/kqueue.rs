@@ -83,6 +83,7 @@ impl Kqueue {
         }
     }
 
+    #[allow(unreachable_code)]
     pub fn kevent(&mut self, handler: &mut Handler) -> Result<(), Box<error::Error>> {
         Ok(loop {
             try!(self.fetch_events());
