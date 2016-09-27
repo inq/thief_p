@@ -4,7 +4,7 @@ use std::sync::mpsc;
 use io::Event;
 use ui::screen::Screen;
 use ui::comp::Component;
-use ui::res::{Brush, Color, Response};
+use ui::res::Response;
 
 struct Handler {
     screen: Screen,
@@ -32,23 +32,7 @@ fn do_loop(chan_input: &mpsc::Receiver<Event>,
            handler: &mut Handler)
            -> Result<(), Box<error::Error>> {
     let event = try!(chan_input.recv());
-
     try!(chan_output.send(handler.handle(event)));
-    // for resp in handler.handle(event) {
-    // match resp {
-    // Response::Refresh(b) => {
-    // b.print(&mut buf, &br.invert());
-    // },
-    // Response::Move(c) => {
-    // term::movexy(&mut buf, c.x, c.y);
-    // },
-    // Response::Put(s) => {
-    // buf.push_str(&s);
-    // }
-    // }
-    // }
-    // try!(chan_output.send(buf));
-    //
     Ok(())
 }
 
