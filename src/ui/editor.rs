@@ -12,12 +12,12 @@ impl Component for Editor {
         self.height = height;
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
-        Response {
-            draw: Some(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
-            cursor: Some(Cursor { x: 0, y: 0 }),
-        }
+        vec![
+            Response::Refresh(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
+            Response::Move(Cursor { x: 0, y: 0 }),
+        ]
     }
 }
 

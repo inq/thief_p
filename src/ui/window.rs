@@ -15,7 +15,7 @@ impl Component for Window {
         self.editor.comp.resize(width - 2, height - 2);
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 200));
         let buffer = Buffer::blank(&b, self.width, self.height);
         self.refresh_children(buffer)

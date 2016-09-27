@@ -15,22 +15,20 @@ impl Handler {
         Handler { screen: Screen::new(width, height) }
     }
 
-    pub fn handle(&mut self, mut buf: &mut String, e: Event) -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self, e: Event)
+                  -> Vec<Response> {
         match e {
             Event::Resize { w: width, h: height } => {
-                let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
                 self.screen.resize(width, height);
-                if let Response { draw: Some(b), cursor: Some(c) } = self.screen.refresh() {
-                    b.print(&mut buf, &br.invert());
-                    term::movexy(&mut buf, c.x, c.y);
-                }
+                self.screen.refresh()
             }
             Event::Char { c: x } => {
-                buf.push_str(&format!("{}", x));
-            }
-            _ => (),
+                vec![Response::Put(format!("{}", x))]
+            },
+            _ => {
+                vec![]
+            },
         }
-        Ok(())
     }
 }
 
@@ -38,11 +36,24 @@ fn do_loop(chan_input: &mpsc::Receiver<Event>,
            chan_output: &mpsc::Sender<String>,
            handler: &mut Handler)
            -> Result<(), Box<error::Error>> {
-    let res = try!(chan_input.recv());
-    let mut buf = String::with_capacity(4096);
-    try!(handler.handle(&mut buf, res));
-    try!(chan_output.send(buf));
+    let event = try!(chan_input.recv());
 
+    let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
+    let mut buf = String::with_capacity(4096);
+    for resp in handler.handle(event) {
+        match resp {
+            Response::Refresh(b) => {
+                b.print(&mut buf, &br.invert());
+            },
+            Response::Move(c) => {
+                term::movexy(&mut buf, c.x, c.y);
+            },
+            Response::Put(s) => {
+                buf.push_str(&s);
+            }
+        }
+    }
+    try!(chan_output.send(buf));
     Ok(())
 }
 
