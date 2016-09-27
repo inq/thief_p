@@ -1,5 +1,5 @@
 use ui::prim::{Buffer, Brush, Color};
-use ui::comp::{Component, Child, Response, Cursor};
+use ui::comp::{Component, Response, Cursor};
 
 pub struct Editor {
     width: usize,

@@ -1,7 +1,6 @@
-use std::error;
-use ui::prim::{term, Buffer, Brush, Color};
+use ui::prim::{Buffer, Brush, Color};
 use ui::window::Window;
-use ui::comp::{Parent, Child, Component, Cursor, Response};
+use ui::comp::{Parent, Child, Component, Response};
 
 pub struct Screen {
     windows: Vec<Child<Window>>,
@@ -27,7 +26,7 @@ impl Component for Screen {
 
     fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-        let mut buffer = Buffer::blank(&b, self.width, self.height);
+        let buffer = Buffer::blank(&b, self.width, self.height);
         self.refresh_children(buffer)
     }
 }

@@ -1,5 +1,3 @@
-use std::error;
-use std::fmt;
 use libc;
 
 def_error! {

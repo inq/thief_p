@@ -1,6 +1,6 @@
 use ui::editor::Editor;
 use ui::prim::{Buffer, Brush, Color};
-use ui::comp::{Response, Component, Child, Cursor, Parent};
+use ui::comp::{Response, Component, Child, Parent};
 
 pub struct Window {
     editor: Child<Editor>,
@@ -17,7 +17,7 @@ impl Component for Window {
 
     fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 200));
-        let mut buffer = Buffer::blank(&b, self.width, self.height);
+        let buffer = Buffer::blank(&b, self.width, self.height);
         self.refresh_children(buffer)
     }
 }

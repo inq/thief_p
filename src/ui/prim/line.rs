@@ -36,7 +36,7 @@ impl Line {
     pub fn draw(&mut self, src: &Line, x: usize) {
         for (i, chr) in src.chars.iter().enumerate() {
             if x + i < self.width {
-                self.chars[x + i] = src.chars[i].clone();
+                self.chars[x + i] = chr.clone();
             }
         }
     }
