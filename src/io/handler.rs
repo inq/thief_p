@@ -1,11 +1,16 @@
 use std::os::unix::io::RawFd;
 use std::convert::From;
 use std::sync::mpsc;
-use std::{error, str, fmt};
 use std::io::{self, Write};
+use std::error;
 use libc;
 use io::{event, input, term};
 
+def_error! {
+    Kqueue: "kqueue returned -1",
+    Kevent: "kevent returned -1",
+    OutOfCapacity: "out of capacity",
+}
 
 pub struct Handler {
     pub kq: RawFd,
@@ -148,28 +153,4 @@ fn process(buf: &mut String,
     buf.clear();
     buf.push_str(&cur);
     Ok(())
-}
-
-
-#[derive(Debug)]
-pub enum Error {
-    Kqueue,
-    Kevent,
-    OutOfCapacity,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Kqueue => "kqueue returned -1",
-            Error::Kevent => "kevent returned -1",
-            Error::OutOfCapacity => "out of the capacity",
-        }
-    }
 }

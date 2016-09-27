@@ -1,6 +1,12 @@
 use std::{error, fmt, mem};
 use libc;
 
+def_error! {
+    Tcgetattr: "tcgetattr returned -1",
+    Tcsetattr: "tcsetattr returned -1",
+    Tiocgwinsz: "ioctl returned -1",
+}
+
 pub fn init() -> Result<(usize, usize), Error> {
     let mut termios = unsafe { mem::uninitialized() };
     if unsafe { libc::tcgetattr(libc::STDIN_FILENO, &mut termios) } == -1 {
@@ -31,28 +37,4 @@ pub fn get_size() -> Result<(usize, usize), Error> {
         return Err(Error::Tiocgwinsz);
     }
     Ok((ws.ws_col as usize, ws.ws_row as usize))
-}
-
-
-#[derive(Debug)]
-pub enum Error {
-    Tcgetattr,
-    Tcsetattr,
-    Tiocgwinsz,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        error::Error::description(self).fmt(f)
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::Tcgetattr => "tcgetattr returned -1",
-            Error::Tcsetattr => "tcsetattr returned -1",
-            Error::Tiocgwinsz => "ioctl returned -1",
-        }
-    }
 }

@@ -1,4 +1,8 @@
 extern crate libc;
+
+#[macro_use]
+mod error;
+
 mod io;
 mod ui;
 
