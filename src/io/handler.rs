@@ -86,6 +86,11 @@ impl Handler {
                     Response::Put(s) => {
                         self.ipt_buf.push_str(&s);
                     }
+                    Response::Quit => {
+                        term::rmcup();
+                        try!(io::stdout().flush());
+                        return Ok(());
+                    }
                 }
             }
             self.ipt_written = 0;
@@ -94,6 +99,7 @@ impl Handler {
     }
 
     pub fn init(&mut self) -> Result<(), Box<error::Error>> {
+        term::smcup();
         let (w, h) = try!(term::get_size());
         try!(self.out.send(event::Event::Resize { w: w, h: h }));
         Ok(())

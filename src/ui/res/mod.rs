@@ -17,4 +17,5 @@ pub enum Response {
     Refresh(Buffer),
     Move(Cursor),
     Put(String),
+    Quit,
 }

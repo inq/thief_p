@@ -17,8 +17,6 @@ pub fn init() -> Result<(usize, usize), Error> {
     if unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) } == -1 {
         return Err(Error::Tcsetattr);
     }
-
-    smcup();
     get_size()
 }
 
