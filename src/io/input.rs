@@ -1,5 +1,5 @@
+use std::convert::From;
 use std::error;
-use std::fmt;
 use libc;
 
 def_error! {
@@ -21,17 +21,16 @@ pub fn init() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn read(buf: &mut Vec<u8>) -> Result<isize, Error> {
-    let res = unsafe {
-        libc::read(libc::STDIN_FILENO,
-                   buf.as_mut_ptr() as *mut libc::c_void,
-                   buf.capacity() as usize)
-    };
-    if res < 0 {
-        return Err(Error::Read);
-    }
+pub fn read(limit: usize) -> Result<String, Box<error::Error>> {
+    let mut buf = Vec::with_capacity(limit);
     unsafe {
+        let res = libc::read(libc::STDIN_FILENO,
+                             buf.as_mut_ptr() as *mut libc::c_void,
+                             buf.capacity() as usize);
+        if res < 0 {
+            return Err(From::from(Error::Read));
+        }
         buf.set_len(res as usize);
     }
-    Ok(res)
+    Ok(try!(String::from_utf8(buf)))
 }
