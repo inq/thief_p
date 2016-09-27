@@ -1,6 +1,6 @@
 use ui::editor::Editor;
-use ui::prim::{Buffer, Brush, Color};
-use ui::comp::{Response, Component, Child, Parent};
+use ui::res::{Response, Buffer, Brush, Color};
+use ui::comp::{Component, Child, Parent};
 
 pub struct Window {
     editor: Child<Editor>,
@@ -25,9 +25,13 @@ impl Component for Window {
 impl Window {
     pub fn new(width: usize, height: usize) -> Window {
         Window {
-            editor: Child { comp: Editor::new(width, height), x: 1, y: 1 },
+            editor: Child {
+                comp: Editor::new(width, height),
+                x: 1,
+                y: 1,
+            },
             width: width,
-            height: height
+            height: height,
         }
     }
 }

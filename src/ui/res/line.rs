@@ -1,5 +1,5 @@
-use ui::prim::char::Char;
-use ui::prim::color::Brush;
+use ui::res::char::Char;
+use ui::res::color::Brush;
 
 #[derive(Debug, Clone)]
 pub struct Line {

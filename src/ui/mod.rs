@@ -1,11 +1,13 @@
 pub mod handler;
 mod comp;
-mod prim;
 mod editor;
 mod screen;
 mod window;
+mod res;
 
 use libc;
+
+pub use ui::res::*;
 
 pub fn init() {
     unsafe {

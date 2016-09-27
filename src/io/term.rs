@@ -1,4 +1,4 @@
-use std::{mem};
+use std::mem;
 use libc;
 
 def_error! {
@@ -28,6 +28,10 @@ pub fn smcup() {
 
 pub fn rmcup() {
     print!("\u{1b}[?47l");
+}
+
+pub fn movexy(x: usize, y: usize) -> String {
+    format!("\u{1b}[{};{}f", y + 1, x + 1)
 }
 
 pub fn get_size() -> Result<(usize, usize), Error> {

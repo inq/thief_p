@@ -1,4 +1,4 @@
-use ui::prim::Buffer;
+use ui::res::{Buffer, Cursor, Response};
 
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize);
@@ -14,11 +14,14 @@ pub trait Parent<T: Component> {
         for &ref child in self.children() {
             for resp in child.comp.refresh() {
                 match resp {
-                    Response::Refresh(buf) =>
-                        buffer.draw(&buf, child.x, child.y),
-                    Response::Move(cur) =>
-                        cursor = Some(Cursor { x: cur.x + child.x, y: cur.y + child.y }),
-                    _ => ()
+                    Response::Refresh(buf) => buffer.draw(&buf, child.x, child.y),
+                    Response::Move(cur) => {
+                        cursor = Some(Cursor {
+                            x: cur.x + child.x,
+                            y: cur.y + child.y,
+                        })
+                    }
+                    _ => (),
                 }
             }
         }
@@ -34,15 +37,4 @@ pub struct Child<T: Component> {
     pub comp: T,
     pub x: usize,
     pub y: usize,
-}
-
-pub struct Cursor {
-    pub x: usize,
-    pub y: usize,
-}
-
-pub enum Response {
-    Refresh(Buffer),
-    Move(Cursor),
-    Put(String),
 }
