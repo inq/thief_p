@@ -5,3 +5,4 @@ authors = ["inkyu <gofiri@gmail.com>"]
 
 [dependencies]
 libc = "0.2"
+regex = "0.1.77"

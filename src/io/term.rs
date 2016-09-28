@@ -7,7 +7,7 @@ def_error! {
     Tiocgwinsz: "ioctl returned -1",
 }
 
-pub fn init() -> Result<(usize, usize), Error> {
+pub fn init() -> Result<(), Error> {
     let mut termios = unsafe { mem::uninitialized() };
     if unsafe { libc::tcgetattr(libc::STDIN_FILENO, &mut termios) } == -1 {
         return Err(Error::Tcgetattr);
@@ -17,9 +17,12 @@ pub fn init() -> Result<(usize, usize), Error> {
     if unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) } == -1 {
         return Err(Error::Tcsetattr);
     }
+    query_cursor();
+    Ok(())
+}
 
-    smcup();
-    get_size()
+pub fn query_cursor() {
+    print!("\u{1b}[6n");
 }
 
 pub fn smcup() {

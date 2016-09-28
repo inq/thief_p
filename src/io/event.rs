@@ -1,4 +1,5 @@
 use std::char;
+use regex::Regex;
 
 #[derive(Debug)]
 pub enum Event {
@@ -6,6 +7,7 @@ pub enum Event {
     Ctrl { c: char },
     Move { x: i8, y: i8 },
     Meta { c: char },
+    Pair { x: usize, y: usize },
     Resize { w: usize, h: usize },
     Escape,
 }
@@ -29,6 +31,17 @@ impl Event {
     }
 }
 
+fn check_pair(s: &String) -> Option<(Event, String)> {
+    let re = Regex::new(r"^\x{1b}\[(\d+);(\d+)R").unwrap();
+    re.captures(s).and_then(|caps| {
+        Some((Event::Pair {
+            x: caps.at(2).unwrap().parse().unwrap(),
+            y: caps.at(1).unwrap().parse().unwrap(),
+        },
+              s.chars().skip(caps.at(0).unwrap().len()).collect()))
+    })
+}
+
 fn check_prefix(s: &String, t: &str) -> Option<String> {
     if s.starts_with(&t) {
         Some(s.chars().skip(t.len()).collect())
@@ -38,7 +51,9 @@ fn check_prefix(s: &String, t: &str) -> Option<String> {
 }
 
 fn from_escape(s: &String) -> (Option<Event>, String) {
-    if let Some(r) = check_prefix(&s, "\u{1b}[A") {
+    if let Some((e, r)) = check_pair(&s) {
+        (Some(e), r)
+    } else if let Some(r) = check_prefix(&s, "\u{1b}[A") {
         (Some(Event::Move { x: 0, y: -1 }), r)
     } else if let Some(r) = check_prefix(&s, "\u{1b}[B") {
         (Some(Event::Move { x: 0, y: 1 }), r)
