@@ -16,7 +16,7 @@ pub use ui::res::*;
 
 pub struct Ui {
     chan: Chan<Vec<Response>, Event>,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Ui {
@@ -33,13 +33,13 @@ impl Ui {
                     chan.send(handler.handle(event)).or_else(|e| {
                         println!("{:?}", e);
                         Err(e)
-                    });
+                    }).unwrap()
                 }
             }
         });
         Ui {
             chan: e,
-            thread: thread,
+            thread: Some(thread),
         }
     }
 
@@ -49,5 +49,9 @@ impl Ui {
 
     pub fn try_recv(&self) -> Result<Vec<Response>, mpsc::TryRecvError> {
         self.chan.try_recv()
+    }
+
+    pub fn join(&mut self) -> thread::Result<()> {
+        self.thread.take().map(|t| t.join()).unwrap_or(Ok(()))
     }
 }

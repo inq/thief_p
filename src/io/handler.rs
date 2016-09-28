@@ -96,6 +96,7 @@ impl Handler {
                     Response::Quit => {
                         term::rmcup();
                         try!(io::stdout().flush());
+                        self.ui.join();
                         return Ok(());
                     }
                 }
