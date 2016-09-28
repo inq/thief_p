@@ -4,29 +4,36 @@ use std::io::{self, Write};
 use std::error;
 use libc;
 use io::{event, input, term, kqueue};
-use ui::{Brush, Color, Response};
+use ui::{Ui, Brush, Color, Response};
 
 def_error! {
     OutOfCapacity: "out of capacity",
+    Send: "send failed",
 }
 
 pub struct Handler {
-    ipt: mpsc::Receiver<Vec<Response>>,
+    ui: Ui,
     ipt_buf: String,
     ipt_written: usize,
-    out: mpsc::Sender<event::Event>,
     out_buf: String,
 }
 
 impl Handler {
-    pub fn new(out: mpsc::Sender<event::Event>, ipt: mpsc::Receiver<Vec<Response>>) -> Handler {
-        Handler {
-            ipt: ipt,
+    pub fn init(ui: Ui) -> Result<Handler, Box<error::Error>> {
+        try!(::io::signal::init());
+        try!(::io::input::init());
+        try!(::io::term::init());
+
+        term::smcup();
+        let (w, h) = try!(term::get_size());
+        try!(ui.send(event::Event::Resize { w: w, h: h }));
+
+        Ok(Handler {
+            ui: ui,
             ipt_buf: String::with_capacity(4096),
             ipt_written: 0,
-            out: out,
             out_buf: String::with_capacity(32),
-        }
+        })
     }
 
     fn handle_stdout(&mut self) -> Result<(), Box<error::Error>> {
@@ -53,7 +60,7 @@ impl Handler {
         while !done {
             let (res, next) = event::Event::from_string(cur);
             match res {
-                Some(e) => try!(self.out.send(e)),
+                Some(e) => try!(self.ui.send(e)),
                 None => done = true,
             }
             cur = next.clone();
@@ -65,7 +72,7 @@ impl Handler {
 
     fn handle_sigwinch(&mut self) -> Result<(), Box<error::Error>> {
         let (w, h) = try!(term::get_size());
-        try!(self.out.send(event::Event::Resize { w: w, h: h }));
+        try!(self.ui.send(event::Event::Resize { w: w, h: h }));
         Ok(())
     }
 
@@ -73,7 +80,7 @@ impl Handler {
         // TODO: must use brush as a terminal state
         let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
 
-        if let Ok(resps) = self.ipt.try_recv() {
+        if let Ok(resps) = self.ui.try_recv() {
             self.ipt_buf.clear();
             for resp in resps {
                 match resp {
@@ -98,13 +105,6 @@ impl Handler {
         Ok(())
     }
 
-    pub fn init(&mut self) -> Result<(), Box<error::Error>> {
-        term::smcup();
-        let (w, h) = try!(term::get_size());
-        try!(self.out.send(event::Event::Resize { w: w, h: h }));
-        Ok(())
-    }
-
     pub fn handle(&mut self, ident: usize) -> Result<(), Box<error::Error>> {
         match ident as libc::c_int {
             libc::STDOUT_FILENO => self.handle_stdout(),
@@ -113,5 +113,11 @@ impl Handler {
             kqueue::TIMER_IDENT => self.handle_timer(),
             _ => Ok(()),
         }
+    }
+
+    pub fn run(&mut self) -> Result<(), Box<error::Error>> {
+        let mut kqueue = try!(::io::kqueue::Kqueue::new());
+        try!(kqueue.init());
+        kqueue.kevent(self)
     }
 }

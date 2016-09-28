@@ -5,15 +5,16 @@ mod error;
 
 mod io;
 mod ui;
+mod util;
 
+use ui::Ui;
 use std::fs::File;
 use std::io::Write;
 
 fn main() {
-    ui::init();
-    let (w, h) = io::init().unwrap();
-    let (a, b) = ui::handler::launch(w, h);
-    match io::run(a, b) {
+    let ui = Ui::init();
+    let mut io = io::Handler::init(ui).unwrap();
+    match io.run() {
         Ok(()) => (),
         Err(e) => {
             let mut f = File::create("log/main.log").unwrap();
