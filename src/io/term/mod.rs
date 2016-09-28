@@ -7,6 +7,7 @@ use io::term::output::Output;
 use ui::{Brush, Buffer};
 
 def_error! {
+    Initialized: "already initialized",
     Tcgetattr: "tcgetattr returned -1",
     Tcsetattr: "tcsetattr returned -1",
     Tiocgwinsz: "ioctl returned -1",
@@ -18,7 +19,13 @@ pub struct Term {
 }
 
 impl Term {
-    pub fn init() -> Result<Term, Error> {
+    pub fn new() -> Result<Term, Error> {
+        allow_once!();
+
+        unsafe {
+            libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
+        }
+
         let mut termios = unsafe { mem::uninitialized() };
         if unsafe { libc::tcgetattr(libc::STDIN_FILENO, &mut termios) } == -1 {
             return Err(Error::Tcgetattr);
@@ -29,7 +36,10 @@ impl Term {
             return Err(Error::Tcsetattr);
         }
 
-        let res = Term { brush: None, output: Output::new() };
+        let res = Term {
+            brush: None,
+            output: Output::new(),
+        };
         res.query_cursor();
         Ok(res)
     }
@@ -74,4 +84,10 @@ impl Term {
     pub fn query_cursor(&self) {
         print!("\u{1b}[6n");
     }
+}
+
+#[test]
+fn initialize() {
+    assert!(Term::new().is_ok());
+    assert!(Term::new().is_err());
 }

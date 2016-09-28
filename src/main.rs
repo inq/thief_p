@@ -2,19 +2,18 @@ extern crate libc;
 extern crate regex;
 
 #[macro_use]
-mod error;
+mod util;
 
 mod io;
 mod ui;
-mod util;
 
 use ui::Ui;
 use std::fs::File;
 use std::io::Write;
 
 fn main() {
-    let ui = Ui::init();
-    let mut io = io::Handler::init(ui).unwrap();
+    let ui = Ui::new().unwrap();
+    let mut io = io::Handler::new(ui).unwrap();
     match io.run() {
         Ok(()) => (),
         Err(e) => {

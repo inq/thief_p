@@ -22,3 +22,17 @@ macro_rules! def_error {
         }
     }
 }
+
+#[macro_export]
+macro_rules! allow_once {
+    () => {
+        static mut initialized: bool = false;
+        unsafe {
+            if initialized {
+                return Err(Error::Initialized);
+            } else {
+                initialized = true;
+            }
+        }
+    }
+}
