@@ -2,7 +2,9 @@ use std::convert::From;
 use std::io::{self, Write};
 use std::error;
 use libc;
-use io::{event, input, term, kqueue};
+
+use io::{event, input, kqueue};
+use io::term::Term;
 use ui::{Ui, Brush, Color, Cursor, Response};
 
 def_error! {
@@ -10,41 +12,32 @@ def_error! {
 }
 
 pub struct Handler {
+    term: Term,
     cursor: Option<Cursor>,
     ui: Ui,
-    ipt_buf: String,
-    ipt_written: usize,
     out_buf: String,
 }
 
 impl Handler {
     pub fn init(ui: Ui) -> Result<Handler, Box<error::Error>> {
+        let term = try!(Term::init());
         try!(::io::signal::init());
         try!(::io::input::init());
-        try!(::io::term::init());
 
-        term::smcup();
-        let (w, h) = try!(term::get_size());
+        term.smcup();
+        let (w, h) = try!(term.get_size());
         try!(ui.send(event::Event::Resize { w: w, h: h }));
 
         Ok(Handler {
+            term: term,
             cursor: None,
             ui: ui,
-            ipt_buf: String::with_capacity(4096),
-            ipt_written: 0,
             out_buf: String::with_capacity(32),
         })
     }
 
     fn handle_stdout(&mut self) -> Result<(), Box<error::Error>> {
-        if self.ipt_buf.len() > self.ipt_written {
-            let (_, v2) = self.ipt_buf.split_at(self.ipt_written);
-            let l = try!(io::stdout().write(v2.as_bytes()));
-            self.ipt_written += l;
-            if self.ipt_written == self.ipt_buf.len() {
-                try!(io::stdout().flush());
-            }
-        }
+        self.term.consume_output_buffer();
         Ok(())
     }
 
@@ -78,7 +71,7 @@ impl Handler {
     }
 
     fn handle_sigwinch(&mut self) -> Result<(), Box<error::Error>> {
-        let (w, h) = try!(term::get_size());
+        let (w, h) = try!(self.term.get_size());
         try!(self.ui.send(event::Event::Resize { w: w, h: h }));
         Ok(())
     }
@@ -88,22 +81,22 @@ impl Handler {
         let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
 
         if let Ok(resps) = self.ui.try_recv() {
-            self.ipt_buf.clear();
+            self.term.clear_output_buffer();
             for resp in resps {
                 match resp {
                     Response::Refresh(b) => {
-                        b.print(&mut self.ipt_buf, &br.invert());
+                        self.term.write_ui_buffer(&b);
                     }
                     Response::Move(c) => {
-                        self.ipt_buf.push_str(&term::movexy(c.x, c.y));
+                        self.term.move_cursor(c.x, c.y);
                     }
                     Response::Put(s) => {
-                        self.ipt_buf.push_str(&s);
+                        self.term.write(&s);
                     }
                     Response::Quit => {
-                        term::rmcup();
+                        self.term.rmcup();
                         if let Some(Cursor { x, y }) = self.cursor {
-                            print!("{}", term::movexy(x, y));
+                            self.term.move_cursor(x, y);
                         }
                         self.ui.join().unwrap();
                         try!(io::stdout().flush());
@@ -111,7 +104,6 @@ impl Handler {
                     }
                 }
             }
-            self.ipt_written = 0;
         }
         Ok(())
     }
