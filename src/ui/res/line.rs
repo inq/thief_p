@@ -41,15 +41,16 @@ impl Line {
         }
     }
 
-    pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
-        let mut cur = brush.clone();
+    pub fn to_string(&self, brush: &mut Option<Brush>) -> String {
+        let mut res = String::with_capacity(self.width * 2);
         for c in &self.chars {
-            if c.brush != cur {
-                cur.change(&mut buf, &c.brush);
-                cur = c.brush.clone();
+            let prev = Some(c.brush.clone());
+            if *brush != prev {
+                res.push_str(&Brush::change(&brush, &prev));
+                *brush = prev;
             }
-            buf.push_str(&format!("{}", c.chr));
+            res.push(c.chr);
         }
-        cur
+        res
     }
 }
