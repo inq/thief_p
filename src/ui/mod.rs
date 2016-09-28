@@ -1,4 +1,4 @@
-pub mod handler;
+mod handler;
 mod comp;
 mod editor;
 mod screen;
@@ -6,11 +6,48 @@ mod window;
 mod res;
 
 use libc;
+use util::Chan;
+use std::{thread, error};
+use std::sync::mpsc;
+use io::Event;
+use ui::handler::Handler;
 
 pub use ui::res::*;
 
-pub fn init() {
-    unsafe {
-        libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
+pub struct Ui {
+    chan: Chan<Vec<Response>, Event>,
+    thread: thread::JoinHandle<()>,
+}
+
+impl Ui {
+    pub fn init() -> Ui {
+        unsafe {
+            libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
+        }
+
+        let (chan, e) = Chan::create();
+        let thread = thread::spawn(move || {
+            let mut handler = Handler::new();
+            while !handler.quit {
+                if let Ok(event) = chan.recv() {
+                    chan.send(handler.handle(event)).or_else(|e| {
+                        println!("{:?}", e);
+                        Err(e)
+                    });
+                }
+            }
+        });
+        Ui {
+            chan: e,
+            thread: thread,
+        }
+    }
+
+    pub fn send(&self, e: Event) -> Result<(), mpsc::SendError<Event>> {
+        self.chan.send(e)
+    }
+
+    pub fn try_recv(&self) -> Result<Vec<Response>, mpsc::TryRecvError> {
+        self.chan.try_recv()
     }
 }
