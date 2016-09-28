@@ -33,10 +33,16 @@ impl Brush {
                     res += &format!("\u{1b}[48;2;{};{};{}m", t.bg.r, t.bg.g, t.bg.b);
                 }
                 res
-            },
-            (&None, &Some(ref t)) =>
+            }
+            (&None, &Some(ref t)) => {
                 format!("\u{1b}[38;2;{};{};{}m\u{1b}[48;2;{};{};{}m",
-                        t.fg.r, t.fg.g, t.fg.b, t.bg.r, t.bg.g, t.bg.b),
+                        t.fg.r,
+                        t.fg.g,
+                        t.fg.b,
+                        t.bg.r,
+                        t.bg.g,
+                        t.bg.b)
+            }
             (&Some(ref f), &None) => String::from("\u{1b}[0m"),
             (&None, &None) => String::from(""),
         }

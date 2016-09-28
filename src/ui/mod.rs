@@ -14,16 +14,18 @@ use ui::handler::Handler;
 
 pub use ui::res::*;
 
+def_error! {
+    Initialized: "already initialized",
+}
+
 pub struct Ui {
     chan: Chan<Vec<Response>, Event>,
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Ui {
-    pub fn init() -> Ui {
-        unsafe {
-            libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
-        }
+    pub fn new() -> Result<Ui, Error> {
+        allow_once!();
 
         let (chan, e) = Chan::create();
         let thread = thread::spawn(move || {
@@ -39,10 +41,10 @@ impl Ui {
                 }
             }
         });
-        Ui {
+        Ok(Ui {
             chan: e,
             thread: Some(thread),
-        }
+        })
     }
 
     pub fn send(&self, e: Event) -> Result<(), mpsc::SendError<Event>> {
@@ -56,4 +58,10 @@ impl Ui {
     pub fn join(&mut self) -> thread::Result<()> {
         self.thread.take().map(|t| t.join()).unwrap_or(Ok(()))
     }
+}
+
+#[test]
+fn initialize() {
+    assert!(Ui::new().is_ok());
+    assert!(Ui::new().is_err());
 }

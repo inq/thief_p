@@ -19,8 +19,8 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn init(ui: Ui) -> Result<Handler, Box<error::Error>> {
-        let term = try!(Term::init());
+    pub fn new(ui: Ui) -> Result<Handler, Box<error::Error>> {
+        let term = try!(Term::new());
         try!(::io::signal::init());
         try!(::io::input::init());
 
@@ -77,9 +77,6 @@ impl Handler {
     }
 
     fn handle_timer(&mut self) -> Result<(), Box<error::Error>> {
-        // TODO: must use brush as a terminal state
-        let br = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-
         if let Ok(resps) = self.ui.try_recv() {
             self.term.clear_output_buffer();
             for resp in resps {
