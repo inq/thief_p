@@ -7,7 +7,7 @@ mod res;
 
 use libc;
 use util::Chan;
-use std::{thread, error};
+use std::thread;
 use std::sync::mpsc;
 use io::Event;
 use ui::handler::Handler;
@@ -30,10 +30,12 @@ impl Ui {
             let mut handler = Handler::new();
             while !handler.quit {
                 if let Ok(event) = chan.recv() {
-                    chan.send(handler.handle(event)).or_else(|e| {
-                        println!("{:?}", e);
-                        Err(e)
-                    }).unwrap()
+                    chan.send(handler.handle(event))
+                        .or_else(|e| {
+                            println!("{:?}", e);
+                            Err(e)
+                        })
+                        .unwrap()
                 }
             }
         });

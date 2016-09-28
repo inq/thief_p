@@ -1,17 +1,16 @@
 use std::convert::From;
-use std::sync::mpsc;
 use std::io::{self, Write};
 use std::error;
 use libc;
 use io::{event, input, term, kqueue};
-use ui::{Ui, Brush, Color, Response};
+use ui::{Ui, Brush, Color, Cursor, Response};
 
 def_error! {
     OutOfCapacity: "out of capacity",
-    Send: "send failed",
 }
 
 pub struct Handler {
+    cursor: Option<Cursor>,
     ui: Ui,
     ipt_buf: String,
     ipt_written: usize,
@@ -29,6 +28,7 @@ impl Handler {
         try!(ui.send(event::Event::Resize { w: w, h: h }));
 
         Ok(Handler {
+            cursor: None,
             ui: ui,
             ipt_buf: String::with_capacity(4096),
             ipt_written: 0,
@@ -60,7 +60,14 @@ impl Handler {
         while !done {
             let (res, next) = event::Event::from_string(cur);
             match res {
-                Some(e) => try!(self.ui.send(e)),
+                Some(e) => {
+                    if let event::Event::Pair { x, y } = e {
+                        if self.cursor.is_none() {
+                            self.cursor = Some(Cursor { x: x, y: y })
+                        }
+                    }
+                    try!(self.ui.send(e))
+                }
                 None => done = true,
             }
             cur = next.clone();
@@ -95,8 +102,11 @@ impl Handler {
                     }
                     Response::Quit => {
                         term::rmcup();
+                        if let Some(Cursor { x, y }) = self.cursor {
+                            print!("{}", term::movexy(x, y));
+                        }
+                        self.ui.join().unwrap();
                         try!(io::stdout().flush());
-                        self.ui.join();
                         return Ok(());
                     }
                 }

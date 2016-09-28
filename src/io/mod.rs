@@ -1,5 +1,3 @@
-use std::error::Error;
-
 mod event;
 mod handler;
 mod input;

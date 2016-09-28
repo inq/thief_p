@@ -17,7 +17,12 @@ pub fn init() -> Result<(), Error> {
     if unsafe { libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) } == -1 {
         return Err(Error::Tcsetattr);
     }
+    query_cursor();
     Ok(())
+}
+
+pub fn query_cursor() {
+    print!("\u{1b}[6n");
 }
 
 pub fn smcup() {
