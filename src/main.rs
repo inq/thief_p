@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate regex;
 
 #[macro_use]
 mod error;

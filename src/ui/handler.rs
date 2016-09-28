@@ -1,6 +1,3 @@
-use std::{error, thread};
-use std::sync::mpsc;
-
 use io::Event;
 use ui::screen::Screen;
 use ui::comp::Component;
@@ -25,7 +22,7 @@ impl Handler {
                 self.screen.resize(width, height);
                 self.screen.refresh()
             }
-            Event::Ctrl { c: c } => {
+            Event::Ctrl { c } => {
                 match c {
                     'q' => {
                         self.quit = true;
@@ -34,7 +31,7 @@ impl Handler {
                     _ => vec![],
                 }
             }
-            Event::Char { c: c } => vec![Response::Put(format!("{}", c))],
+            Event::Char { c } => vec![Response::Put(format!("{}", c))],
             _ => vec![],
         }
     }
