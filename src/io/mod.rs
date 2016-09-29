@@ -1,6 +1,5 @@
 mod event;
 mod handler;
-mod input;
 mod signal;
 mod stdout;
 mod term;
