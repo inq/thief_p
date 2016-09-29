@@ -2,6 +2,7 @@ use ui::editor::Editor;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Child, Parent};
 
+
 pub struct Window {
     editor: Child<Editor>,
     width: usize,
@@ -17,8 +18,11 @@ impl Component for Window {
 
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 200));
-        let buffer = Buffer::blank(&b, self.width, self.height);
-        self.refresh_children(buffer)
+        let mut buffer = Buffer::blank(&b, self.width, self.height);
+        let mut c = self.refresh_children(&mut buffer);
+        let mut res = vec![Response::Refresh(buffer)];
+        res.append(&mut c);
+        res
     }
 }
 
