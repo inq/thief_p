@@ -5,7 +5,7 @@ def_error! {
     SigErr: "signal returned -1",
 }
 
-pub fn init() -> Result<(), Error> {
+pub fn init() -> Result<()> {
     allow_once!();
 
     let res = unsafe { libc::signal(libc::SIGINT, libc::SIG_IGN) };

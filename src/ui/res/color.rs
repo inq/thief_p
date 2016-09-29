@@ -43,7 +43,7 @@ impl Brush {
                         t.bg.g,
                         t.bg.b)
             }
-            (&Some(ref f), &None) => String::from("\u{1b}[0m"),
+            (&Some(_), &None) => String::from("\u{1b}[0m"),
             (&None, &None) => String::from(""),
         }
     }

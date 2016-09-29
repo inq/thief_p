@@ -1,11 +1,4 @@
-use std::error;
 use std::io::{self, Write};
-
-def_error! {
-    Read: "read returned -1",
-    FGetfl: "fcntl(F_GETFL) returned -1",
-    FSetfl: "fcntl(F_SETFL) returned -1",
-}
 
 pub struct Output {
     buffer: String,
@@ -25,10 +18,10 @@ impl Output {
         self.offset = 0;
     }
 
-    pub fn consume(&mut self) -> Result<(), Box<error::Error>> {
+    pub fn consume(&mut self) -> io::Result<()> {
         if self.buffer.len() > self.offset {
             let (_, remaining) = self.buffer.split_at(self.offset);
-            let offset = try!(io::stdout().write(remaining.as_bytes()));
+            let offset = io::stdout().write(remaining.as_bytes()).unwrap();
             self.offset += offset;
         }
         if self.offset == self.buffer.len() {

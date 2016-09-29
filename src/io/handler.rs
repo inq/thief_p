@@ -1,11 +1,11 @@
 use std::convert::From;
-use std::io::{self, Write};
-use std::error;
 use libc;
 
-use io::{event, kqueue};
+use io::kqueue::Kqueue;
+use io::event::Event;
 use io::term::Term;
-use ui::{Ui, Brush, Color, Cursor, Response};
+use ui::{Ui, Cursor, Response};
+use util::ResultBox;
 
 def_error! {
     OutOfCapacity: "out of capacity",
@@ -14,46 +14,44 @@ def_error! {
 
 pub struct Handler {
     term: Term,
-    cursor: Option<Cursor>,
     ui: Ui,
-    out_buf: String,
+    ipt_buf: String,
 }
 
 impl Handler {
-    pub fn new(ui: Ui) -> Result<Handler, Box<error::Error>> {
+    pub fn new(ui: Ui) -> ResultBox<Handler> {
         let term = try!(Term::new());
         try!(::io::signal::init());
 
         let (w, h) = try!(term.get_size());
-        try!(ui.send(event::Event::Resize { w: w, h: h }));
+        try!(ui.send(Event::Resize { w: w, h: h }));
 
         Ok(Handler {
             term: term,
-            cursor: None,
             ui: ui,
-            out_buf: String::with_capacity(32),
+            ipt_buf: String::with_capacity(32),
         })
     }
 
-    fn handle_stdout(&mut self) -> Result<(), Box<error::Error>> {
-        self.term.consume_output_buffer();
+    fn handle_stdout(&mut self) -> ResultBox<()> {
+        try!(self.term.consume_output_buffer());
         Ok(())
     }
 
-    fn handle_stdin(&mut self) -> Result<(), Box<error::Error>> {
+    fn handle_stdin(&mut self) -> ResultBox<()> {
         let ipt = try!(self.term.read(32));
 
-        if self.out_buf.len() + ipt.len() > self.out_buf.capacity() {
+        if self.ipt_buf.len() + ipt.len() > self.ipt_buf.capacity() {
             return Err(From::from(Error::OutOfCapacity));
         }
-        self.out_buf.push_str(&ipt);
-        let mut cur = self.out_buf.clone();
+        self.ipt_buf.push_str(&ipt);
+        let mut cur = self.ipt_buf.clone();
         let mut done = false;
         while !done {
-            let (res, next) = event::Event::from_string(cur);
+            let (res, next) = Event::from_string(cur);
             match res {
                 Some(e) => {
-                    if let event::Event::Pair { x, y } = e {
+                    if let Event::Pair { x, y } = e {
                         self.term.initial_cursor(&Cursor { x: x, y: y });
                     }
                     try!(self.ui.send(e))
@@ -62,18 +60,18 @@ impl Handler {
             }
             cur = next.clone();
         }
-        self.out_buf.clear();
-        self.out_buf.push_str(&cur);
+        self.ipt_buf.clear();
+        self.ipt_buf.push_str(&cur);
         Ok(())
     }
 
-    fn handle_sigwinch(&mut self) -> Result<(), Box<error::Error>> {
+    fn handle_sigwinch(&mut self) -> ResultBox<()> {
         let (w, h) = try!(self.term.get_size());
-        try!(self.ui.send(event::Event::Resize { w: w, h: h }));
+        try!(self.ui.send(Event::Resize { w: w, h: h }));
         Ok(())
     }
 
-    fn handle_timer(&mut self) -> Result<(), Box<error::Error>> {
+    fn handle_timer(&mut self) -> ResultBox<()> {
         if let Ok(resps) = self.ui.try_recv() {
             for resp in resps {
                 match resp {
@@ -89,7 +87,7 @@ impl Handler {
                     }
                     Response::Quit => {
                         self.ui.join().unwrap();
-                        self.term.release();
+                        try!(self.term.release());
                         return Err(From::from(Error::Exit));
                     }
                 }
@@ -98,7 +96,7 @@ impl Handler {
         Ok(())
     }
 
-    pub fn handle(&mut self, ident: usize) -> Result<(), Box<error::Error>> {
+    pub fn handle(&mut self, ident: usize) -> ResultBox<()> {
         try!(self.handle_timer());
         match ident as libc::c_int {
             libc::STDOUT_FILENO => self.handle_stdout(),
@@ -108,8 +106,8 @@ impl Handler {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), Box<error::Error>> {
-        let mut kqueue = try!(::io::kqueue::Kqueue::new());
+    pub fn run(&mut self) -> ResultBox<()> {
+        let mut kqueue = try!(Kqueue::new());
         try!(kqueue.init());
         kqueue.kevent(self)
     }

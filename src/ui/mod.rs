@@ -5,9 +5,8 @@ mod screen;
 mod window;
 mod res;
 
-use libc;
 use util::Chan;
-use std::thread;
+use std::{thread, result};
 use std::sync::mpsc;
 use io::Event;
 use ui::handler::Handler;
@@ -24,7 +23,7 @@ pub struct Ui {
 }
 
 impl Ui {
-    pub fn new() -> Result<Ui, Error> {
+    pub fn new() -> Result<Ui> {
         allow_once!();
 
         let (chan, e) = Chan::create();
@@ -50,11 +49,11 @@ impl Ui {
         })
     }
 
-    pub fn send(&self, e: Event) -> Result<(), mpsc::SendError<Event>> {
+    pub fn send(&self, e: Event) -> result::Result<(), mpsc::SendError<Event>> {
         self.chan.send(e)
     }
 
-    pub fn try_recv(&self) -> Result<Vec<Response>, mpsc::TryRecvError> {
+    pub fn try_recv(&self) -> result::Result<Vec<Response>, mpsc::TryRecvError> {
         self.chan.try_recv()
     }
 
