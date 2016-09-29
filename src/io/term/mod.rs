@@ -1,10 +1,11 @@
 mod output;
 
 use libc;
-use std::{error, mem};
+use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
 use ui::{Brush, Buffer, Cursor};
+use util::ResultBox;
 
 def_error! {
     Initialized: "already initialized",
@@ -24,7 +25,7 @@ pub struct Term {
 }
 
 impl Term {
-    pub fn new() -> Result<Term, Error> {
+    pub fn new() -> ResultBox<Term> {
         allow_once!();
         let mut term = Term {
             buffering: true,
@@ -32,21 +33,22 @@ impl Term {
             brush: None,
             output: Output::new(),
         };
-        term.echo(false);
+        try!(term.echo(false));
         term.query_cursor();
-        term.buffering(false);
-        io::stdout().flush();
+        try!(term.buffering(false));
+        try!(io::stdout().flush());
         Ok(term)
     }
 
-    pub fn release(&mut self) {
-        self.buffering(true);
-        self.echo(true);
+    pub fn release(&mut self) -> ResultBox<()> {
+        try!(self.buffering(true));
+        try!(self.echo(true));
         if let Some(ref cursor) = self.initial_cursor.clone() {
             self.move_cursor(cursor.x + 1, cursor.y + 1);
         }
         self.rmcup();
-        io::stdout().flush();
+        try!(io::stdout().flush());
+        Ok(())
     }
 
     pub fn initial_cursor(&mut self, cursor: &Cursor) {
@@ -56,12 +58,8 @@ impl Term {
         }
     }
 
-    pub fn clear_output_buffer(&mut self) {
-        self.output.clear();
-    }
-
-    pub fn consume_output_buffer(&mut self) {
-        self.output.consume();
+    pub fn consume_output_buffer(&mut self) -> io::Result<()> {
+        self.output.consume()
     }
 
     pub fn move_cursor(&mut self, x: usize, y: usize) {
@@ -70,7 +68,7 @@ impl Term {
 
     pub fn write(&mut self, s: &String) {
         if self.buffering {
-            io::stdout().write(s.as_bytes());
+            io::stdout().write(s.as_bytes()).unwrap();
         } else {
             self.output.write(s);
         }
@@ -80,7 +78,7 @@ impl Term {
         self.output.write(&s.to_string(&mut self.brush))
     }
 
-    pub fn get_size(&self) -> Result<(usize, usize), Error> {
+    pub fn get_size(&self) -> Result<(usize, usize)> {
         let ws: libc::winsize = unsafe { mem::uninitialized() };
         let res = unsafe { libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &ws) };
         if res < 0 {
@@ -101,7 +99,7 @@ impl Term {
         self.write(&String::from("\u{1b}[6n"));
     }
 
-    pub fn read(&self, limit: usize) -> Result<String, Box<error::Error>> {
+    pub fn read(&self, limit: usize) -> ResultBox<String> {
         let mut buf = Vec::with_capacity(limit);
         unsafe {
             let res = libc::read(libc::STDIN_FILENO,
@@ -115,7 +113,7 @@ impl Term {
         Ok(try!(String::from_utf8(buf)))
     }
 
-    fn buffering(&mut self, on: bool) -> Result<(), Error> {
+    fn buffering(&mut self, on: bool) -> Result<()> {
         unsafe {
             let prev = libc::fcntl(libc::STDIN_FILENO, libc::F_GETFL);
             if prev == -1 {
@@ -134,7 +132,7 @@ impl Term {
         Ok(())
     }
 
-    fn echo(&mut self, on: bool) -> Result<(), Error> {
+    fn echo(&mut self, on: bool) -> Result<()> {
         unsafe {
             libc::setlocale(libc::LC_CTYPE, "".as_ptr() as *const i8);
             let mut termios = mem::uninitialized();
