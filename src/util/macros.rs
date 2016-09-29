@@ -6,6 +6,8 @@ macro_rules! def_error {
             $($x,)*
         }
 
+        pub type Result<T> = ::std::result::Result<T, Error>;
+
         impl ::std::fmt::Display for Error {
             fn fmt(&self, f: &mut ::std::fmt::Formatter)
                    -> ::std::fmt::Result {
@@ -18,6 +20,20 @@ macro_rules! def_error {
                 match *self {
                     $(Error::$x => $y,)*
                 }
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! allow_once {
+    () => {
+        static mut initialized: bool = false;
+        unsafe {
+            if initialized {
+                return Err(From::from(Error::Initialized));
+            } else {
+                initialized = true;
             }
         }
     }

@@ -37,12 +37,11 @@ impl Buffer {
         }
     }
 
-    pub fn print(&self, mut buf: &mut String, brush: &Brush) -> Brush {
-        let mut cur = brush.clone();
+    pub fn to_string(&self, mut brush: &mut Option<Brush>) -> String {
+        let mut res = String::with_capacity(self.width * self.height * 2);
         for l in self.lines.iter() {
-            cur = l.print(&mut buf, &cur);
+            res.push_str(&l.to_string(&mut brush));
         }
-        buf.push_str("\u{1b}[0m");
-        cur
+        res
     }
 }

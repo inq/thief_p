@@ -31,7 +31,7 @@ impl Handler {
                     _ => vec![],
                 }
             }
-            Event::Char { c } => vec![Response::Put(format!("{}", c))],
+            Event::Char { c } => vec![Response::Put(c.to_string())],
             _ => vec![],
         }
     }
