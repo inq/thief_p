@@ -1,7 +1,7 @@
 use std::os::unix::io::RawFd;
-use std::error;
 use libc;
 use io::handler::Handler;
+use util::ResultBox;
 
 def_error! {
     Kqueue: "kqueue returned -1",
@@ -17,7 +17,7 @@ pub struct Kqueue {
 pub const TIMER_IDENT: i32 = 0xbeef;
 
 impl Kqueue {
-    pub fn new() -> Result<Kqueue, Error> {
+    pub fn new() -> Result<Kqueue> {
         let res = unsafe { libc::kqueue() };
         if res == -1 {
             return Err(Error::Kqueue);
@@ -40,7 +40,7 @@ impl Kqueue {
         })
     }
 
-    fn fetch_events(&mut self) -> Result<(), Error> {
+    fn fetch_events(&mut self) -> Result<()> {
         unsafe {
             let res = libc::kevent(self.kq,
                                    ::std::ptr::null(),
@@ -60,7 +60,7 @@ impl Kqueue {
         Ok(())
     }
 
-    pub fn init(&mut self) -> Result<(), Error> {
+    pub fn init(&mut self) -> Result<()> {
         self.add_event(libc::STDIN_FILENO, libc::EVFILT_READ, 0);
         self.add_event(libc::STDOUT_FILENO, libc::EVFILT_WRITE, 0);
         self.add_event(libc::SIGWINCH, libc::EVFILT_SIGNAL, 0);
@@ -83,13 +83,12 @@ impl Kqueue {
         }
     }
 
-    #[allow(unreachable_code)]
-    pub fn kevent(&mut self, handler: &mut Handler) -> Result<(), Box<error::Error>> {
-        Ok(loop {
+    pub fn kevent(&mut self, handler: &mut Handler) -> ResultBox<()> {
+        loop {
             try!(self.fetch_events());
             for e in self.events.iter() {
                 try!(handler.handle(e.ident as usize));
             }
-        })
+        }
     }
 }
