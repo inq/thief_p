@@ -30,14 +30,17 @@ impl Ui {
         let (chan, e) = Chan::create();
         let thread = thread::spawn(move || {
             let mut handler = Handler::new();
-            while !handler.quit {
+            loop {
                 if let Ok(event) = chan.recv() {
                     chan.send(handler.handle(event))
                         .or_else(|e| {
                             println!("{:?}", e);
                             Err(e)
                         })
-                        .unwrap()
+                        .unwrap();
+                    if handler.quit {
+                        break;
+                    }
                 }
             }
         });

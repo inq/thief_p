@@ -1,9 +1,9 @@
+#[macro_use]
 extern crate libc;
 extern crate regex;
 
 #[macro_use]
 mod util;
-
 mod io;
 mod ui;
 

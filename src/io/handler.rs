@@ -3,12 +3,13 @@ use std::io::{self, Write};
 use std::error;
 use libc;
 
-use io::{event, input, kqueue};
+use io::{event, kqueue};
 use io::term::Term;
 use ui::{Ui, Brush, Color, Cursor, Response};
 
 def_error! {
     OutOfCapacity: "out of capacity",
+    Exit: "exit request",
 }
 
 pub struct Handler {
@@ -22,9 +23,7 @@ impl Handler {
     pub fn new(ui: Ui) -> Result<Handler, Box<error::Error>> {
         let term = try!(Term::new());
         try!(::io::signal::init());
-        try!(::io::input::init());
 
-        term.smcup();
         let (w, h) = try!(term.get_size());
         try!(ui.send(event::Event::Resize { w: w, h: h }));
 
@@ -42,7 +41,7 @@ impl Handler {
     }
 
     fn handle_stdin(&mut self) -> Result<(), Box<error::Error>> {
-        let ipt = try!(input::read(32));
+        let ipt = try!(self.term.read(32));
 
         if self.out_buf.len() + ipt.len() > self.out_buf.capacity() {
             return Err(From::from(Error::OutOfCapacity));
@@ -55,9 +54,7 @@ impl Handler {
             match res {
                 Some(e) => {
                     if let event::Event::Pair { x, y } = e {
-                        if self.cursor.is_none() {
-                            self.cursor = Some(Cursor { x: x, y: y })
-                        }
+                        self.term.initial_cursor(&Cursor { x: x, y: y });
                     }
                     try!(self.ui.send(e))
                 }
@@ -78,10 +75,10 @@ impl Handler {
 
     fn handle_timer(&mut self) -> Result<(), Box<error::Error>> {
         if let Ok(resps) = self.ui.try_recv() {
-            self.term.clear_output_buffer();
             for resp in resps {
                 match resp {
                     Response::Refresh(b) => {
+                        self.term.move_cursor(0, 0);
                         self.term.write_ui_buffer(&b);
                     }
                     Response::Move(c) => {
@@ -91,13 +88,9 @@ impl Handler {
                         self.term.write(&s);
                     }
                     Response::Quit => {
-                        self.term.rmcup();
-                        if let Some(Cursor { x, y }) = self.cursor {
-                            self.term.move_cursor(x, y);
-                        }
                         self.ui.join().unwrap();
-                        try!(io::stdout().flush());
-                        return Ok(());
+                        self.term.release();
+                        return Err(From::from(Error::Exit));
                     }
                 }
             }
@@ -106,11 +99,11 @@ impl Handler {
     }
 
     pub fn handle(&mut self, ident: usize) -> Result<(), Box<error::Error>> {
+        try!(self.handle_timer());
         match ident as libc::c_int {
             libc::STDOUT_FILENO => self.handle_stdout(),
             libc::STDIN_FILENO => self.handle_stdin(),
             libc::SIGWINCH => self.handle_sigwinch(),
-            kqueue::TIMER_IDENT => self.handle_timer(),
             _ => Ok(()),
         }
     }

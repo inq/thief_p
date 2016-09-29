@@ -1,6 +1,12 @@
 use std::error;
 use std::io::{self, Write};
 
+def_error! {
+    Read: "read returned -1",
+    FGetfl: "fcntl(F_GETFL) returned -1",
+    FSetfl: "fcntl(F_SETFL) returned -1",
+}
+
 pub struct Output {
     buffer: String,
     offset: usize,
@@ -15,6 +21,7 @@ impl Output {
     }
 
     pub fn clear(&mut self) {
+        self.buffer.clear();
         self.offset = 0;
     }
 
@@ -23,9 +30,10 @@ impl Output {
             let (_, remaining) = self.buffer.split_at(self.offset);
             let offset = try!(io::stdout().write(remaining.as_bytes()));
             self.offset += offset;
-            if self.offset == self.buffer.len() {
-                try!(io::stdout().flush());
-            }
+        }
+        if self.offset == self.buffer.len() {
+            try!(io::stdout().flush());
+            self.clear();
         }
         Ok(())
     }

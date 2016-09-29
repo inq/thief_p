@@ -83,13 +83,13 @@ impl Kqueue {
         }
     }
 
-    #[allow(unreachable_code)]
     pub fn kevent(&mut self, handler: &mut Handler) -> Result<(), Box<error::Error>> {
-        Ok(loop {
+        loop {
             try!(self.fetch_events());
             for e in self.events.iter() {
                 try!(handler.handle(e.ident as usize));
             }
-        })
+        }
+        Ok(())
     }
 }
