@@ -21,16 +21,14 @@ impl Handler {
             Event::Resize { w: width, h: height } => {
                 self.screen.resize(width, height);
                 self.screen.refresh()
-            }
-            Event::Ctrl { c } => {
-                match c {
-                    'q' => {
-                        self.quit = true;
-                        vec![Response::Quit]
-                    }
-                    _ => vec![],
+            },
+            Event::Ctrl { c } => match c {
+                'q' => {
+                    self.quit = true;
+                    vec![Response::Quit]
                 }
-            }
+                _ => vec![],
+            },
             Event::Char { c } => vec![Response::Put(c.to_string())],
             _ => vec![],
         }
