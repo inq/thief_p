@@ -5,9 +5,9 @@ pub trait Component {
     fn refresh(&self) -> Vec<Response>;
 }
 
-pub trait Parent<T: Component> {
-    fn children_mut(&mut self) -> Vec<&mut Child<T>>;
-    fn children(&self) -> Vec<&Child<T>>;
+pub trait Parent {
+    fn children_mut(&mut self) -> Vec<&mut Child>;
+    fn children(&self) -> Vec<&Child>;
 
     fn refresh_children(&self, buffer: &mut Buffer) -> Vec<Response> {
         let mut cursor = None;
@@ -33,8 +33,8 @@ pub trait Parent<T: Component> {
     }
 }
 
-pub struct Child<T: Component> {
-    pub comp: T,
+pub struct Child {
+    pub comp: Box<Component>,
     pub x: usize,
     pub y: usize,
 }

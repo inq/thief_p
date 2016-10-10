@@ -4,8 +4,8 @@ use ui::window::Window;
 use ui::comp::{Parent, Child, Component};
 
 pub struct Screen {
-    windows: Vec<Child<Window>>,
-    command_bar: Option<Child<CommandBar>>,
+    windows: Vec<Child>,
+    command_bar: Child,
     width: usize,
     height: usize,
 }
@@ -24,21 +24,17 @@ impl Component for Screen {
             child.y = 1;
             offset += w + 1;
         }
-        if let Some(ref mut command_bar) = self.command_bar {
-            command_bar.x = 0;
-            command_bar.y = self.height - 1;
-            command_bar.comp.resize(self.width, 3);
-        }
+        self.command_bar.x = 0;
+        self.command_bar.y = self.height - 1;
+        self.command_bar.comp.resize(self.width, 3);
     }
 
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let mut a = Parent::<Window>::refresh_children(self, &mut buffer);
-        let mut b = Parent::<CommandBar>::refresh_children(self, &mut buffer);
+        let mut a = self.refresh_children(&mut buffer);
         let mut res = vec![Response::Refresh(buffer)];
         res.append(&mut a);
-        res.append(&mut b);
         res
     }
 }
@@ -47,10 +43,10 @@ impl Screen {
     pub fn new(width: usize, height: usize) -> Screen {
         let mut res = Screen {
             windows: vec![
-                Child { comp: Window::new(0, 0), x: 0, y: 0 },
-                Child { comp: Window::new(0, 0), x: 0, y: 0 },
+                Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
+                Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
             ],
-            command_bar: Some(Child { comp: CommandBar::new(0, 0), x: 0, y: 0 }),
+            command_bar: Child { comp: Box::new(CommandBar::new(0, 0)), x: 0, y: 0 },
             width: 0,
             height: 0,
         };
@@ -59,22 +55,16 @@ impl Screen {
     }
 }
 
-impl Parent<Window> for Screen {
-    fn children_mut(&mut self) -> Vec<&mut Child<Window>> {
-        self.windows.iter_mut().collect()
+impl Parent for Screen {
+    fn children_mut(&mut self) -> Vec<&mut Child> {
+        self.windows.iter_mut()
+            .chain(Some(&mut self.command_bar).into_iter())
+            .collect()
     }
 
-    fn children(&self) -> Vec<&Child<Window>> {
-        self.windows.iter().collect()
-    }
-}
-
-impl Parent<CommandBar> for Screen {
-    fn children_mut(&mut self) -> Vec<&mut Child<CommandBar>> {
-        self.command_bar.iter_mut().collect()
-    }
-
-    fn children(&self) -> Vec<&Child<CommandBar>> {
-        self.command_bar.iter().collect()
+    fn children(&self) -> Vec<&Child> {
+        self.windows.iter()
+            .chain(Some(&self.command_bar).into_iter())
+            .collect()
     }
 }

@@ -4,7 +4,7 @@ use ui::comp::{Component, Child, Parent};
 
 
 pub struct Window {
-    editor: Child<Editor>,
+    editor: Child,
     width: usize,
     height: usize,
 }
@@ -30,7 +30,7 @@ impl Window {
     pub fn new(width: usize, height: usize) -> Window {
         Window {
             editor: Child {
-                comp: Editor::new(width, height),
+                comp: Box::new(Editor::new(width, height)),
                 x: 1,
                 y: 1,
             },
@@ -41,12 +41,12 @@ impl Window {
 }
 
 
-impl Parent<Editor> for Window {
-    fn children_mut(&mut self) -> Vec<&mut Child<Editor>> {
+impl Parent for Window {
+    fn children_mut(&mut self) -> Vec<&mut Child> {
         vec![&mut self.editor]
     }
 
-    fn children(&self) -> Vec<&Child<Editor>> {
+    fn children(&self) -> Vec<&Child> {
         vec![&self.editor]
     }
 }
