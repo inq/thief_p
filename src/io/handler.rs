@@ -75,9 +75,8 @@ impl Handler {
         if let Ok(resps) = self.ui.try_recv() {
             for resp in resps {
                 match resp {
-                    Response::Refresh(b) => {
-                        self.term.move_cursor(0, 0);
-                        self.term.write_ui_buffer(&b);
+                    Response::Refresh(x, y, b) => {
+                        self.term.write_ui_buffer(x, y, &b);
                     }
                     Response::Move(c) => {
                         self.term.move_cursor(c.x, c.y);

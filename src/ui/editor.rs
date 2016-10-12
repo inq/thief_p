@@ -15,7 +15,10 @@ impl Component for Editor {
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
         vec![
-            Response::Refresh(Buffer::bordered(&b, &b.invert(), self.width, self.height)),
+            Response::Refresh(
+                0, 0,
+                Buffer::bordered(&b, &b.invert(), self.width, self.height)
+            ),
             Response::Move(Cursor { x: 0, y: 0 }),
         ]
     }

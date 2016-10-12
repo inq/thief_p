@@ -3,9 +3,9 @@ use ui::res::line::Line;
 
 #[allow(dead_code)]
 pub struct Buffer {
-    lines: Vec<Line>,
-    width: usize,
-    height: usize,
+    pub lines: Vec<Line>,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Buffer {
@@ -35,13 +35,5 @@ impl Buffer {
                 self.lines[y + i].draw(line, x);
             }
         }
-    }
-
-    pub fn to_string(&self, mut brush: &mut Option<Brush>) -> String {
-        let mut res = String::with_capacity(self.width * self.height * 2);
-        for l in self.lines.iter() {
-            res.push_str(&l.to_string(&mut brush));
-        }
-        res
     }
 }
