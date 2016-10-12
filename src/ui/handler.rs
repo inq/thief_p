@@ -26,8 +26,8 @@ impl Handler {
                 'q' => {
                     self.quit = true;
                     vec![Response::Quit]
-                }
-                _ => vec![],
+                },
+                _ => self.screen.key(c, true),
             },
             Event::Char { c } => vec![Response::Put(c.to_string())],
             _ => vec![],

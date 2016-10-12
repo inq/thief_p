@@ -1,4 +1,5 @@
 use ui::res::{Buffer, Cursor, Response};
+use ui::res::Trans;
 
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize);
@@ -14,7 +15,9 @@ pub trait Parent {
         for &ref child in self.children() {
             for resp in child.comp.refresh() {
                 match resp {
-                    Response::Refresh(buf) => buffer.draw(&buf, child.x, child.y),
+                    Response::Refresh(x, y, buf) => {
+                        buffer.draw(&buf, child.x + x, child.y + y)
+                    }
                     Response::Move(cur) => {
                         cursor = Some(Cursor {
                             x: cur.x + child.x,
@@ -37,4 +40,12 @@ pub struct Child {
     pub comp: Box<Component>,
     pub x: usize,
     pub y: usize,
+}
+
+impl Child {
+    pub fn refresh(&self) -> Vec<Response> {
+        let mut res = vec![];
+        res.append(&mut self.comp.refresh());
+        res.translate(self.x, self.y)
+    }
 }

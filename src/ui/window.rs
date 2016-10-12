@@ -20,7 +20,7 @@ impl Component for Window {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 200));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
         let mut c = self.refresh_children(&mut buffer);
-        let mut res = vec![Response::Refresh(buffer)];
+        let mut res = vec![Response::Refresh(0, 0, buffer)];
         res.append(&mut c);
         res
     }

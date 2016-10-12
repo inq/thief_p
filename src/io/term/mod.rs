@@ -62,6 +62,10 @@ impl Term {
         self.output.consume()
     }
 
+    pub fn color(&mut self, b: &Option<Brush>) {
+        self.output.write(&Brush::change(&self.brush, b));
+    }
+
     pub fn move_cursor(&mut self, x: usize, y: usize) {
         self.write(&format!("\u{1b}[{};{}f", y + 1, x + 1));
     }
@@ -74,8 +78,20 @@ impl Term {
         }
     }
 
-    pub fn write_ui_buffer(&mut self, s: &Buffer) {
-        self.output.write(&s.to_string(&mut self.brush))
+    pub fn write_ui_buffer(&mut self, x: usize, y: usize, buf: &Buffer) {
+        self.move_cursor(x, y);
+        for (i, l) in buf.lines.iter().enumerate() {
+            self.move_cursor(x, y + i);
+            for c in &l.chars {
+                let prev = Some(c.brush.clone());
+                if self.brush != prev {
+                    self.color(&prev);
+                    self.brush = prev;
+                }
+                // TODO: Optimize
+                self.write(&c.chr.to_string());
+            }
+        }
     }
 
     pub fn get_size(&self) -> Result<(usize, usize)> {
