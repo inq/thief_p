@@ -1,20 +1,23 @@
 use ui::res::{Buffer, Cursor, Response};
+use ui::res::Trans;
 
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize);
     fn refresh(&self) -> Vec<Response>;
 }
 
-pub trait Parent<T: Component> {
-    fn children_mut(&mut self) -> Vec<&mut Child<T>>;
-    fn children(&self) -> Vec<&Child<T>>;
+pub trait Parent {
+    fn children_mut(&mut self) -> Vec<&mut Child>;
+    fn children(&self) -> Vec<&Child>;
 
-    fn refresh_children(&self, mut buffer: Buffer) -> Vec<Response> {
+    fn refresh_children(&self, buffer: &mut Buffer) -> Vec<Response> {
         let mut cursor = None;
         for &ref child in self.children() {
             for resp in child.comp.refresh() {
                 match resp {
-                    Response::Refresh(buf) => buffer.draw(&buf, child.x, child.y),
+                    Response::Refresh(x, y, buf) => {
+                        buffer.draw(&buf, child.x + x, child.y + y)
+                    }
                     Response::Move(cur) => {
                         cursor = Some(Cursor {
                             x: cur.x + child.x,
@@ -25,7 +28,7 @@ pub trait Parent<T: Component> {
                 }
             }
         }
-        let mut res = vec![Response::Refresh(buffer)];
+        let mut res = vec![];
         if let Some(cur) = cursor {
             res.push(Response::Move(cur));
         }
@@ -33,8 +36,16 @@ pub trait Parent<T: Component> {
     }
 }
 
-pub struct Child<T: Component> {
-    pub comp: T,
+pub struct Child {
+    pub comp: Box<Component>,
     pub x: usize,
     pub y: usize,
+}
+
+impl Child {
+    pub fn refresh(&self) -> Vec<Response> {
+        let mut res = vec![];
+        res.append(&mut self.comp.refresh());
+        res.translate(self.x, self.y)
+    }
 }
