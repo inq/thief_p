@@ -4,7 +4,7 @@ use ui::window::Window;
 use ui::comp::{Parent, Child, Component};
 
 pub struct Screen {
-    windows: Vec<Child>,
+    window: Child,
     overlaps: Vec<Child>,
     width: usize,
     height: usize,
@@ -14,16 +14,9 @@ impl Component for Screen {
     fn resize(&mut self, width: usize, height: usize) {
         self.width = width;
         self.height = height;
-        let borders = self.windows.len() + 1;
-        let windows = self.windows.len();
-        let mut offset = 1;
-        for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
-            let w = (self.width - borders + i + 1) / windows;
-            child.comp.resize(w, self.height - 2);
-            child.x = offset;
-            child.y = 1;
-            offset += w + 1;
-        }
+        self.window.comp.resize(self.width - 2, self.height - 2);
+        self.window.x = 1;
+        self.window.y = 1;
         for &mut ref mut child in self.overlaps.iter_mut() {
             child.comp.resize(self.width, 3);
             child.x = 0;
@@ -55,10 +48,7 @@ impl Screen {
 
     pub fn new(width: usize, height: usize) -> Screen {
         let mut res = Screen {
-            windows: vec![
-                Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
-                Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
-            ],
+            window: Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
             overlaps: vec![],
             width: 0,
             height: 0,
@@ -84,13 +74,13 @@ impl Screen {
 
 impl Parent for Screen {
     fn children_mut(&mut self) -> Vec<&mut Child> {
-        self.windows.iter_mut()
+        vec![&mut self.window].into_iter()
             .chain(self.overlaps.iter_mut())
             .collect()
     }
 
     fn children(&self) -> Vec<&Child> {
-        self.windows.iter()
+        vec![&self.window].into_iter()
             .chain(self.overlaps.iter())
             .collect()
     }
