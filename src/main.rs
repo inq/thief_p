@@ -4,6 +4,7 @@ extern crate regex;
 
 #[macro_use]
 mod util;
+mod buf;
 mod io;
 mod ui;
 
