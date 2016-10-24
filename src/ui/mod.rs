@@ -4,6 +4,7 @@ mod editor;
 mod screen;
 mod window;
 mod res;
+mod hsplit;
 mod command_bar;
 
 use util::Chan;
