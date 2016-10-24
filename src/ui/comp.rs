@@ -4,6 +4,9 @@ use ui::res::Trans;
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize);
     fn refresh(&self) -> Vec<Response>;
+    fn key(&mut self, _: char, _: bool) -> Vec<Response> {
+        vec![]
+    }
 }
 
 pub trait Parent {

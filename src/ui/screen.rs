@@ -1,10 +1,10 @@
 use ui::command_bar::CommandBar;
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::window::Window;
+use ui::hsplit::HSplit;
 use ui::comp::{Parent, Child, Component};
 
 pub struct Screen {
-    window: Child,
+    hsplit: Child,
     overlaps: Vec<Child>,
     width: usize,
     height: usize,
@@ -14,9 +14,9 @@ impl Component for Screen {
     fn resize(&mut self, width: usize, height: usize) {
         self.width = width;
         self.height = height;
-        self.window.comp.resize(self.width - 2, self.height - 2);
-        self.window.x = 1;
-        self.window.y = 1;
+        self.hsplit.comp.resize(self.width - 2, self.height - 1);
+        self.hsplit.x = 1;
+        self.hsplit.y = 0;
         for &mut ref mut child in self.overlaps.iter_mut() {
             child.comp.resize(self.width, 3);
             child.x = 0;
@@ -31,6 +31,20 @@ impl Component for Screen {
         let mut res = vec![Response::Refresh(0, 0, buffer)];
         res.append(&mut a);
         res
+    }
+
+    fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
+        if ctrl {
+            match c {
+                'r' => self.command_bar(),
+                _ => self.hsplit.comp.key(c, ctrl),
+            }
+        } else {
+            match c {
+                'b' => vec![],
+                _ => vec![],
+            }
+        }
     }
 }
 
@@ -48,7 +62,7 @@ impl Screen {
 
     pub fn new(width: usize, height: usize) -> Screen {
         let mut res = Screen {
-            window: Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 },
+            hsplit: Child { comp: Box::new(HSplit::new(0, 0, 1)), x: 0, y: 0 },
             overlaps: vec![],
             width: 0,
             height: 0,
@@ -56,31 +70,17 @@ impl Screen {
         res.resize(width, height);
         res
     }
-
-    pub fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
-        if ctrl {
-            match c {
-                'r' => self.command_bar(),
-                _ => vec![]
-            }
-        } else {
-            match c {
-                'b' => vec![],
-                _ => vec![],
-            }
-        }
-    }
 }
 
 impl Parent for Screen {
     fn children_mut(&mut self) -> Vec<&mut Child> {
-        vec![&mut self.window].into_iter()
+        vec![&mut self.hsplit].into_iter()
             .chain(self.overlaps.iter_mut())
             .collect()
     }
 
     fn children(&self) -> Vec<&Child> {
-        vec![&self.window].into_iter()
+        vec![&self.hsplit].into_iter()
             .chain(self.overlaps.iter())
             .collect()
     }
