@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Line {
     before: String,
     after: String,
@@ -11,6 +12,13 @@ impl Line {
             before: String::with_capacity(BUFSIZE),
             after: String::with_capacity(BUFSIZE),
         }
+    }
+
+    /// Construct from a string.
+    pub fn from_string(str: &String) -> Line {
+        let mut res = Line::new();
+        res.append_before_cursor(str);
+        res
     }
 
     /// Append string before cursor.

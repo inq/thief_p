@@ -28,12 +28,12 @@ macro_rules! def_error {
 #[macro_export]
 macro_rules! allow_once {
     () => {
-        static mut initialized: bool = false;
+        static mut INITIALIZED: bool = false;
         unsafe {
-            if initialized {
+            if INITIALIZED {
                 return Err(From::from(Error::Initialized));
             } else {
-                initialized = true;
+                INITIALIZED = true;
             }
         }
     }
