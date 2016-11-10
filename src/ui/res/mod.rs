@@ -3,10 +3,10 @@ mod color;
 mod char;
 mod line;
 
-pub use ui::res::buffer::Buffer;
-pub use ui::res::char::Char;
-pub use ui::res::color::{Color, Brush};
-pub use ui::res::line::Line;
+pub use self::buffer::Buffer;
+pub use self::char::Char;
+pub use self::color::{Color, Brush};
+pub use self::line::Line;
 
 #[derive(Debug, Clone)]
 pub struct Cursor {
@@ -22,7 +22,7 @@ pub enum Response {
 }
 
 pub trait Trans {
-    fn translate(mut self, x: usize, y: usize) -> Self;
+    fn translate(self, x: usize, y: usize) -> Self;
 }
 
 impl Trans for Vec<Response> {
