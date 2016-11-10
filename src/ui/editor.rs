@@ -1,7 +1,7 @@
 use std::path::Path;
 use buf;
 use ui::res::{Buffer, Brush, Color, Cursor, Response};
-use ui::comp::Component;
+use ui::comp::{Component, Child};
 use util::ResultBox;
 
 pub struct Editor {
@@ -31,15 +31,34 @@ impl Component for Editor {
 }
 
 impl Editor {
-    pub fn new(width: usize, height: usize) -> Editor {
-        Editor {
-            buffer: buf::Buffer::new(),
-            width: width,
-            height: height,
+    pub fn new() -> Child {
+        Child {
+            x: usize::max_value(),
+            y: usize::max_value(),
+            comp: Box::new(Editor {
+                buffer: buf::Buffer::new(),
+                width: usize::max_value(),
+                height: usize::max_value(),
+            }),
         }
     }
 
-    pub fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {
+    /// Initializer with file.
+    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
+        let mut editor = Editor {
+            buffer: buf::Buffer::new(),
+            width: usize::max_value(),
+            height: usize::max_value(),
+        };
+        try!(editor.load_file(s));
+        Ok(Child {
+            x: usize::max_value(),
+            y: usize::max_value(),
+            comp: Box::new(editor),
+        })
+    }
+
+    fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {
         self.buffer.load_file(s)
     }
 }

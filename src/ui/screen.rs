@@ -51,7 +51,7 @@ impl Component for Screen {
 impl Screen {
     pub fn command_bar(&mut self) -> Vec<Response> {
         if self.overlaps.len() == 0 {
-            let bar = CommandBar::new(0, self.height - 1, self.width, 1);
+            let bar = CommandBar::new();
             let res = bar.refresh();
             self.overlaps.push(bar);
             res
@@ -60,15 +60,13 @@ impl Screen {
         }
     }
 
-    pub fn new(width: usize, height: usize) -> Screen {
-        let mut res = Screen {
-            hsplit: Child { comp: Box::new(HSplit::new(0, 0, 1)), x: 0, y: 0 },
+    pub fn new() -> Screen {
+        Screen {
+            hsplit: HSplit::new(1),
             overlaps: vec![],
-            width: 0,
-            height: 0,
-        };
-        res.resize(width, height);
-        res
+            width: usize::max_value(),
+            height: usize::max_value(),
+        }
     }
 }
 

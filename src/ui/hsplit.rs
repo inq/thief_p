@@ -64,19 +64,23 @@ impl HSplit {
             self.windows.truncate(children)
         } else {
             for _ in 0..(children - self.windows.len()) {
-                self.windows.push(Child { comp: Box::new(EditWindow::new(0, 0)), x: 0, y: 0 })
+                self.windows.push(EditWindow::new())
             }
         }
     }
 
-    pub fn new(width: usize, height: usize, windows: usize) -> HSplit {
+    pub fn new(windows: usize) -> Child {
         let mut res = HSplit {
             windows: vec![],
-            width: width,
-            height: height,
+            width: usize::max_value(),
+            height: usize::max_value(),
         };
         res.set_children(windows);
-        res
+        Child {
+            x: usize::max_value(),
+            y: usize::max_value(),
+            comp: Box::new(res),
+        }
     }
 }
 

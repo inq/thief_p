@@ -12,6 +12,8 @@ impl Component for EditWindow {
     fn resize(&mut self, width: usize, height: usize) {
         self.width = width;
         self.height = height;
+        self.editor.x = 3;
+        self.editor.y = 0;
         self.editor.comp.resize(width - 3, height);
     }
 
@@ -26,17 +28,17 @@ impl Component for EditWindow {
 }
 
 impl EditWindow {
-    pub fn new(width: usize, height: usize) -> EditWindow {
-        let mut editor = Editor::new(width, height);
-        editor.load_file("LICENSE").unwrap();
-        EditWindow {
-            editor: Child {
-                comp: Box::new(editor),
-                x: 3,
-                y: 0,
-            },
-            width: width,
-            height: height,
+    /// Initializer.
+    pub fn new() -> Child {
+        let mut editor = Editor::new_with_file("LICENSE").unwrap();
+        Child {
+            x: usize::max_value(),
+            y: usize::max_value(),
+            comp: Box::new(EditWindow {
+                editor: editor,
+                width: usize::max_value(),
+                height: usize::max_value(),
+            })
         }
     }
 }

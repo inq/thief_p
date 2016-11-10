@@ -10,12 +10,14 @@ pub struct Handler {
 
 impl Handler {
     pub fn new() -> Handler {
+        let scr = Screen::new();
         Handler {
-            screen: Screen::new(10, 10),
+            screen: scr,
             quit: false,
         }
     }
 
+    /// Handle the event, and return the series of responses.
     pub fn handle(&mut self, e: Event) -> Vec<Response> {
         match e {
             Event::Resize { w: width, h: height } => {
