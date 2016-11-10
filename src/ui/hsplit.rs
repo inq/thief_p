@@ -1,5 +1,5 @@
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::window::Window;
+use ui::window::EditWindow;
 use ui::comp::{Parent, Child, Component};
 
 pub struct HSplit {
@@ -14,7 +14,7 @@ impl Component for HSplit {
         self.height = height;
         let borders = self.windows.len() + 1;
         let windows = self.windows.len();
-        let mut offset = 1;
+        let mut offset = 0;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
             let w = (self.width - borders + i + 1) / windows;
             child.comp.resize(w, self.height - 2);
@@ -64,7 +64,7 @@ impl HSplit {
             self.windows.truncate(children)
         } else {
             for _ in 0..(children - self.windows.len()) {
-                self.windows.push(Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 })
+                self.windows.push(Child { comp: Box::new(EditWindow::new(0, 0)), x: 0, y: 0 })
             }
         }
     }
