@@ -1,3 +1,6 @@
+use std::iter::{Chain, Rev};
+use std::str::Chars;
+
 #[derive(Debug)]
 pub struct Line {
     before: String,
@@ -14,6 +17,11 @@ impl Line {
         }
     }
 
+    /// Iterate chars.
+    pub fn iter(&self) -> Chain<Chars, Rev<Chars>> {
+        self.before.chars().chain(self.after.chars().rev())
+    }
+
     /// Construct from a string.
     pub fn from_string(str: &String) -> Line {
         let mut res = Line::new();
@@ -27,6 +35,7 @@ impl Line {
     }
 
     /// Append string after cursor.
+    #[allow(dead_code)]
     pub fn append_after_cursor(&mut self, str: &String) {
         let reversed = str.chars().rev().collect::<String>();
         self.after.push_str(&reversed);
@@ -35,6 +44,7 @@ impl Line {
     /// Move cursor by 1 character.
     /// If `right` is `true`, then move to right direction. Otherwise,
     /// move to left direction. Returns `true` if succeed.
+    #[allow(dead_code)]
     pub fn move_cursor(&mut self, right: bool) -> bool {
         let (from, to) = if right {
             (&mut self.after, &mut self.before)

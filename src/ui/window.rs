@@ -28,9 +28,11 @@ impl Component for Window {
 
 impl Window {
     pub fn new(width: usize, height: usize) -> Window {
+        let mut editor = Editor::new(width, height);
+        editor.load_file("LICENSE").unwrap();
         Window {
             editor: Child {
-                comp: Box::new(Editor::new(width, height)),
+                comp: Box::new(editor),
                 x: 1,
                 y: 1,
             },

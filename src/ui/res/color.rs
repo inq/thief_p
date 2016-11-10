@@ -48,6 +48,8 @@ impl Brush {
         }
     }
 
+    /// Switch between foreground and background.
+    #[allow(dead_code)]
     pub fn invert(&self) -> Brush {
         Brush {
             fg: self.bg.clone(),
