@@ -1,9 +1,8 @@
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Child, Parent};
-use super::{Editor, LineNumber};
+use super::{Editor};
 
 pub struct EditWindow {
-    line_number: LineNumber,
     editor: Child,
     width: usize,
     height: usize,
@@ -13,10 +12,9 @@ impl Component for EditWindow {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
-        let (lw, _) = self.line_number.resize(3, height);
-        self.editor.x = lw;
+        self.editor.x = 0;
         self.editor.y = 0;
-        self.editor.comp.resize(width - 3, height);
+        self.editor.comp.resize(width, height);
         (width, height)
     }
 
@@ -38,7 +36,6 @@ impl EditWindow {
             x: usize::max_value(),
             y: usize::max_value(),
             comp: Box::new(EditWindow {
-                line_number: LineNumber::new(),
                 editor: editor,
                 width: usize::max_value(),
                 height: usize::max_value(),

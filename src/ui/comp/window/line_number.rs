@@ -10,13 +10,13 @@ pub struct LineNumber {
 
 impl Component for LineNumber {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
-        self.width = width;
+        self.width = 4;
         self.height = height;
-        (width, height)
+        (4, height)
     }
 
     fn refresh(&self) -> Vec<Response> {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 200, 220));
+        let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
         vec![
             Response::Refresh(
