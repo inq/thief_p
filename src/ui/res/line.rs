@@ -43,6 +43,13 @@ impl Line {
         }
     }
 
+    /// Draw the given string into heer.
+    pub fn draw_str(&mut self, src: &str, x: usize) {
+        for (i, c) in src.chars().enumerate() {
+            self.chars[x + i].chr = c
+        }
+    }
+
     /// Draw the given line buffer into here.
     pub fn draw_buffer(&mut self, src: &buf::Line, x: usize) {
         for (i, c) in src.iter().enumerate() {

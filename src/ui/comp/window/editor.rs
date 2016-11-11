@@ -69,6 +69,7 @@ impl Editor {
             height: usize::max_value(),
         };
         try!(editor.load_file(s));
+        editor.line_number.set_max(100);
         Ok(Child {
             x: usize::max_value(),
             y: usize::max_value(),

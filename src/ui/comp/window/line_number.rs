@@ -10,14 +10,16 @@ pub struct LineNumber {
 
 impl Component for LineNumber {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
-        self.width = 4;
         self.height = height;
-        (4, height)
+        (self.width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
+        for (i, line) in buffer.lines.iter_mut().enumerate() {
+            line.draw_str(&format!("{:width$}", i, width = self.width - 1), 0);
+        }
         vec![
             Response::Refresh(
                 0, 0,
@@ -28,6 +30,11 @@ impl Component for LineNumber {
 }
 
 impl LineNumber {
+    pub fn set_max(&mut self, max: usize) {
+        self.max = max;
+        self.width = format!("{}", self.max).len() + 1;
+    }
+
     pub fn new() -> LineNumber {
         LineNumber {
             current: usize::max_value(),
