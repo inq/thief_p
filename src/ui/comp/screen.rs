@@ -1,7 +1,5 @@
-use ui::command_bar::CommandBar;
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::hsplit::HSplit;
-use ui::comp::{Parent, Child, Component};
+use ui::comp::{CommandBar, HSplit, Parent, Child, Component};
 
 pub struct Screen {
     hsplit: Child,
@@ -11,7 +9,7 @@ pub struct Screen {
 }
 
 impl Component for Screen {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
         self.hsplit.comp.resize(self.width - 2, self.height - 1);
@@ -22,22 +20,24 @@ impl Component for Screen {
             child.x = 0;
             child.y = self.height - 1;
         }
+        (width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let mut a = self.refresh_children(&mut buffer);
-        let mut res = vec![Response::Refresh(0, 0, buffer)];
-        res.append(&mut a);
-        res
+        let _ = self.refresh_children(&mut buffer);
+        vec![Response::Refresh(0, 0, buffer)]
     }
 
     fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
         if ctrl {
             match c {
                 'r' => self.command_bar(),
-                _ => self.hsplit.comp.key(c, ctrl),
+                _ => {
+                    let res = self.hsplit.comp.key(c, ctrl);
+                    self.transform(&self.hsplit, res)
+                }
             }
         } else {
             match c {
@@ -51,7 +51,7 @@ impl Component for Screen {
 impl Screen {
     pub fn command_bar(&mut self) -> Vec<Response> {
         if self.overlaps.len() == 0 {
-            let bar = CommandBar::new(0, self.height - 1, self.width, 1);
+            let bar = CommandBar::new();
             let res = bar.refresh();
             self.overlaps.push(bar);
             res
@@ -60,15 +60,13 @@ impl Screen {
         }
     }
 
-    pub fn new(width: usize, height: usize) -> Screen {
-        let mut res = Screen {
-            hsplit: Child { comp: Box::new(HSplit::new(0, 0, 1)), x: 0, y: 0 },
+    pub fn new() -> Screen {
+        Screen {
+            hsplit: HSplit::new(1),
             overlaps: vec![],
-            width: 0,
-            height: 0,
-        };
-        res.resize(width, height);
-        res
+            width: usize::max_value(),
+            height: usize::max_value(),
+        }
     }
 }
 

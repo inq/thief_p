@@ -1,8 +1,19 @@
+mod screen;
+mod window;
+mod command_bar;
+mod hsplit;
+
+pub use self::command_bar::CommandBar;
+pub use self::screen::Screen;
+pub use self::window::EditWindow;
+pub use self::hsplit::HSplit;
+
 use ui::res::{Buffer, Cursor, Response};
 use ui::res::Trans;
 
+
 pub trait Component {
-    fn resize(&mut self, width: usize, height: usize);
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize);
     fn refresh(&self) -> Vec<Response>;
     fn key(&mut self, _: char, _: bool) -> Vec<Response> {
         vec![]
@@ -12,6 +23,22 @@ pub trait Component {
 pub trait Parent {
     fn children_mut(&mut self) -> Vec<&mut Child>;
     fn children(&self) -> Vec<&Child>;
+
+    /// Apply offset of the child to the responses.
+    fn transform(&self, child: &Child, resps: Vec<Response>) -> Vec<Response> {
+        resps.into_iter().map(|resp| match resp {
+            Response::Refresh(x, y, buf) => {
+                Response::Refresh(child.x + x, child.y + y, buf)
+            }
+            Response::Move(ref cur) => {
+                Response::Move(Cursor {
+                    x: cur.x + child.x,
+                    y: cur.y + child.y,
+                })
+            }
+            e => e,
+        }).collect()
+    }
 
     fn refresh_children(&self, buffer: &mut Buffer) -> Vec<Response> {
         let mut cursor = None;

@@ -1,11 +1,6 @@
 mod handler;
 mod comp;
-mod editor;
-mod screen;
-mod window;
 mod res;
-mod hsplit;
-mod command_bar;
 
 use util::Chan;
 use std::{thread, result};

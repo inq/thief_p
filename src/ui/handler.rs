@@ -1,6 +1,5 @@
 use io::Event;
-use ui::screen::Screen;
-use ui::comp::Component;
+use ui::comp::{Component, Screen};
 use ui::res::Response;
 
 pub struct Handler {
@@ -10,12 +9,14 @@ pub struct Handler {
 
 impl Handler {
     pub fn new() -> Handler {
+        let scr = Screen::new();
         Handler {
-            screen: Screen::new(10, 10),
+            screen: scr,
             quit: false,
         }
     }
 
+    /// Handle the event, and return the series of responses.
     pub fn handle(&mut self, e: Event) -> Vec<Response> {
         match e {
             Event::Resize { w: width, h: height } => {

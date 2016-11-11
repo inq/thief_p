@@ -1,6 +1,5 @@
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::window::Window;
-use ui::comp::{Parent, Child, Component};
+use ui::comp::{EditWindow, Parent, Child, Component};
 
 pub struct HSplit {
     windows: Vec<Child>,
@@ -9,12 +8,12 @@ pub struct HSplit {
 }
 
 impl Component for HSplit {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
         let borders = self.windows.len() + 1;
         let windows = self.windows.len();
-        let mut offset = 1;
+        let mut offset = 0;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
             let w = (self.width - borders + i + 1) / windows;
             child.comp.resize(w, self.height - 2);
@@ -22,6 +21,7 @@ impl Component for HSplit {
             child.y = 1;
             offset += w + 1;
         }
+        (width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {
@@ -64,19 +64,23 @@ impl HSplit {
             self.windows.truncate(children)
         } else {
             for _ in 0..(children - self.windows.len()) {
-                self.windows.push(Child { comp: Box::new(Window::new(0, 0)), x: 0, y: 0 })
+                self.windows.push(EditWindow::new())
             }
         }
     }
 
-    pub fn new(width: usize, height: usize, windows: usize) -> HSplit {
+    pub fn new(windows: usize) -> Child {
         let mut res = HSplit {
             windows: vec![],
-            width: width,
-            height: height,
+            width: usize::max_value(),
+            height: usize::max_value(),
         };
         res.set_children(windows);
-        res
+        Child {
+            x: usize::max_value(),
+            y: usize::max_value(),
+            comp: Box::new(res),
+        }
     }
 }
 

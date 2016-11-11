@@ -7,9 +7,10 @@ pub struct CommandBar {
 }
 
 impl Component for CommandBar {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, _: usize) -> (usize, usize) {
         self.width = width;
-        self.height = height;
+        self.height = 1;
+        (width, 1)
     }
 
     fn refresh(&self) -> Vec<Response> {
@@ -22,12 +23,13 @@ impl Component for CommandBar {
 }
 
 impl CommandBar {
-    pub fn new(x: usize, y: usize, width: usize, height: usize) -> Child {
+    pub fn new() -> Child {
         Child {
-            x: x, y: y,
+            x: usize::max_value(),
+            y: usize::max_value(),
             comp: Box::new(CommandBar {
-                width: width,
-                height: height,
+                width: usize::max_value(),
+                height: usize::max_value(),
             })
         }
     }
