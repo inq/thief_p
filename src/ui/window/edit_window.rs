@@ -30,7 +30,7 @@ impl Component for EditWindow {
 impl EditWindow {
     /// Initializer.
     pub fn new() -> Child {
-        let mut editor = Editor::new_with_file("LICENSE").unwrap();
+        let editor = Editor::new_with_file("LICENSE").unwrap();
         Child {
             x: usize::max_value(),
             y: usize::max_value(),

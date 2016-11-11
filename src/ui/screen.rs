@@ -27,17 +27,18 @@ impl Component for Screen {
     fn refresh(&self) -> Vec<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let mut a = self.refresh_children(&mut buffer);
-        let mut res = vec![Response::Refresh(0, 0, buffer)];
-        res.append(&mut a);
-        res
+        let _ = self.refresh_children(&mut buffer);
+        vec![Response::Refresh(0, 0, buffer)]
     }
 
     fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
         if ctrl {
             match c {
                 'r' => self.command_bar(),
-                _ => self.hsplit.comp.key(c, ctrl),
+                _ => {
+                    let res = self.hsplit.comp.key(c, ctrl);
+                    self.transform(&self.hsplit, res)
+                }
             }
         } else {
             match c {

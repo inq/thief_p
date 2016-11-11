@@ -31,6 +31,7 @@ impl Component for Editor {
 }
 
 impl Editor {
+    #[allow(dead_code)]
     pub fn new() -> Child {
         Child {
             x: usize::max_value(),

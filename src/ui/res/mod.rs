@@ -14,6 +14,7 @@ pub struct Cursor {
     pub y: usize,
 }
 
+#[derive(Debug)]
 pub enum Response {
     Refresh(usize, usize, Buffer),
     Move(Cursor),

@@ -13,6 +13,22 @@ pub trait Parent {
     fn children_mut(&mut self) -> Vec<&mut Child>;
     fn children(&self) -> Vec<&Child>;
 
+    /// Apply offset of the child to the responses.
+    fn transform(&self, child: &Child, resps: Vec<Response>) -> Vec<Response> {
+        resps.into_iter().map(|resp| match resp {
+            Response::Refresh(x, y, buf) => {
+                Response::Refresh(child.x + x, child.y + y, buf)
+            }
+            Response::Move(ref cur) => {
+                Response::Move(Cursor {
+                    x: cur.x + child.x,
+                    y: cur.y + child.y,
+                })
+            }
+            e => e,
+        }).collect()
+    }
+
     fn refresh_children(&self, buffer: &mut Buffer) -> Vec<Response> {
         let mut cursor = None;
         for &ref child in self.children() {
