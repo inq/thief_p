@@ -11,9 +11,10 @@ pub struct Editor {
 }
 
 impl Component for Editor {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
+        (width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {

@@ -1,6 +1,5 @@
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::window::EditWindow;
-use ui::comp::{Parent, Child, Component};
+use ui::comp::{EditWindow, Parent, Child, Component};
 
 pub struct HSplit {
     windows: Vec<Child>,
@@ -9,7 +8,7 @@ pub struct HSplit {
 }
 
 impl Component for HSplit {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
         let borders = self.windows.len() + 1;
@@ -22,6 +21,7 @@ impl Component for HSplit {
             child.y = 1;
             offset += w + 1;
         }
+        (width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {

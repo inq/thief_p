@@ -1,8 +1,19 @@
+mod screen;
+mod window;
+mod command_bar;
+mod hsplit;
+
+pub use self::command_bar::CommandBar;
+pub use self::screen::Screen;
+pub use self::window::EditWindow;
+pub use self::hsplit::HSplit;
+
 use ui::res::{Buffer, Cursor, Response};
 use ui::res::Trans;
 
+
 pub trait Component {
-    fn resize(&mut self, width: usize, height: usize);
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize);
     fn refresh(&self) -> Vec<Response>;
     fn key(&mut self, _: char, _: bool) -> Vec<Response> {
         vec![]

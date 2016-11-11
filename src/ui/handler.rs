@@ -1,6 +1,5 @@
 use io::Event;
-use ui::screen::Screen;
-use ui::comp::Component;
+use ui::comp::{Component, Screen};
 use ui::res::Response;
 
 pub struct Handler {

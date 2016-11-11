@@ -7,9 +7,10 @@ pub struct CommandBar {
 }
 
 impl Component for CommandBar {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, _: usize) -> (usize, usize) {
         self.width = width;
-        self.height = height;
+        self.height = 1;
+        (width, 1)
     }
 
     fn refresh(&self) -> Vec<Response> {

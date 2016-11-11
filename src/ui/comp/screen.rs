@@ -1,7 +1,5 @@
-use ui::command_bar::CommandBar;
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::hsplit::HSplit;
-use ui::comp::{Parent, Child, Component};
+use ui::comp::{CommandBar, HSplit, Parent, Child, Component};
 
 pub struct Screen {
     hsplit: Child,
@@ -11,7 +9,7 @@ pub struct Screen {
 }
 
 impl Component for Screen {
-    fn resize(&mut self, width: usize, height: usize) {
+    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
         self.width = width;
         self.height = height;
         self.hsplit.comp.resize(self.width - 2, self.height - 1);
@@ -22,6 +20,7 @@ impl Component for Screen {
             child.x = 0;
             child.y = self.height - 1;
         }
+        (width, height)
     }
 
     fn refresh(&self) -> Vec<Response> {
