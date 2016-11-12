@@ -17,6 +17,11 @@ impl Line {
         }
     }
 
+    /// Insert a char.
+    pub fn insert(&mut self, c: char) {
+        self.before.push(c);
+    }
+
     /// Iterate chars.
     pub fn iter(&self) -> Chain<Chars, Rev<Chars>> {
         self.before.chars().chain(self.after.chars().rev())
@@ -70,7 +75,7 @@ impl Line {
 }
 
 #[test]
-fn basic_operations() {
+fn test_basic_operations() {
     let mut t = Line::new();
     t.append_before_cursor(&String::from("hello"));
     assert_eq!(t.to_string(), "hello");
@@ -79,7 +84,7 @@ fn basic_operations() {
 }
 
 #[test]
-fn move_cursor() {
+fn test_move_cursor() {
     let mut t = Line::new();
     t.append_before_cursor(&String::from("hello"));
     t.append_after_cursor(&String::from("world"));
@@ -93,4 +98,16 @@ fn move_cursor() {
     }
     assert_eq!(t.move_cursor(false), false);
     assert_eq!(t.before, "");
+}
+
+#[test]
+fn test_insert() {
+    let mut t = Line::new();
+    t.insert('h');
+    assert_eq!(t.to_string(), "h");
+    t.append_before_cursor(&String::from("ell"));
+    t.append_after_cursor(&String::from("world"));
+    t.insert('o');
+    assert_eq!(t.to_string(), "helloworld");
+
 }
