@@ -1,6 +1,7 @@
 use ui::res::{Response, Buffer, Brush, Color};
-use ui::comp::{Component, Child, Parent};
+use ui::comp::{Component};
 
+#[allow(dead_code)]
 pub struct LineNumber {
     current: usize,
     max: usize,
@@ -9,7 +10,7 @@ pub struct LineNumber {
 }
 
 impl Component for LineNumber {
-    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
+    fn resize(&mut self, _: usize, height: usize) -> (usize, usize) {
         self.height = height;
         (self.width, height)
     }

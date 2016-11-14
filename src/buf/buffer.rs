@@ -138,7 +138,7 @@ impl Buffer {
 fn test_buffer_from_file() {
     let mut a = String::with_capacity(1024);
     File::open("Cargo.toml").unwrap().read_to_string(&mut a).unwrap();
-    let mut buf = Buffer::from_file("Cargo.toml").unwrap();
+    let buf = Buffer::from_file("Cargo.toml").unwrap();
     assert_eq!(a, buf.to_string());
 }
 

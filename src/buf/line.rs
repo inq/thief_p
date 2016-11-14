@@ -1,4 +1,4 @@
-use std::iter::{Chain, Rev, repeat};
+use std::iter::{Chain, Rev};
 use std::str::Chars;
 use std::mem;
 

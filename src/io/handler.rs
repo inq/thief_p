@@ -4,7 +4,7 @@ use libc;
 use io::kqueue::Kqueue;
 use io::event::Event;
 use io::term::Term;
-use ui::{Ui, Cursor, Response, Refresh, Sequence};
+use ui::{Ui, Cursor, Refresh, Sequence};
 use util::ResultBox;
 
 def_error! {
@@ -80,9 +80,6 @@ impl Handler {
                 match resp {
                     Sequence::Move(c) => {
                         self.term.move_cursor(c.x, c.y);
-                    }
-                    Sequence::Put(s) => {
-                        self.term.write(&s);
                     }
                     Sequence::Line(l) => {
                         self.term.write_ui_line(&l);

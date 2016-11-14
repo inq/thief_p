@@ -42,7 +42,7 @@ pub trait Parent {
     }
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&self, mut buffer: Buffer) -> Response {
+    fn refresh_children(&self, buffer: Buffer) -> Response {
         let mut refresh = Refresh { x: 0, y: 0, buf: buffer };
         let mut sequence = vec![];
         for &ref child in self.children() {

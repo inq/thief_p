@@ -24,7 +24,6 @@ pub struct Refresh {
 #[derive(Debug)]
 pub enum Sequence {
     Move(Cursor),
-    Put(String),
     Line(Line),
     Show(bool),
     Quit,
