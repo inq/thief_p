@@ -84,6 +84,9 @@ impl Handler {
                     Response::Put(s) => {
                         self.term.write(&s);
                     }
+                    Response::Show(b) => {
+                        self.term.show_cursor(b);
+                    }
                     Response::Quit => {
                         self.ui.join().unwrap();
                         try!(self.term.release());

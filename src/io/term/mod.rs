@@ -66,8 +66,18 @@ impl Term {
         self.output.write(&Brush::change(&self.brush, b));
     }
 
+    /// Move cursor to the coordinate.
     pub fn move_cursor(&mut self, x: usize, y: usize) {
         self.write(&format!("\u{1b}[{};{}f", y + 1, x + 1));
+    }
+
+    /// If b is `true` then show the cursor. Otherwise hide.
+    pub fn show_cursor(&mut self, b: bool) {
+        if b {
+            self.write(&String::from("\u{1b}[?25h"));
+        } else {
+            self.write(&String::from("\u{1b}[?25l"));
+        }
     }
 
     pub fn write(&mut self, s: &String) {

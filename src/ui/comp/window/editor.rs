@@ -47,7 +47,7 @@ impl Component for Editor {
     /// Move cursor left and right.
     fn handle(&mut self, e: Event) -> Vec<Response> {
         match e {
-            Event::Move { x: x, y: 0 } => {
+            Event::Move { x, y: 0 } => {
                 self.cursor.x = if x > 0 {
                     self.cursor.x + 1
                 } else {
@@ -60,6 +60,10 @@ impl Component for Editor {
                 let mut cur = self.cursor.clone();
                 cur.x += self.x_off;
                 vec![Response::Move(cur)]
+            }
+            Event::Char { c } => {
+                self.buffer.insert(c);
+                vec![Response::Show(false)]
             }
             _ => vec![]
         }
