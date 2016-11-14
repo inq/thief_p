@@ -14,18 +14,13 @@ impl Component for LineNumber {
         (self.width, height)
     }
 
-    fn refresh(&self) -> Vec<Response> {
+    fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
         for (i, line) in buffer.lines.iter_mut().enumerate() {
             line.draw_str(&format!("{:width$}", i, width = self.width - 1), 0);
         }
-        vec![
-            Response::Refresh(
-                0, 0,
-                buffer,
-            ),
-        ]
+        Response::refresh(0, 0, buffer)
     }
 }
 

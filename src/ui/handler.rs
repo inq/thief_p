@@ -17,7 +17,7 @@ impl Handler {
     }
 
     /// Handle the event, and return the series of responses.
-    pub fn handle(&mut self, e: Event) -> Vec<Response> {
+    pub fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Resize { w: width, h: height } => {
                 self.screen.resize(width, height);
@@ -25,7 +25,7 @@ impl Handler {
             },
             Event::Ctrl { c: 'q' } => {
                 self.quit = true;
-                vec![Response::Quit]
+                Response::quit()
             },
             _ => self.screen.handle(e),
         }

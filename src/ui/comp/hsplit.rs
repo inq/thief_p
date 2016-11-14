@@ -26,16 +26,13 @@ impl Component for HSplit {
         (width, height)
     }
 
-    fn refresh(&self) -> Vec<Response> {
+    fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let mut a = self.refresh_children(&mut buffer);
-        let mut res = vec![Response::Refresh(0, 0, buffer)];
-        res.append(&mut a);
-        res
+        self.refresh_children(buffer)
     }
 
-    fn handle(&mut self, e: Event) -> Vec<Response> {
+    fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Ctrl { c: 'd' } => {
                 self.toggle_split();

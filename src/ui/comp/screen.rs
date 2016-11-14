@@ -24,15 +24,14 @@ impl Component for Screen {
         (width, height)
     }
 
-    fn refresh(&self) -> Vec<Response> {
+    fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let _ = self.refresh_children(&mut buffer);
-        vec![Response::Refresh(0, 0, buffer)]
+        self.refresh_children(buffer)
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, e: Event) -> Vec<Response> {
+    fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Ctrl { c: 'r' } => self.command_bar(),
             _ => {
@@ -44,14 +43,14 @@ impl Component for Screen {
 }
 
 impl Screen {
-    pub fn command_bar(&mut self) -> Vec<Response> {
+    pub fn command_bar(&mut self) -> Response {
         if self.overlaps.len() == 0 {
             let bar = CommandBar::new();
             let res = bar.refresh();
             self.overlaps.push(bar);
             res
         } else {
-            vec![]
+            Response::empty()
         }
     }
 

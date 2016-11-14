@@ -8,15 +8,14 @@ pub use self::screen::Screen;
 pub use self::window::EditWindow;
 pub use self::hsplit::HSplit;
 
-use ui::res::{Buffer, Cursor, Response};
-use ui::res::Trans;
+use ui::res::{Buffer, Cursor, Response, Refresh, Sequence};
 use io::Event;
 
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize);
-    fn refresh(&self) -> Vec<Response>;
-    fn handle(&mut self, _: Event) -> Vec<Response> {
-        vec![]
+    fn refresh(&self) -> Response;
+    fn handle(&mut self, _: Event) -> Response {
+        Response::empty()
     }
 }
 
@@ -25,44 +24,50 @@ pub trait Parent {
     fn children(&self) -> Vec<&Child>;
 
     /// Apply offset of the child to the responses.
-    fn transform(&self, child: &Child, resps: Vec<Response>) -> Vec<Response> {
-        resps.into_iter().map(|resp| match resp {
-            Response::Refresh(x, y, buf) => {
-                Response::Refresh(child.x + x, child.y + y, buf)
+    fn transform(&self, child: &Child, mut resp: Response) -> Response {
+        if let Some(Refresh { ref mut x, ref mut y, .. }) = resp.refresh {
+            *x += child.x;
+            *y += child.y;
+        }
+        for r in resp.sequence.iter_mut() {
+            match *r {
+                Sequence::Move(Cursor { ref mut x, ref mut y }) => {
+                    *x += child.x;
+                    *y += child.y;
+                }
+                _ => (),
             }
-            Response::Move(ref cur) => {
-                Response::Move(Cursor {
-                    x: cur.x + child.x,
-                    y: cur.y + child.y,
-                })
-            }
-            e => e,
-        }).collect()
+        }
+        resp
     }
 
-    fn refresh_children(&self, buffer: &mut Buffer) -> Vec<Response> {
-        let mut cursor = None;
+    /// Draw the children and transform each sequenced results.
+    fn refresh_children(&self, mut buffer: Buffer) -> Response {
+        let mut refresh = Refresh { x: 0, y: 0, buf: buffer };
+        let mut sequence = vec![];
         for &ref child in self.children() {
-            for resp in child.comp.refresh() {
-                match resp {
-                    Response::Refresh(x, y, buf) => {
-                        buffer.draw(&buf, child.x + x, child.y + y)
-                    }
-                    Response::Move(cur) => {
-                        cursor = Some(Cursor {
+            let resp = child.comp.refresh();
+            if let Some(Refresh { x, y, buf }) = resp.refresh {
+                refresh.buf.draw(&buf, child.x + x, child.y + y)
+            }
+            for r in resp.sequence {
+                match r {
+                    Sequence::Move(cur) => {
+                        sequence.push(Sequence::Move(Cursor {
                             x: cur.x + child.x,
                             y: cur.y + child.y,
-                        })
+                        }));
                     }
-                    _ => (),
+                    x => {
+                        sequence.push(x);
+                    }
                 }
             }
         }
-        let mut res = vec![];
-        if let Some(cur) = cursor {
-            res.push(Response::Move(cur));
+        Response {
+            refresh: Some(refresh),
+            sequence: sequence,
         }
-        res
     }
 }
 
@@ -73,9 +78,9 @@ pub struct Child {
 }
 
 impl Child {
-    pub fn refresh(&self) -> Vec<Response> {
-        let mut res = vec![];
-        res.append(&mut self.comp.refresh());
-        res.translate(self.x, self.y)
+    pub fn refresh(&self) -> Response {
+        let mut resp = self.comp.refresh();
+        resp.translate(self.x, self.y);
+        resp
     }
 }

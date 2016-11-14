@@ -15,7 +15,7 @@ def_error! {
 }
 
 pub struct Ui {
-    chan: Chan<Vec<Response>, Event>,
+    chan: Chan<Response, Event>,
     thread: Option<thread::JoinHandle<()>>,
 }
 
@@ -50,7 +50,7 @@ impl Ui {
         self.chan.send(e)
     }
 
-    pub fn try_recv(&self) -> result::Result<Vec<Response>, mpsc::TryRecvError> {
+    pub fn try_recv(&self) -> result::Result<Response, mpsc::TryRecvError> {
         self.chan.try_recv()
     }
 

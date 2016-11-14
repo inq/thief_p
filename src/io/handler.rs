@@ -4,7 +4,7 @@ use libc;
 use io::kqueue::Kqueue;
 use io::event::Event;
 use io::term::Term;
-use ui::{Ui, Cursor, Response};
+use ui::{Ui, Cursor, Response, Refresh, Sequence};
 use util::ResultBox;
 
 def_error! {
@@ -72,25 +72,25 @@ impl Handler {
     }
 
     fn handle_timer(&mut self) -> ResultBox<()> {
-        if let Ok(resps) = self.ui.try_recv() {
-            for resp in resps {
+        if let Ok(resp) = self.ui.try_recv() {
+            if let Some(Refresh { x, y, buf }) = resp.refresh {
+                self.term.write_ui_buffer(x, y, &buf);
+            }
+            for resp in resp.sequence {
                 match resp {
-                    Response::Refresh(x, y, b) => {
-                        self.term.write_ui_buffer(x, y, &b);
-                    }
-                    Response::Move(c) => {
+                    Sequence::Move(c) => {
                         self.term.move_cursor(c.x, c.y);
                     }
-                    Response::Put(s) => {
+                    Sequence::Put(s) => {
                         self.term.write(&s);
                     }
-                    Response::Line(l) => {
+                    Sequence::Line(l) => {
                         self.term.write_ui_line(&l);
                     }
-                    Response::Show(b) => {
+                    Sequence::Show(b) => {
                         self.term.show_cursor(b);
                     }
-                    Response::Quit => {
+                    Sequence::Quit => {
                         self.ui.join().unwrap();
                         try!(self.term.release());
                         return Err(From::from(Error::Exit));

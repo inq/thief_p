@@ -1,7 +1,7 @@
 use std::path::Path;
 use buf;
 use io::Event;
-use ui::res::{Buffer, Brush, Color, Cursor, Line, Response};
+use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, Child};
 use util::ResultBox;
 use super::LineNumber;
@@ -24,29 +24,25 @@ impl Component for Editor {
         (width, height)
     }
 
-    fn refresh(&self) -> Vec<Response> {
+    fn refresh(&self) -> Response {
         let mut buffer = Buffer::blank(&self.brush, self.width, self.height);
         // Draw line_number
-        for resp in self.line_number.refresh() {
-            match resp {
-                Response::Refresh(x, y, buf) => buffer.draw(&buf, 0 + x, 0 + y),
-                _ => (),
-            }
+        if let Some(Refresh { x, y, buf }) = self.line_number.refresh().refresh {
+            buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
         buffer.draw_buffer(&self.buffer, self.x_off, 0);
-        vec![
-            Response::Refresh(
-                0, 0,
-                buffer,
-            ),
-            Response::Show(true),
-            Response::Move(Cursor { x: self.x_off, y: 0 }),
-        ]
+        Response {
+            refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
+            sequence: vec![
+                Sequence::Show(true),
+                Sequence::Move(Cursor { x: self.x_off, y: 0 }),
+            ]
+        }
     }
 
     /// Move cursor left and right, or Type a character.
-    fn handle(&mut self, e: Event) -> Vec<Response> {
+    fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Move { x, y: 0 } => {
                 self.cursor.x = if x > 0 {
@@ -61,19 +57,25 @@ impl Component for Editor {
                 self.buffer.move_cursor(x, 0);
                 let mut cur = self.cursor.clone();
                 cur.x += self.x_off;
-                vec![Response::Move(cur)]
+                Response {
+                    refresh: None,
+                    sequence: vec![Sequence::Move(cur)],
+                }
             }
             Event::Char { c } => {
                 self.buffer.insert(c);
                 let req = self.width - self.x_off - self.cursor.x;
-                vec![
-                    Response::Show(false),
-                    Response::Line(Line::new_from_str(&self.buffer.after_cursor(req), &self.brush)),
-                    Response::Move(self.cursor_translated()),
-                    Response::Show(true),
-                ]
+                Response {
+                    refresh: None,
+                    sequence: vec![
+                        Sequence::Show(false),
+                        Sequence::Line(Line::new_from_str(&self.buffer.after_cursor(req), &self.brush)),
+                        Sequence::Move(self.cursor_translated()),
+                        Sequence::Show(true),
+                    ]
+                }
             }
-            _ => vec![]
+            _ => Response::empty()
         }
     }
 }
