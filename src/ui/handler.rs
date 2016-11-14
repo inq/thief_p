@@ -17,21 +17,17 @@ impl Handler {
     }
 
     /// Handle the event, and return the series of responses.
-    pub fn handle(&mut self, e: Event) -> Vec<Response> {
+    pub fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Resize { w: width, h: height } => {
                 self.screen.resize(width, height);
                 self.screen.refresh()
             },
-            Event::Ctrl { c } => match c {
-                'q' => {
-                    self.quit = true;
-                    vec![Response::Quit]
-                },
-                _ => self.screen.key(c, true),
+            Event::Ctrl { c: 'q' } => {
+                self.quit = true;
+                Response::quit()
             },
-            Event::Char { c } => vec![Response::Put(c.to_string())],
-            _ => vec![],
+            _ => self.screen.handle(e),
         }
     }
 }

@@ -1,8 +1,10 @@
+use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
 use ui::comp::{EditWindow, Parent, Child, Component};
 
 pub struct HSplit {
     windows: Vec<Child>,
+    focused: usize,
     width: usize,
     height: usize,
 }
@@ -24,28 +26,21 @@ impl Component for HSplit {
         (width, height)
     }
 
-    fn refresh(&self) -> Vec<Response> {
+    fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-        let mut buffer = Buffer::blank(&b, self.width, self.height);
-        let mut a = self.refresh_children(&mut buffer);
-        let mut res = vec![Response::Refresh(0, 0, buffer)];
-        res.append(&mut a);
-        res
+        let buffer = Buffer::blank(&b, self.width, self.height);
+        self.refresh_children(buffer)
     }
 
-    fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
-        if ctrl {
-            match c {
-                'd' => {
-                    self.toggle_split();
-                    self.refresh()
-                },
-                _ => vec![],
-            }
-        } else {
-            match c {
-                'b' => vec![],
-                _ => vec![],
+    fn handle(&mut self, e: Event) -> Response {
+        match e {
+            Event::Ctrl { c: 'd' } => {
+                self.toggle_split();
+                self.refresh()
+            },
+            _ => {
+                let res = self.windows[self.focused].comp.handle(e);
+                self.transform(&self.windows[self.focused], res)
             }
         }
     }
@@ -60,6 +55,8 @@ impl HSplit {
     }
 
     pub fn set_children(&mut self, children: usize) {
+        // TODO: Must be implemented
+        self.focused = 0;
         if children <= self.windows.len() {
             self.windows.truncate(children)
         } else {
@@ -72,6 +69,7 @@ impl HSplit {
     pub fn new(windows: usize) -> Child {
         let mut res = HSplit {
             windows: vec![],
+            focused: usize::max_value(),
             width: usize::max_value(),
             height: usize::max_value(),
         };

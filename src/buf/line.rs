@@ -1,5 +1,6 @@
 use std::iter::{Chain, Rev};
 use std::str::Chars;
+use std::mem;
 
 #[derive(Debug)]
 pub struct Line {
@@ -15,6 +16,40 @@ impl Line {
             before: String::with_capacity(BUFSIZE),
             after: String::with_capacity(BUFSIZE),
         }
+    }
+
+    /// TODO: must consider unicode width
+    pub fn offset(&self) -> usize {
+       self.before.len()
+    }
+
+    /// Break the line.
+    pub fn break_line(&mut self) -> Line {
+        let res = mem::replace(&mut self.before, String::with_capacity(BUFSIZE));
+        Line {
+            before: res,
+            after: String::with_capacity(BUFSIZE),
+        }
+    }
+
+    /// Set the cursor position by the given x coordinate.
+    pub fn set_cursor(&mut self, x: usize) {
+        while self.before.len() > x {
+            self.move_cursor(false);
+        }
+        while self.before.len() < x && self.before.len() > 0 {
+            self.move_cursor(true);
+        }
+    }
+
+    /// Get string after cursor
+    pub fn after_cursor(&self, limit: usize) -> String {
+        self.after.chars().rev().take(limit).collect()
+    }
+
+    /// Insert a char.
+    pub fn insert(&mut self, c: char) {
+        self.before.push(c);
     }
 
     /// Iterate chars.
@@ -44,7 +79,6 @@ impl Line {
     /// Move cursor by 1 character.
     /// If `right` is `true`, then move to right direction. Otherwise,
     /// move to left direction. Returns `true` if succeed.
-    #[allow(dead_code)]
     pub fn move_cursor(&mut self, right: bool) -> bool {
         let (from, to) = if right {
             (&mut self.after, &mut self.before)
@@ -70,7 +104,7 @@ impl Line {
 }
 
 #[test]
-fn basic_operations() {
+fn test_basic_operations() {
     let mut t = Line::new();
     t.append_before_cursor(&String::from("hello"));
     assert_eq!(t.to_string(), "hello");
@@ -79,7 +113,7 @@ fn basic_operations() {
 }
 
 #[test]
-fn move_cursor() {
+fn test_move_cursor() {
     let mut t = Line::new();
     t.append_before_cursor(&String::from("hello"));
     t.append_after_cursor(&String::from("world"));
@@ -93,4 +127,26 @@ fn move_cursor() {
     }
     assert_eq!(t.move_cursor(false), false);
     assert_eq!(t.before, "");
+}
+
+#[test]
+fn test_insert() {
+    let mut t = Line::new();
+    t.insert('h');
+    assert_eq!(t.to_string(), "h");
+    t.append_before_cursor(&String::from("ell"));
+    t.append_after_cursor(&String::from("world"));
+    t.insert('o');
+    assert_eq!(t.to_string(), "helloworld");
+
+}
+
+#[test]
+fn test_break_line() {
+    let mut t = Line::new();
+    t.append_before_cursor(&String::from("hello"));
+    t.append_after_cursor(&String::from("world"));
+    let u = t.break_line();
+    assert_eq!(t.to_string(), "world");
+    assert_eq!(u.to_string(), "hello");
 }

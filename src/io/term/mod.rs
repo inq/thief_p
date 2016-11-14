@@ -4,7 +4,7 @@ use libc;
 use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
-use ui::{Brush, Buffer, Cursor};
+use ui::{Brush, Line, Buffer, Cursor};
 use util::ResultBox;
 
 def_error! {
@@ -66,8 +66,18 @@ impl Term {
         self.output.write(&Brush::change(&self.brush, b));
     }
 
+    /// Move cursor to the coordinate.
     pub fn move_cursor(&mut self, x: usize, y: usize) {
         self.write(&format!("\u{1b}[{};{}f", y + 1, x + 1));
+    }
+
+    /// If b is `true` then show the cursor. Otherwise hide.
+    pub fn show_cursor(&mut self, b: bool) {
+        if b {
+            self.write(&String::from("\u{1b}[?25h"));
+        } else {
+            self.write(&String::from("\u{1b}[?25l"));
+        }
     }
 
     pub fn write(&mut self, s: &String) {
@@ -78,19 +88,25 @@ impl Term {
         }
     }
 
+    /// Draw ui::Line after the cursor.
+    pub fn write_ui_line(&mut self, l: &Line) {
+        for c in &l.chars {
+            let prev = Some(c.brush.clone());
+            if self.brush != prev {
+                self.color(&prev);
+                self.brush = prev;
+            }
+            // TODO: Optimize
+            self.write(&c.chr.to_string());
+        }
+    }
+
+    /// Draw ui::Buffer at the coordinate.
     pub fn write_ui_buffer(&mut self, x: usize, y: usize, buf: &Buffer) {
         self.move_cursor(x, y);
         for (i, l) in buf.lines.iter().enumerate() {
             self.move_cursor(x, y + i);
-            for c in &l.chars {
-                let prev = Some(c.brush.clone());
-                if self.brush != prev {
-                    self.color(&prev);
-                    self.brush = prev;
-                }
-                // TODO: Optimize
-                self.write(&c.chr.to_string());
-            }
+            self.write_ui_line(&l);
         }
     }
 

@@ -11,6 +11,13 @@ extern "C" {
 }
 
 impl Char {
+    pub fn new(chr: char, brush: Brush) -> Char {
+        Char {
+            chr: chr,
+            brush: brush,
+        }
+    }
+
     #[allow(dead_code)]
     pub fn width(&self) -> usize {
         unsafe { wcwidth(self.chr as u32) as usize }
