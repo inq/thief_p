@@ -78,6 +78,7 @@ impl Editor {
     }
 
     fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {
-        self.buffer.load_file(s)
+        self.buffer = try!(buf::Buffer::from_file(s));
+        Ok(())
     }
 }
