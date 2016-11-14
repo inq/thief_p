@@ -47,7 +47,7 @@ impl Buffer {
 
     /// Read characters after cursor.
     pub fn after_cursor(&self, limit: usize) -> String {
-        self.after[0].after_cursor(limit)
+        self.after[self.after.len() - 1].after_cursor(limit)
     }
 
     /// Move up the cursor.
@@ -72,14 +72,16 @@ impl Buffer {
         while self.before.len() < y && self.before.len() > 0 {
             self.move_down();
         }
-        self.after[0].set_cursor(x);
+        let loc = self.after.len();
+        self.after[loc - 1].set_cursor(x);
     }
 
     /// Move cursor.
     pub fn move_cursor(&mut self, dx: i8, dy: i8) -> bool {
+        let loc = self.after.len() - 1;
         match (dx, dy) {
-            (1, 0) => self.after[0].move_cursor(true),
-            (-1, 0) => self.after[0].move_cursor(false),
+            (1, 0) => self.after[loc].move_cursor(true),
+            (-1, 0) => self.after[loc].move_cursor(false),
             _ => true,
         }
     }

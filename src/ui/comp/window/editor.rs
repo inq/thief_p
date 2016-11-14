@@ -36,7 +36,7 @@ impl Component for Editor {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
                 Sequence::Show(true),
-                Sequence::Move(Cursor { x: self.x_off, y: 0 }),
+                Sequence::Move(Cursor { x: self.x_off + self.cursor.x, y: 0 }),
             ]
         }
     }
@@ -65,11 +65,15 @@ impl Component for Editor {
             Event::Char { c } => {
                 self.buffer.insert(c);
                 let req = self.width - self.x_off - self.cursor.x;
+                let mut after_cursor = String::with_capacity(self.width);
+                self.cursor.x += 1;
+                after_cursor.push(c);
+                after_cursor.push_str(&self.buffer.after_cursor(req));
                 Response {
                     refresh: None,
                     sequence: vec![
                         Sequence::Show(false),
-                        Sequence::Line(Line::new_from_str(&self.buffer.after_cursor(req), &self.brush)),
+                        Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
                         Sequence::Move(self.cursor_translated()),
                         Sequence::Show(true),
                     ]
