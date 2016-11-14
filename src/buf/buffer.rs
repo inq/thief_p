@@ -79,11 +79,24 @@ impl Buffer {
     /// Move cursor.
     pub fn move_cursor(&mut self, dx: i8, dy: i8) -> bool {
         let loc = self.after.len() - 1;
-        match (dx, dy) {
-            (1, 0) => self.after[loc].move_cursor(true),
-            (-1, 0) => self.after[loc].move_cursor(false),
-            _ => true,
+        if dx != 0 {
+            if dx > 0 {
+                self.after[loc].move_cursor(true);
+            } else {
+                self.after[loc].move_cursor(false);
+            }
         }
+        if dy != 0 {
+            let off = self.after[loc].offset();
+            if dy > 0 {
+                self.move_down();
+            } else {
+                self.move_up();
+            }
+            let loc = self.after.len() - 1;
+            self.after[loc].set_cursor(off);
+        }
+        true
     }
 
     /// Insert a char at the location of the cursur.

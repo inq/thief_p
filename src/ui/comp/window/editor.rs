@@ -44,17 +44,20 @@ impl Component for Editor {
     /// Move cursor left and right, or Type a character.
     fn handle(&mut self, e: Event) -> Response {
         match e {
-            Event::Move { x, y: 0 } => {
-                self.cursor.x = if x > 0 {
-                    self.cursor.x + 1
-                } else {
-                    if self.cursor.x > 0 {
-                        self.cursor.x - 1
-                    } else {
-                        self.cursor.x
-                    }
+            Event::Move { x, y } => {
+                if x > 0 {
+                    self.cursor.x += 1;
+                }
+                if x < 0 && self.cursor.x > 0 {
+                    self.cursor.x -= 1;
                 };
-                self.buffer.move_cursor(x, 0);
+                if y > 0 {
+                    self.cursor.y += 1;
+                }
+                if y < 0 && self.cursor.y > 0 {
+                    self.cursor.y -= 1;
+                };
+                self.buffer.move_cursor(x, y);
                 let mut cur = self.cursor.clone();
                 cur.x += self.x_off;
                 Response {

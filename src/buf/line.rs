@@ -18,6 +18,11 @@ impl Line {
         }
     }
 
+    /// TODO: must consider unicode width
+    pub fn offset(&self) -> usize {
+       self.before.len()
+    }
+
     /// Break the line.
     pub fn break_line(&mut self) -> Line {
         let res = mem::replace(&mut self.before, String::with_capacity(BUFSIZE));
