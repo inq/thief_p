@@ -4,6 +4,7 @@ use std::iter::{Chain, Rev};
 use std::fs::File;
 use std::path::Path;
 use super::line::Line;
+use super::Direction;
 use util::ResultBox;
 
 /// Current line is the last element of the `after`.
@@ -43,6 +44,15 @@ impl Buffer {
             res.after.push(l);
         }
         Ok(res)
+    }
+
+    /// Move cursor.
+    pub fn move_cursor(&mut self, direction: Direction) -> bool {
+        match direction {
+            Direction::Right => self.after[0].move_cursor(true),
+            Direction::Left => self.after[0].move_cursor(false),
+            _ => true,
+        }
     }
 
     /// Insert a char at the location of the cursur.

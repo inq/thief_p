@@ -1,3 +1,4 @@
+use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
 use ui::comp::{CommandBar, HSplit, Parent, Child, Component};
 
@@ -30,19 +31,13 @@ impl Component for Screen {
         vec![Response::Refresh(0, 0, buffer)]
     }
 
-    fn key(&mut self, c: char, ctrl: bool) -> Vec<Response> {
-        if ctrl {
-            match c {
-                'r' => self.command_bar(),
-                _ => {
-                    let res = self.hsplit.comp.key(c, ctrl);
-                    self.transform(&self.hsplit, res)
-                }
-            }
-        } else {
-            match c {
-                'b' => vec![],
-                _ => vec![],
+    /// Send some functions into command bar. Otherwise, into hsplit.
+    fn handle(&mut self, e: Event) -> Vec<Response> {
+        match e {
+            Event::Ctrl { c: 'r' } => self.command_bar(),
+            _ => {
+                let res = self.hsplit.comp.handle(e);
+                self.transform(&self.hsplit, res)
             }
         }
     }

@@ -10,12 +10,12 @@ pub use self::hsplit::HSplit;
 
 use ui::res::{Buffer, Cursor, Response};
 use ui::res::Trans;
-
+use io::Event;
 
 pub trait Component {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize);
     fn refresh(&self) -> Vec<Response>;
-    fn key(&mut self, _: char, _: bool) -> Vec<Response> {
+    fn handle(&mut self, _: Event) -> Vec<Response> {
         vec![]
     }
 }

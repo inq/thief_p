@@ -1,5 +1,6 @@
 use std::path::Path;
 use buf;
+use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Response};
 use ui::comp::{Component, Child};
 use util::ResultBox;
@@ -8,6 +9,7 @@ use super::LineNumber;
 pub struct Editor {
     line_number: LineNumber,
     buffer: buf::Buffer,
+    cursor: Cursor,
     x_off: usize,
     width: usize,
     height: usize,
@@ -41,6 +43,27 @@ impl Component for Editor {
             Response::Move(Cursor { x: 0, y: 0 }),
         ]
     }
+
+    /// Move cursor left and right.
+    fn handle(&mut self, e: Event) -> Vec<Response> {
+        match e {
+            Event::Move { x: x, y: 0 } => {
+                self.cursor.x = if x > 0 {
+                    self.cursor.x + 1
+                } else {
+                    if self.cursor.x > 0 {
+                        self.cursor.x - 1
+                    } else {
+                        self.cursor.x
+                    }
+                };
+                let mut cur = self.cursor.clone();
+                cur.x += self.x_off;
+                vec![Response::Move(cur)]
+            }
+            _ => vec![]
+        }
+    }
 }
 
 impl Editor {
@@ -51,6 +74,7 @@ impl Editor {
             y: usize::max_value(),
             comp: Box::new(Editor {
                 line_number: LineNumber::new(),
+                cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
                 buffer: buf::Buffer::new(),
                 x_off: usize::max_value(),
                 width: usize::max_value(),
@@ -63,12 +87,14 @@ impl Editor {
     pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
         let mut editor = Editor {
             line_number: LineNumber::new(),
+            cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
             buffer: buf::Buffer::new(),
             x_off: usize::max_value(),
             width: usize::max_value(),
             height: usize::max_value(),
         };
         try!(editor.load_file(s));
+        editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
         Ok(Child {
             x: usize::max_value(),

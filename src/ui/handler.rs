@@ -23,15 +23,11 @@ impl Handler {
                 self.screen.resize(width, height);
                 self.screen.refresh()
             },
-            Event::Ctrl { c } => match c {
-                'q' => {
-                    self.quit = true;
-                    vec![Response::Quit]
-                },
-                _ => self.screen.key(c, true),
+            Event::Ctrl { c: 'q' } => {
+                self.quit = true;
+                vec![Response::Quit]
             },
-            Event::Char { c } => vec![Response::Put(c.to_string())],
-            _ => vec![],
+            _ => self.screen.handle(e),
         }
     }
 }

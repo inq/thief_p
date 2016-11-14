@@ -59,7 +59,6 @@ impl Line {
     /// Move cursor by 1 character.
     /// If `right` is `true`, then move to right direction. Otherwise,
     /// move to left direction. Returns `true` if succeed.
-    #[allow(dead_code)]
     pub fn move_cursor(&mut self, right: bool) -> bool {
         let (from, to) = if right {
             (&mut self.after, &mut self.before)

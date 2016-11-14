@@ -1,3 +1,4 @@
+use io::Event;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Child, Parent};
 use super::{Editor};
@@ -25,6 +26,15 @@ impl Component for EditWindow {
         let mut res = vec![Response::Refresh(0, 0, buffer)];
         res.append(&mut c);
         res
+    }
+
+    fn handle(&mut self, e: Event) -> Vec<Response> {
+        match e {
+            _ => {
+                let res = self.editor.comp.handle(e);
+                self.transform(&self.editor, res)
+            }
+        }
     }
 }
 
