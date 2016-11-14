@@ -1,5 +1,6 @@
 use std::iter::{Chain, Rev};
 use std::str::Chars;
+use std::mem;
 
 #[derive(Debug)]
 pub struct Line {
@@ -13,6 +14,15 @@ impl Line {
     pub fn new() -> Line {
         Line {
             before: String::with_capacity(BUFSIZE),
+            after: String::with_capacity(BUFSIZE),
+        }
+    }
+
+    /// Break the line.
+    pub fn break_line(&mut self) -> Line {
+        let res = mem::replace(&mut self.before, String::with_capacity(BUFSIZE));
+        Line {
+            before: res,
             after: String::with_capacity(BUFSIZE),
         }
     }
@@ -110,4 +120,14 @@ fn test_insert() {
     t.insert('o');
     assert_eq!(t.to_string(), "helloworld");
 
+}
+
+#[test]
+fn test_break_line() {
+    let mut t = Line::new();
+    t.append_before_cursor(&String::from("hello"));
+    t.append_after_cursor(&String::from("world"));
+    let u = t.break_line();
+    assert_eq!(t.to_string(), "world");
+    assert_eq!(u.to_string(), "hello");
 }
