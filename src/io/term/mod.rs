@@ -4,7 +4,7 @@ use libc;
 use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
-use ui::{Brush, Buffer, Cursor};
+use ui::{Brush, Line, Buffer, Cursor};
 use util::ResultBox;
 
 def_error! {
@@ -88,19 +88,25 @@ impl Term {
         }
     }
 
+    /// Draw ui::Line after the cursor.
+    pub fn write_ui_line(&mut self, l: &Line) {
+        for c in &l.chars {
+            let prev = Some(c.brush.clone());
+            if self.brush != prev {
+                self.color(&prev);
+                self.brush = prev;
+            }
+            // TODO: Optimize
+            self.write(&c.chr.to_string());
+        }
+    }
+
+    /// Draw ui::Buffer at the coordinate.
     pub fn write_ui_buffer(&mut self, x: usize, y: usize, buf: &Buffer) {
         self.move_cursor(x, y);
         for (i, l) in buf.lines.iter().enumerate() {
             self.move_cursor(x, y + i);
-            for c in &l.chars {
-                let prev = Some(c.brush.clone());
-                if self.brush != prev {
-                    self.color(&prev);
-                    self.brush = prev;
-                }
-                // TODO: Optimize
-                self.write(&c.chr.to_string());
-            }
+            self.write_ui_line(&l);
         }
     }
 

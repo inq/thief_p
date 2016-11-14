@@ -1,4 +1,4 @@
-use std::iter::{Chain, Rev};
+use std::iter::{Chain, Rev, repeat};
 use std::str::Chars;
 use std::mem;
 
@@ -25,6 +25,21 @@ impl Line {
             before: res,
             after: String::with_capacity(BUFSIZE),
         }
+    }
+
+    /// Set the cursor position by the given x coordinate.
+    pub fn set_cursor(&mut self, x: usize) {
+        while self.before.len() > x {
+            self.move_cursor(false);
+        }
+        while self.before.len() < x && self.before.len() > 0 {
+            self.move_cursor(true);
+        }
+    }
+
+    /// Get string after cursor
+    pub fn after_cursor(&self, limit: usize) -> String {
+        self.after.chars().rev().take(limit).collect()
     }
 
     /// Insert a char.

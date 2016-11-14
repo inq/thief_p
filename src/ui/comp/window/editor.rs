@@ -1,7 +1,7 @@
 use std::path::Path;
 use buf;
 use io::Event;
-use ui::res::{Buffer, Brush, Color, Cursor, Response};
+use ui::res::{Buffer, Brush, Color, Cursor, Line, Response};
 use ui::comp::{Component, Child};
 use util::ResultBox;
 use super::LineNumber;
@@ -13,6 +13,7 @@ pub struct Editor {
     x_off: usize,
     width: usize,
     height: usize,
+    brush: Brush,
 }
 
 impl Component for Editor {
@@ -24,8 +25,7 @@ impl Component for Editor {
     }
 
     fn refresh(&self) -> Vec<Response> {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220));
-        let mut buffer = Buffer::blank(&b, self.width, self.height);
+        let mut buffer = Buffer::blank(&self.brush, self.width, self.height);
         // Draw line_number
         for resp in self.line_number.refresh() {
             match resp {
@@ -40,11 +40,12 @@ impl Component for Editor {
                 0, 0,
                 buffer,
             ),
-            Response::Move(Cursor { x: 0, y: 0 }),
+            Response::Show(true),
+            Response::Move(Cursor { x: self.x_off, y: 0 }),
         ]
     }
 
-    /// Move cursor left and right.
+    /// Move cursor left and right, or Type a character.
     fn handle(&mut self, e: Event) -> Vec<Response> {
         match e {
             Event::Move { x, y: 0 } => {
@@ -57,13 +58,20 @@ impl Component for Editor {
                         self.cursor.x
                     }
                 };
+                self.buffer.move_cursor(x, 0);
                 let mut cur = self.cursor.clone();
                 cur.x += self.x_off;
                 vec![Response::Move(cur)]
             }
             Event::Char { c } => {
                 self.buffer.insert(c);
-                vec![Response::Show(false)]
+                let req = self.width - self.x_off - self.cursor.x;
+                vec![
+                    Response::Show(false),
+                    Response::Line(Line::new_from_str(&self.buffer.after_cursor(req), &self.brush)),
+                    Response::Move(self.cursor_translated()),
+                    Response::Show(true),
+                ]
             }
             _ => vec![]
         }
@@ -71,12 +79,19 @@ impl Component for Editor {
 }
 
 impl Editor {
+    fn cursor_translated(&self) -> Cursor {
+        let mut cur = self.cursor.clone();
+        cur.x += self.x_off;
+        cur
+    }
+
     #[allow(dead_code)]
     pub fn new() -> Child {
         Child {
             x: usize::max_value(),
             y: usize::max_value(),
             comp: Box::new(Editor {
+                brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
                 line_number: LineNumber::new(),
                 cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
                 buffer: buf::Buffer::new(),
@@ -90,6 +105,7 @@ impl Editor {
     /// Initializer with file.
     pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
         let mut editor = Editor {
+            brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             line_number: LineNumber::new(),
             cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
             buffer: buf::Buffer::new(),
@@ -100,6 +116,7 @@ impl Editor {
         try!(editor.load_file(s));
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
+        editor.buffer.set_cursor(0, 0);
         Ok(Child {
             x: usize::max_value(),
             y: usize::max_value(),

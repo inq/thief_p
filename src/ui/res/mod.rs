@@ -2,23 +2,20 @@ mod buffer;
 mod color;
 mod char;
 mod line;
+mod cursor;
 
 pub use self::buffer::Buffer;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
-
-#[derive(Debug, Clone)]
-pub struct Cursor {
-    pub x: usize,
-    pub y: usize,
-}
+pub use self::cursor::Cursor;
 
 #[derive(Debug)]
 pub enum Response {
     Refresh(usize, usize, Buffer),
     Move(Cursor),
     Put(String),
+    Line(Line),
     Show(bool),
     Quit,
 }

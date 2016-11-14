@@ -4,7 +4,6 @@ use std::iter::{Chain, Rev};
 use std::fs::File;
 use std::path::Path;
 use super::line::Line;
-use super::Direction;
 use util::ResultBox;
 
 /// Current line is the last element of the `after`.
@@ -46,11 +45,41 @@ impl Buffer {
         Ok(res)
     }
 
+    /// Read characters after cursor.
+    pub fn after_cursor(&self, limit: usize) -> String {
+        self.after[0].after_cursor(limit)
+    }
+
+    /// Move up the cursor.
+    fn move_up(&mut self) {
+        if let Some(l) = self.before.pop() {
+            self.after.push(l);
+        }
+    }
+
+    /// Move down the cursor.
+    fn move_down(&mut self) {
+        if let Some(l) = self.after.pop() {
+            self.before.push(l);
+        }
+    }
+
+    /// Set the cursor by the given coordinate.
+    pub fn set_cursor(&mut self, x: usize, y: usize) {
+        while self.before.len() > y {
+            self.move_up();
+        }
+        while self.before.len() < y && self.before.len() > 0 {
+            self.move_down();
+        }
+        self.after[0].set_cursor(x);
+    }
+
     /// Move cursor.
-    pub fn move_cursor(&mut self, direction: Direction) -> bool {
-        match direction {
-            Direction::Right => self.after[0].move_cursor(true),
-            Direction::Left => self.after[0].move_cursor(false),
+    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> bool {
+        match (dx, dy) {
+            (1, 0) => self.after[0].move_cursor(true),
+            (-1, 0) => self.after[0].move_cursor(false),
             _ => true,
         }
     }

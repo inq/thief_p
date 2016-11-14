@@ -84,6 +84,9 @@ impl Handler {
                     Response::Put(s) => {
                         self.term.write(&s);
                     }
+                    Response::Line(l) => {
+                        self.term.write_ui_line(&l);
+                    }
                     Response::Show(b) => {
                         self.term.show_cursor(b);
                     }

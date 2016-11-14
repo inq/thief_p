@@ -9,9 +9,19 @@ pub struct Line {
 }
 
 impl Line {
+    /// Construct a new line from str.
+    pub fn new_from_str(src: &str, br: &Brush) -> Line {
+        let res: Vec<Char> = src.chars().map(|c| Char::new(c, br.clone())).collect();
+        let w = res.iter().map(|c| c.width()).sum();
+        Line {
+            chars: res,
+            width: w,
+        }
+    }
+
     #[allow(dead_code)]
     pub fn bordered(line: &Brush, fill: &Brush, width: usize) -> Line {
-        let mut chars = vec![Char{ chr: ' ', brush: line.clone()}; 1];
+        let mut chars = vec![Char::new(' ', line.clone()); 1];
         chars.resize(width - 1,
                      Char {
                          chr: ' ',
@@ -30,7 +40,7 @@ impl Line {
 
     pub fn blank(brush: &Brush, width: usize) -> Line {
         Line {
-            chars: vec![Char{ chr: ' ', brush: brush.clone() }; width],
+            chars: vec![Char::new(' ', brush.clone()); width],
             width: width,
         }
     }
