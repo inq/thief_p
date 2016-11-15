@@ -46,13 +46,9 @@ impl Component for Editor {
     fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Move { x, y } => {
-                if y > 0 {
-                    self.cursor.y += 1;
-                }
-                if y < 0 && self.cursor.y > 0 {
-                    self.cursor.y -= 1;
-                };
-                self.cursor.x = self.buffer.move_cursor(self.cursor_x, x, y);
+                self.buffer.move_cursor(x, y);
+                self.cursor.x = self.buffer.get_x();
+                self.cursor.y = self.buffer.get_y();
                 if x != 0 {
                     self.cursor_x = self.cursor.x;
                 }

@@ -1,122 +1,142 @@
-use std::io::{BufReader, BufRead, Read};
-use std::slice::{Iter};
-use std::iter::{Chain, Rev};
-use std::fs::File;
-use std::path::Path;
+use std::io::{BufReader, BufRead};
+use std::{fs, mem, path};
 use super::line::Line;
 use util::ResultBox;
 
-/// Current line is the last element of the `after`.
 pub struct Buffer {
-    before: Vec<Line>,
-    after: Vec<Line>,
+    cur: Line,
+    x: usize,
+    prevs: Vec<Line>,
+    nexts: Vec<Line>,
 }
 
 const BUFSIZE: usize = 80;
 
 impl Buffer {
+    /// Construct a new buffer from a line.
+    fn new_with_line(line: Line) -> Buffer {
+        Buffer {
+            cur: line,
+            x: 0,
+            prevs: Vec::with_capacity(BUFSIZE),
+            nexts: Vec::with_capacity(BUFSIZE),
+        }
+    }
+
+    /// Return the ith element.
+    pub fn get(&self, i: usize) -> Option<&Line> {
+        if i == self.prevs.len() {
+            Some(&self.cur)
+        } else if i < self.prevs.len() {
+            Some(&self.prevs[i])
+        } else {
+            self.nexts.get(self.nexts.len() + self.prevs.len() - i)
+        }
+    }
+
+    /// Return the total number of lines.
+    pub fn get_line_num(&self) -> usize {
+        1 + self.prevs.len() + self.nexts.len()
+    }
+
     /// Construct a new empty buffer.
     pub fn new() -> Buffer {
-        let mut res = Buffer {
-            before: Vec::with_capacity(BUFSIZE),
-            after: Vec::with_capacity(BUFSIZE),
-        };
-        res.after.push(Line::new());
-        res
+        Buffer::new_with_line(Line::new())
+    }
+
+    /// Get the x position of the cursor.
+    pub fn get_x(&self) -> usize {
+        self.cur.get_x()
+    }
+
+    /// Get the y position of the cursor.
+    pub fn get_y(&self) -> usize {
+        self.prevs.len()
     }
 
     /// Construct a buffer from a file.
-    pub fn from_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Buffer> {
-        let mut res = Buffer {
-            before: Vec::with_capacity(BUFSIZE),
-            after: Vec::with_capacity(BUFSIZE),
-        };
-        let f = File::open(s)?;
+    pub fn from_file<S: AsRef<path::Path> + ?Sized>(s: &S) -> ResultBox<Buffer> {
+        let f = fs::File::open(s)?;
         let br = BufReader::new(&f);
-
+        let mut prevs = vec![];
         for line in br.lines() {
             if let Ok(s) = line {
-                res.before.push(Line::from_string(&s));
+                prevs.push(Line::from_string(&s));
             }
         }
-        while let Some(l) = res.before.pop() {
-            res.after.push(l);
-        }
-        Ok(res)
+        let cur = prevs.pop().unwrap_or(Line::new());
+        Ok(Buffer {
+            cur: cur,
+            x: 0,
+            prevs: prevs,
+            nexts: vec![],
+        })
     }
 
     /// Read characters after cursor.
     pub fn after_cursor(&self, limit: usize) -> String {
-        self.after[self.after.len() - 1].after_cursor(limit)
+        self.cur.after_cursor(limit)
     }
 
     /// Move up the cursor.
     fn move_up(&mut self, offset: usize) {
-        if let Some(l) = self.before.pop() {
-            self.after.push(l);
-            let t = self.after.len();
-            self.after[t - 1].set_cursor(offset);
+        if let Some(l) = self.prevs.pop() {
+            self.nexts.push(mem::replace(&mut self.cur, l));
+            self.cur.set_cursor(offset);
         }
     }
 
     /// Move down the cursor.
     fn move_down(&mut self, offset: usize) {
-        if let Some(l) = self.after.pop() {
-            self.before.push(l);
-            let t = self.after.len();
-            self.after[t - 1].set_cursor(offset);
+        if let Some(l) = self.nexts.pop() {
+            self.prevs.push(mem::replace(&mut self.cur, l));
+            self.cur.set_cursor(offset);
         }
     }
 
     /// Set the cursor by the given coordinate.
     pub fn set_cursor(&mut self, x: usize, y: usize) {
-        while self.before.len() > y {
+        while self.prevs.len() > y {
             self.move_up(x);
         }
-        while self.before.len() < y && self.before.len() > 0 {
+        while self.prevs.len() < y && self.prevs.len() > 0 {
             self.move_down(x);
         }
-        let loc = self.after.len();
-        self.after[loc - 1].set_cursor(x);
+        self.cur.set_cursor(x);
     }
 
     /// Move cursor.
-    pub fn move_cursor(&mut self, x: usize, dx: i8, dy: i8) -> usize {
-        let loc = self.after.len() - 1;
+    pub fn move_cursor(&mut self, dx: i8, dy: i8) {
         if dx != 0 {
             if dx > 0 {
-                self.after[loc].move_cursor(true);
+                if !self.cur.move_right() {
+                    self.move_down(0);
+                }
             } else {
-                self.after[loc].move_cursor(false);
+                if !self.cur.move_left() {
+                    self.move_up(usize::max_value());
+                }
             }
+            self.x = self.cur.get_x();
         }
         if dy != 0 {
+            let x = self.x;
             if dy > 0 {
                 self.move_down(x);
             } else {
                 self.move_up(x);
             }
         }
-        let loc = self.after.len() - 1;
-        self.after[loc].get_offset()
     }
 
     /// Insert a char at the location of the cursur.
     pub fn insert(&mut self, c: char) {
-        let loc = self.after.len() - 1;
-        self.after[loc].insert(c)
+        self.cur.insert(c)
     }
 
     /// Break the line at the location of the cursor.
     pub fn break_line(&mut self) {
-        let loc = self.after.len() - 1;
-        let res = self.after[loc].break_line();
-        self.before.push(res);
-    }
-
-    /// Iterate lines.
-    pub fn iter(&self) -> Chain<Iter<Line>, Rev<Iter<Line>>> {
-        self.before.iter().chain(self.after.iter().rev())
+        self.prevs.push(self.cur.break_line());
     }
 
     /// Convert to a string.
@@ -124,12 +144,12 @@ impl Buffer {
     #[allow(dead_code)]
     pub fn to_string(&self) -> String {
         let mut res = String::with_capacity(1024);
-        for ref v in &self.before {
+        for ref v in &self.prevs {
             res.push_str(&v.to_string());
             res.push('\n');
         }
-        for v in (0..self.after.len()).rev() {
-            res.push_str(&self.after[v].to_string());
+        for v in self.nexts.iter().rev() {
+            res.push_str(&v.to_string());
             res.push('\n');
         }
         res
@@ -139,15 +159,9 @@ impl Buffer {
 #[test]
 fn test_buffer_from_file() {
     let mut a = String::with_capacity(1024);
-    File::open("Cargo.toml").unwrap().read_to_string(&mut a).unwrap();
+    fs::File::open("Cargo.toml").unwrap().read_to_string(&mut a).unwrap();
     let buf = Buffer::from_file("Cargo.toml").unwrap();
     assert_eq!(a, buf.to_string());
-}
-
-#[test]
-fn test_get_line() {
-    let buf = Buffer::from_file("LICENSE").unwrap();
-    assert_eq!(buf.iter().nth(3).unwrap().to_string().len(), 68);
 }
 
 #[test]
@@ -163,13 +177,13 @@ fn test_breakline() {
     buf.break_line();
     assert_eq!(buf.to_string(), "\n\n");
     let mut buf = Buffer::new();
-    buf.after[0] = Line::from_string(&String::from("Hello, world!"));
+    buf.nexts[0] = Line::from_string(&String::from("Hello, world!"));
     buf.break_line();
     assert_eq!(buf.to_string(), "Hello, world!\n\n");
     let mut buf = Buffer::new();
-    buf.after[0] = Line::from_string(&String::from("Hello, world!"));
+    buf.nexts[0] = Line::from_string(&String::from("Hello, world!"));
     for _ in 0..5 {
-        buf.after[0].move_cursor(false);
+        buf.nexts[0].move_cursor(false);
     }
     buf.break_line();
     assert_eq!(buf.to_string(), "Hello, w\norld!\n");
