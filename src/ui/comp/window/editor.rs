@@ -10,7 +10,7 @@ pub struct Editor {
     line_number: LineNumber,
     buffer: buf::Buffer,
     cursor: Cursor,
-    cursor_x: usize,
+    vscroll_off: usize,  // offset for vertical scroll
     x_off: usize,
     width: usize,
     height: usize,
@@ -32,12 +32,12 @@ impl Component for Editor {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(&self.buffer, self.x_off, 0);
+        buffer.draw_buffer(&self.buffer, self.x_off, 0, self.vscroll_off);
         Response {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
                 Sequence::Show(true),
-                Sequence::Move(Cursor { x: self.x_off + self.cursor.x, y: 0 }),
+                self.move_cursor(),
             ]
         }
     }
@@ -49,15 +49,14 @@ impl Component for Editor {
                 self.buffer.move_cursor(x, y);
                 self.cursor.x = self.buffer.get_x();
                 self.cursor.y = self.buffer.get_y();
-                if x != 0 {
-                    self.cursor_x = self.cursor.x;
-                }
-                Response {
-                    refresh: None,
-                    sequence: vec![Sequence::Move(Cursor {
-                        x: self.cursor.x + self.x_off,
-                        y: self.cursor.y,
-                    })],
+                if self.cursor.y - self.vscroll_off >= self.height {
+                    self.vscroll_off = self.cursor.y - self.height + 1;
+                    self.refresh()
+                } else {
+                    Response {
+                        refresh: None,
+                        sequence: vec![self.move_cursor()],
+                    }
                 }
             }
             Event::Char { c } => {
@@ -89,14 +88,21 @@ impl Editor {
         cur
     }
 
+    fn move_cursor(&self) -> Sequence {
+        Sequence::Move(Cursor {
+            x: self.cursor.x + self.x_off,
+            y: self.cursor.y - self.vscroll_off,
+        })
+    }
+
     pub fn new() -> Editor {
         Editor {
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             line_number: LineNumber::new(),
             cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
-            cursor_x: usize::max_value(),
             buffer: buf::Buffer::new(),
             x_off: usize::max_value(),
+            vscroll_off: usize::max_value(),
             width: usize::max_value(),
             height: usize::max_value(),
         }
@@ -107,9 +113,9 @@ impl Editor {
         let mut editor = Editor::new();
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
-        editor.cursor_x = 0;
         editor.line_number.set_max(100);
         editor.buffer.set_cursor(0, 0);
+        editor.vscroll_off = 0;
         Ok(Child {
             x: usize::max_value(),
             y: usize::max_value(),
