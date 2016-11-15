@@ -3,7 +3,7 @@ use ui::comp::{Component};
 
 #[allow(dead_code)]
 pub struct LineNumber {
-    current: usize,
+    pub current: usize,
     max: usize,
     width: usize,
     height: usize,
@@ -19,7 +19,12 @@ impl Component for LineNumber {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.width, self.height);
         for (i, line) in buffer.lines.iter_mut().enumerate() {
-            line.draw_str(&format!("{:width$}", i, width = self.width - 1), 0);
+            line.draw_str(
+                &format!(
+                    "{:width$}",
+                    i + self.current,
+                    width = self.width - 1),
+                0);
         }
         Response::refresh(0, 0, buffer)
     }

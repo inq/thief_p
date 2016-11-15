@@ -10,7 +10,6 @@ pub struct Editor {
     line_number: LineNumber,
     buffer: buf::Buffer,
     cursor: Cursor,
-    vscroll_off: usize,  // offset for vertical scroll
     x_off: usize,
     width: usize,
     height: usize,
@@ -32,7 +31,7 @@ impl Component for Editor {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(&self.buffer, self.x_off, 0, self.vscroll_off);
+        buffer.draw_buffer(&self.buffer, self.x_off, 0, self.line_number.current);
         Response {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
@@ -49,13 +48,13 @@ impl Component for Editor {
                 self.buffer.move_cursor(x, y);
                 self.cursor.x = self.buffer.get_x();
                 self.cursor.y = self.buffer.get_y();
-                if self.cursor.y < self.vscroll_off {
+                if self.cursor.y < self.line_number.current {
                     // Scroll upward
-                    self.vscroll_off = self.cursor.y;
+                    self.line_number.current = self.cursor.y;
                     self.refresh()
-                } else if self.cursor.y - self.vscroll_off >= self.height {
+                } else if self.cursor.y - self.line_number.current >= self.height {
                     // Scroll downward
-                    self.vscroll_off = self.cursor.y - self.height + 1;
+                    self.line_number.current = self.cursor.y - self.height + 1;
                     self.refresh()
                 } else {
                     // Do not scroll
@@ -97,7 +96,7 @@ impl Editor {
     fn move_cursor(&self) -> Sequence {
         Sequence::Move(Cursor {
             x: self.cursor.x + self.x_off,
-            y: self.cursor.y - self.vscroll_off,
+            y: self.cursor.y - self.line_number.current,
         })
     }
 
@@ -108,7 +107,6 @@ impl Editor {
             cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
             buffer: buf::Buffer::new(),
             x_off: usize::max_value(),
-            vscroll_off: usize::max_value(),
             width: usize::max_value(),
             height: usize::max_value(),
         }
@@ -120,8 +118,8 @@ impl Editor {
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
+        editor.line_number.current = 0;
         editor.buffer.set_cursor(0, 0);
-        editor.vscroll_off = 0;
         Ok(Child {
             x: usize::max_value(),
             y: usize::max_value(),
