@@ -40,10 +40,12 @@ impl Buffer {
     }
 
     /// Draw the text buffer here.
-    pub fn draw_buffer(&mut self, src: &buf::Buffer, x: usize, y: usize) {
-        for (i, line) in src.iter().enumerate() {
+    pub fn draw_buffer(&mut self, src: &buf::Buffer, x: usize, y: usize, off: usize) {
+        for i in 0..src.get_line_num() {
             if y + i < self.height {
-                self.lines[y + i].draw_buffer(line, x)
+                if let Some(line) = src.get(i + off) {
+                    self.lines[y + i].draw_buffer(line, x)
+                }
             }
         }
     }

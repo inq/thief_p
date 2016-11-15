@@ -31,12 +31,12 @@ impl Component for Editor {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(&self.buffer, self.x_off, 0);
+        buffer.draw_buffer(&self.buffer, self.x_off, 0, self.line_number.current);
         Response {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
                 Sequence::Show(true),
-                Sequence::Move(Cursor { x: self.x_off + self.cursor.x, y: 0 }),
+                self.move_cursor(),
             ]
         }
     }
@@ -45,24 +45,23 @@ impl Component for Editor {
     fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Move { x, y } => {
-                if x > 0 {
-                    self.cursor.x += 1;
-                }
-                if x < 0 && self.cursor.x > 0 {
-                    self.cursor.x -= 1;
-                };
-                if y > 0 {
-                    self.cursor.y += 1;
-                }
-                if y < 0 && self.cursor.y > 0 {
-                    self.cursor.y -= 1;
-                };
                 self.buffer.move_cursor(x, y);
-                let mut cur = self.cursor.clone();
-                cur.x += self.x_off;
-                Response {
-                    refresh: None,
-                    sequence: vec![Sequence::Move(cur)],
+                self.cursor.x = self.buffer.get_x();
+                self.cursor.y = self.buffer.get_y();
+                if self.cursor.y < self.line_number.current {
+                    // Scroll upward
+                    self.line_number.current = self.cursor.y;
+                    self.refresh()
+                } else if self.cursor.y - self.line_number.current >= self.height {
+                    // Scroll downward
+                    self.line_number.current = self.cursor.y - self.height + 1;
+                    self.refresh()
+                } else {
+                    // Do not scroll
+                    Response {
+                        refresh: None,
+                        sequence: vec![self.move_cursor()],
+                    }
                 }
             }
             Event::Char { c } => {
@@ -94,26 +93,15 @@ impl Editor {
         cur
     }
 
-    #[allow(dead_code)]
-    pub fn new() -> Child {
-        Child {
-            x: usize::max_value(),
-            y: usize::max_value(),
-            comp: Box::new(Editor {
-                brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
-                line_number: LineNumber::new(),
-                cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
-                buffer: buf::Buffer::new(),
-                x_off: usize::max_value(),
-                width: usize::max_value(),
-                height: usize::max_value(),
-            }),
-        }
+    fn move_cursor(&self) -> Sequence {
+        Sequence::Move(Cursor {
+            x: self.cursor.x + self.x_off,
+            y: self.cursor.y - self.line_number.current,
+        })
     }
 
-    /// Initializer with file.
-    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
-        let mut editor = Editor {
+    pub fn new() -> Editor {
+        Editor {
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             line_number: LineNumber::new(),
             cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
@@ -121,10 +109,16 @@ impl Editor {
             x_off: usize::max_value(),
             width: usize::max_value(),
             height: usize::max_value(),
-        };
+        }
+    }
+
+    /// Initializer with file.
+    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
+        let mut editor = Editor::new();
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
+        editor.line_number.current = 0;
         editor.buffer.set_cursor(0, 0);
         Ok(Child {
             x: usize::max_value(),
