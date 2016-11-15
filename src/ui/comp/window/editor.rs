@@ -49,10 +49,16 @@ impl Component for Editor {
                 self.buffer.move_cursor(x, y);
                 self.cursor.x = self.buffer.get_x();
                 self.cursor.y = self.buffer.get_y();
-                if self.cursor.y - self.vscroll_off >= self.height {
+                if self.cursor.y < self.vscroll_off {
+                    // Scroll upward
+                    self.vscroll_off = self.cursor.y;
+                    self.refresh()
+                } else if self.cursor.y - self.vscroll_off >= self.height {
+                    // Scroll downward
                     self.vscroll_off = self.cursor.y - self.height + 1;
                     self.refresh()
                 } else {
+                    // Do not scroll
                     Response {
                         refresh: None,
                         sequence: vec![self.move_cursor()],
