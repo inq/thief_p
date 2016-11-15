@@ -6,6 +6,7 @@ use ui::comp::{Component, Child};
 use util::ResultBox;
 use super::LineNumber;
 
+#[derive(Default)]
 pub struct Editor {
     line_number: LineNumber,
     buffer: buf::Buffer,
@@ -59,8 +60,8 @@ impl Component for Editor {
                 } else {
                     // Do not scroll
                     Response {
-                        refresh: None,
                         sequence: vec![self.move_cursor()],
+                        ..Default::default()
                     }
                 }
             }
@@ -72,16 +73,16 @@ impl Component for Editor {
                 after_cursor.push(c);
                 after_cursor.push_str(&self.buffer.after_cursor(req));
                 Response {
-                    refresh: None,
                     sequence: vec![
                         Sequence::Show(false),
                         Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
                         Sequence::Move(self.cursor_translated()),
                         Sequence::Show(true),
-                    ]
+                    ],
+                    ..Default::default()
                 }
             }
-            _ => Response::empty()
+            _ => Default::default()
         }
     }
 }
@@ -100,15 +101,11 @@ impl Editor {
         })
     }
 
+    /// Basic initializer.
     pub fn new() -> Editor {
         Editor {
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
-            line_number: LineNumber::new(),
-            cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
-            buffer: buf::Buffer::new(),
-            x_off: usize::max_value(),
-            width: usize::max_value(),
-            height: usize::max_value(),
+            ..Default::default()
         }
     }
 
@@ -120,11 +117,7 @@ impl Editor {
         editor.line_number.set_max(100);
         editor.line_number.current = 0;
         editor.buffer.set_cursor(0, 0);
-        Ok(Child {
-            x: usize::max_value(),
-            y: usize::max_value(),
-            comp: Box::new(editor),
-        })
+        Ok(Child::new(Box::new(editor)))
     }
 
     fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {

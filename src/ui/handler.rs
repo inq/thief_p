@@ -9,9 +9,8 @@ pub struct Handler {
 
 impl Handler {
     pub fn new() -> Handler {
-        let scr = Screen::new();
         Handler {
-            screen: scr,
+            screen: Screen::new(),
             quit: false,
         }
     }

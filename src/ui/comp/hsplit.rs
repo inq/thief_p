@@ -2,6 +2,7 @@ use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
 use ui::comp::{EditWindow, Parent, Child, Component};
 
+#[derive(Default)]
 pub struct HSplit {
     windows: Vec<Child>,
     focused: usize,
@@ -67,18 +68,9 @@ impl HSplit {
     }
 
     pub fn new(windows: usize) -> Child {
-        let mut res = HSplit {
-            windows: vec![],
-            focused: usize::max_value(),
-            width: usize::max_value(),
-            height: usize::max_value(),
-        };
+        let mut res: HSplit = Default::default();
         res.set_children(windows);
-        Child {
-            x: usize::max_value(),
-            y: usize::max_value(),
-            comp: Box::new(res),
-        }
+        Child::new(Box::new(res))
     }
 }
 

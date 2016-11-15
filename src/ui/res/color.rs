@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Color {
     r: u8,
     g: u8,
@@ -11,7 +11,7 @@ impl Color {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Brush {
     fg: Color,
     bg: Color,

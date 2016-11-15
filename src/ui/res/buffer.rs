@@ -2,7 +2,6 @@ use buf;
 use ui::res::color::Brush;
 use ui::res::line::Line;
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Buffer {
     pub lines: Vec<Line>,

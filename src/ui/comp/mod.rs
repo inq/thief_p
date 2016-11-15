@@ -15,7 +15,7 @@ pub trait Component {
     fn resize(&mut self, width: usize, height: usize) -> (usize, usize);
     fn refresh(&self) -> Response;
     fn handle(&mut self, _: Event) -> Response {
-        Response::empty()
+        Default::default()
     }
 }
 
@@ -78,6 +78,14 @@ pub struct Child {
 }
 
 impl Child {
+    pub fn new(b: Box<Component>) -> Child {
+        Child {
+            comp: b,
+            x: Default::default(),
+            y: Default::default(),
+        }
+    }
+
     pub fn refresh(&self) -> Response {
         let mut resp = self.comp.refresh();
         resp.translate(self.x, self.y);

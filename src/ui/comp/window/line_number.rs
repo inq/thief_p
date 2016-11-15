@@ -1,7 +1,7 @@
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component};
 
-#[allow(dead_code)]
+#[derive(Default)]
 pub struct LineNumber {
     pub current: usize,
     max: usize,
@@ -34,14 +34,5 @@ impl LineNumber {
     pub fn set_max(&mut self, max: usize) {
         self.max = max;
         self.width = format!("{}", self.max).len() + 1;
-    }
-
-    pub fn new() -> LineNumber {
-        LineNumber {
-            current: usize::max_value(),
-            max: usize::max_value(),
-            width: usize::max_value(),
-            height: usize::max_value(),
-        }
     }
 }

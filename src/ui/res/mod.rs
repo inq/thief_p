@@ -2,14 +2,19 @@ mod buffer;
 mod color;
 mod char;
 mod line;
-mod cursor;
 
 pub use self::buffer::Buffer;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
-pub use self::cursor::Cursor;
 
+#[derive(Debug, Default, Clone)]
+pub struct Cursor {
+    pub x: usize,
+    pub y: usize,
+}
+
+#[derive(Default)]
 pub struct Response {
     pub refresh: Option<Refresh>,
     pub sequence: Vec<Sequence>,
@@ -30,16 +35,11 @@ pub enum Sequence {
 }
 
 impl Response {
-    /// Empty response.
-    pub fn empty() -> Response {
-        Response { refresh: None, sequence: vec![] }
-    }
-
     /// Shorthand for quit event.
     pub fn quit() -> Response {
         Response {
-            refresh: None,
             sequence: vec![Sequence::Quit],
+            ..Default::default()
         }
     }
 
@@ -47,7 +47,7 @@ impl Response {
     pub fn refresh(x: usize, y: usize, buf: Buffer) -> Response {
         Response {
             refresh: Some(Refresh { x: x, y: y, buf: buf }),
-            sequence: vec![],
+            ..Default::default()
         }
     }
 

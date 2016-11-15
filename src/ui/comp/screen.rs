@@ -50,16 +50,16 @@ impl Screen {
             self.overlaps.push(bar);
             res
         } else {
-            Response::empty()
+            Default::default()
         }
     }
 
     pub fn new() -> Screen {
         Screen {
             hsplit: HSplit::new(1),
-            overlaps: vec![],
-            width: usize::max_value(),
-            height: usize::max_value(),
+            overlaps: Default::default(),
+            width: Default::default(),
+            height: Default::default(),
         }
     }
 }

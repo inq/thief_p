@@ -5,14 +5,16 @@ pub struct Output {
     offset: usize,
 }
 
-impl Output {
-    pub fn new() -> Output {
+impl Default for Output {
+    fn default() -> Output {
         Output {
             buffer: String::with_capacity(4096),
-            offset: 0,
+            offset: Default::default(),
         }
     }
+}
 
+impl Output {
     pub fn clear(&mut self) {
         self.buffer.clear();
         self.offset = 0;

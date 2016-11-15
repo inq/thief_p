@@ -12,17 +12,18 @@ pub struct Buffer {
 
 const BUFSIZE: usize = 80;
 
-impl Buffer {
-    /// Construct a new buffer from a line.
-    fn new_with_line(line: Line) -> Buffer {
+impl Default for Buffer {
+    fn default() -> Buffer {
         Buffer {
-            cur: line,
-            x: 0,
+            cur: Default::default(),
+            x: Default::default(),
             prevs: Vec::with_capacity(BUFSIZE),
             nexts: Vec::with_capacity(BUFSIZE),
         }
     }
+}
 
+impl Buffer {
     /// Return the ith element.
     pub fn get(&self, i: usize) -> Option<&Line> {
         if i == self.prevs.len() {
@@ -37,11 +38,6 @@ impl Buffer {
     /// Return the total number of lines.
     pub fn get_line_num(&self) -> usize {
         1 + self.prevs.len() + self.nexts.len()
-    }
-
-    /// Construct a new empty buffer.
-    pub fn new() -> Buffer {
-        Buffer::new_with_line(Line::new())
     }
 
     /// Get the x position of the cursor.
@@ -64,12 +60,11 @@ impl Buffer {
                 prevs.push(Line::from_string(&s));
             }
         }
-        let cur = prevs.pop().unwrap_or(Line::new());
+        let cur = prevs.pop().unwrap_or_default();;
         Ok(Buffer {
-            cur: cur,
-            x: 0,
             prevs: prevs,
-            nexts: vec![],
+            cur: cur,
+            ..Default::default()
         })
     }
 
@@ -166,21 +161,21 @@ fn test_buffer_from_file() {
 
 #[test]
 fn test_insert() {
-    let mut buf = Buffer::new();
+    let mut buf: Buffer = Default::default();
     buf.insert('h');
     assert_eq!(buf.to_string(), "h\n");
 }
 
 #[test]
 fn test_breakline() {
-    let mut buf = Buffer::new();
+    let mut buf: Buffer = Default::default();
     buf.break_line();
     assert_eq!(buf.to_string(), "\n\n");
-    let mut buf = Buffer::new();
+    let mut buf: Buffer = Default::default();
     buf.nexts[0] = Line::from_string(&String::from("Hello, world!"));
     buf.break_line();
     assert_eq!(buf.to_string(), "Hello, world!\n\n");
-    let mut buf = Buffer::new();
+    let mut buf: Buffer = Default::default();
     buf.nexts[0] = Line::from_string(&String::from("Hello, world!"));
     for _ in 0..5 {
         buf.nexts[0].move_cursor(false);

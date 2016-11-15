@@ -12,15 +12,17 @@ pub struct Line {
 
 const BUFSIZE: usize = 80;
 
-impl Line {
-    pub fn new() -> Line {
+impl Default for Line {
+    fn default() -> Line {
         Line {
             prevs: String::with_capacity(BUFSIZE),
             nexts: String::with_capacity(BUFSIZE),
-            x: 0,
+            x: Default::default(),
         }
     }
+}
 
+impl Line {
     /// Return the terminal x of the cursor.
     pub fn get_x(&self) -> usize {
        self.x
@@ -65,7 +67,7 @@ impl Line {
 
     /// Construct from a string.
     pub fn from_string(str: &String) -> Line {
-        let mut res = Line::new();
+        let mut res: Line = Default::default();
         res.push_before(str);
         res
     }
@@ -116,7 +118,7 @@ impl Line {
 
 #[test]
 fn test_basic_operations() {
-    let mut t = Line::new();
+    let mut t: Line = Default::default();
     t.push_before(&String::from("hello"));
     assert_eq!(t.to_string(), "hello");
     t.push_after(&String::from("world"));
@@ -125,7 +127,7 @@ fn test_basic_operations() {
 
 #[test]
 fn test_move_cursor() {
-    let mut t = Line::new();
+    let mut t: Line = Default::default();
     t.push_before(&String::from("hello"));
     t.push_after(&String::from("world"));
     for _ in 0..5 {
@@ -142,7 +144,7 @@ fn test_move_cursor() {
 
 #[test]
 fn test_insert() {
-    let mut t = Line::new();
+    let mut t: Line = Default::default();
     t.insert('h');
     assert_eq!(t.to_string(), "h");
     t.push_before(&String::from("ell"));
@@ -154,7 +156,7 @@ fn test_insert() {
 
 #[test]
 fn test_break_line() {
-    let mut t = Line::new();
+    let mut t: Line = Default::default();
     t.push_before(&String::From("hello"));
     t.push_after(&String::from("world"));
     let u = t.break_line();

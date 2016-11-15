@@ -17,6 +17,7 @@ def_error! {
     FSetfl: "fcntl(F_SETFL) returned -1",
 }
 
+#[derive(Default)]
 pub struct Term {
     buffering: bool,
     initial_cursor: Option<Cursor>,
@@ -27,12 +28,7 @@ pub struct Term {
 impl Term {
     pub fn new() -> ResultBox<Term> {
         allow_once!();
-        let mut term = Term {
-            buffering: true,
-            initial_cursor: None,
-            brush: None,
-            output: Output::new(),
-        };
+        let mut term: Term = Default::default();
         term.echo(false)?;
         term.query_cursor();
         term.buffering(false)?;
