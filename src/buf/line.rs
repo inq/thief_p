@@ -1,11 +1,13 @@
 use std::iter::{Chain, Rev};
 use std::str::Chars;
 use std::mem;
+use util;
 
 #[derive(Debug)]
 pub struct Line {
     before: String,
     after: String,
+    offset: usize,
 }
 
 const BUFSIZE: usize = 80;
@@ -15,20 +17,23 @@ impl Line {
         Line {
             before: String::with_capacity(BUFSIZE),
             after: String::with_capacity(BUFSIZE),
+            offset: 0,
         }
     }
 
-    /// TODO: must consider unicode width
-    pub fn offset(&self) -> usize {
-       self.before.len()
+    /// Return the terminal offset of the cursor.
+    pub fn get_offset(&self) -> usize {
+       self.offset
     }
 
     /// Break the line.
     pub fn break_line(&mut self) -> Line {
         let res = mem::replace(&mut self.before, String::with_capacity(BUFSIZE));
+        let off = res.len();
         Line {
             before: res,
             after: String::with_capacity(BUFSIZE),
+            offset: off,
         }
     }
 
@@ -49,6 +54,7 @@ impl Line {
 
     /// Insert a char.
     pub fn insert(&mut self, c: char) {
+        self.offset += util::term_width(c);
         self.before.push(c);
     }
 
@@ -66,6 +72,7 @@ impl Line {
 
     /// Append string before cursor.
     pub fn append_before_cursor(&mut self, str: &String) {
+        self.offset += str.chars().map({|c| util::term_width(c)}).sum();
         self.before.push_str(str);
     }
 
@@ -87,6 +94,11 @@ impl Line {
         };
         match from.pop() {
             Some(c) => {
+                if right {
+                    self.offset += util::term_width(c);
+                } else {
+                    self.offset -= util::term_width(c);
+                }
                 to.push(c);
                 true
             }

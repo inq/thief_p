@@ -51,33 +51,37 @@ impl Buffer {
     }
 
     /// Move up the cursor.
-    fn move_up(&mut self) {
+    fn move_up(&mut self, offset: usize) {
         if let Some(l) = self.before.pop() {
             self.after.push(l);
+            let t = self.after.len();
+            self.after[t - 1].set_cursor(offset);
         }
     }
 
     /// Move down the cursor.
-    fn move_down(&mut self) {
+    fn move_down(&mut self, offset: usize) {
         if let Some(l) = self.after.pop() {
             self.before.push(l);
+            let t = self.after.len();
+            self.after[t - 1].set_cursor(offset);
         }
     }
 
     /// Set the cursor by the given coordinate.
     pub fn set_cursor(&mut self, x: usize, y: usize) {
         while self.before.len() > y {
-            self.move_up();
+            self.move_up(x);
         }
         while self.before.len() < y && self.before.len() > 0 {
-            self.move_down();
+            self.move_down(x);
         }
         let loc = self.after.len();
         self.after[loc - 1].set_cursor(x);
     }
 
     /// Move cursor.
-    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> bool {
+    pub fn move_cursor(&mut self, x: usize, dx: i8, dy: i8) -> usize {
         let loc = self.after.len() - 1;
         if dx != 0 {
             if dx > 0 {
@@ -87,16 +91,14 @@ impl Buffer {
             }
         }
         if dy != 0 {
-            let off = self.after[loc].offset();
             if dy > 0 {
-                self.move_down();
+                self.move_down(x);
             } else {
-                self.move_up();
+                self.move_up(x);
             }
-            let loc = self.after.len() - 1;
-            self.after[loc].set_cursor(off);
         }
-        true
+        let loc = self.after.len() - 1;
+        self.after[loc].get_offset()
     }
 
     /// Insert a char at the location of the cursur.

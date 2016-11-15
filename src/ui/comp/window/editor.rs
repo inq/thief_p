@@ -10,6 +10,7 @@ pub struct Editor {
     line_number: LineNumber,
     buffer: buf::Buffer,
     cursor: Cursor,
+    cursor_x: usize,
     x_off: usize,
     width: usize,
     height: usize,
@@ -45,24 +46,22 @@ impl Component for Editor {
     fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Move { x, y } => {
-                if x > 0 {
-                    self.cursor.x += 1;
-                }
-                if x < 0 && self.cursor.x > 0 {
-                    self.cursor.x -= 1;
-                };
                 if y > 0 {
                     self.cursor.y += 1;
                 }
                 if y < 0 && self.cursor.y > 0 {
                     self.cursor.y -= 1;
                 };
-                self.buffer.move_cursor(x, y);
-                let mut cur = self.cursor.clone();
-                cur.x += self.x_off;
+                self.cursor.x = self.buffer.move_cursor(self.cursor_x, x, y);
+                if x != 0 {
+                    self.cursor_x = self.cursor.x;
+                }
                 Response {
                     refresh: None,
-                    sequence: vec![Sequence::Move(cur)],
+                    sequence: vec![Sequence::Move(Cursor {
+                        x: self.cursor.x + self.x_off,
+                        y: self.cursor.y,
+                    })],
                 }
             }
             Event::Char { c } => {
@@ -94,36 +93,25 @@ impl Editor {
         cur
     }
 
-    #[allow(dead_code)]
-    pub fn new() -> Child {
-        Child {
-            x: usize::max_value(),
-            y: usize::max_value(),
-            comp: Box::new(Editor {
-                brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
-                line_number: LineNumber::new(),
-                cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
-                buffer: buf::Buffer::new(),
-                x_off: usize::max_value(),
-                width: usize::max_value(),
-                height: usize::max_value(),
-            }),
+    pub fn new() -> Editor {
+        Editor {
+            brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
+            line_number: LineNumber::new(),
+            cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
+            cursor_x: usize::max_value(),
+            buffer: buf::Buffer::new(),
+            x_off: usize::max_value(),
+            width: usize::max_value(),
+            height: usize::max_value(),
         }
     }
 
     /// Initializer with file.
     pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
-        let mut editor = Editor {
-            brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
-            line_number: LineNumber::new(),
-            cursor: Cursor { x: usize::max_value(), y: usize::max_value() },
-            buffer: buf::Buffer::new(),
-            x_off: usize::max_value(),
-            width: usize::max_value(),
-            height: usize::max_value(),
-        };
+        let mut editor = Editor::new();
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
+        editor.cursor_x = 0;
         editor.line_number.set_max(100);
         editor.buffer.set_cursor(0, 0);
         Ok(Child {
