@@ -20,11 +20,11 @@ pub struct Handler {
 
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
-        let term = try!(Term::new());
-        try!(::io::signal::init());
+        let term = Term::new()?;
+        ::io::signal::init()?;
 
-        let (w, h) = try!(term.get_size());
-        try!(ui.send(Event::Resize { w: w, h: h }));
+        let (w, h) = term.get_size()?;
+        ui.send(Event::Resize { w: w, h: h })?;
 
         Ok(Handler {
             term: term,
@@ -34,12 +34,12 @@ impl Handler {
     }
 
     fn handle_stdout(&mut self) -> ResultBox<()> {
-        try!(self.term.consume_output_buffer());
+        self.term.consume_output_buffer()?;
         Ok(())
     }
 
     fn handle_stdin(&mut self) -> ResultBox<()> {
-        let ipt = try!(self.term.read(32));
+        let ipt = self.term.read(32)?;
 
         if self.ipt_buf.len() + ipt.len() > self.ipt_buf.capacity() {
             return Err(From::from(Error::OutOfCapacity));
@@ -54,7 +54,7 @@ impl Handler {
                     if let Event::Pair { x, y } = e {
                         self.term.initial_cursor(&Cursor { x: x, y: y });
                     }
-                    try!(self.ui.send(e))
+                    self.ui.send(e)?
                 }
                 None => done = true,
             }
@@ -66,8 +66,8 @@ impl Handler {
     }
 
     fn handle_sigwinch(&mut self) -> ResultBox<()> {
-        let (w, h) = try!(self.term.get_size());
-        try!(self.ui.send(Event::Resize { w: w, h: h }));
+        let (w, h) = self.term.get_size()?;
+        self.ui.send(Event::Resize { w: w, h: h })?;
         Ok(())
     }
 
@@ -89,7 +89,7 @@ impl Handler {
                     }
                     Sequence::Quit => {
                         self.ui.join().unwrap();
-                        try!(self.term.release());
+                        self.term.release()?;
                         return Err(From::from(Error::Exit));
                     }
                 }
@@ -99,7 +99,7 @@ impl Handler {
     }
 
     pub fn handle(&mut self, ident: usize) -> ResultBox<()> {
-        try!(self.handle_timer());
+        self.handle_timer()?;
         match ident as libc::c_int {
             libc::STDOUT_FILENO => self.handle_stdout(),
             libc::STDIN_FILENO => self.handle_stdin(),
@@ -109,8 +109,8 @@ impl Handler {
     }
 
     pub fn run(&mut self) -> ResultBox<()> {
-        let mut kqueue = try!(Kqueue::new());
-        try!(kqueue.init());
+        let mut kqueue = Kqueue::new()?;
+        kqueue.init()?;
         kqueue.kevent(self)
     }
 }

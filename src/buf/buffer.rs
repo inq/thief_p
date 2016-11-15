@@ -31,7 +31,7 @@ impl Buffer {
             before: Vec::with_capacity(BUFSIZE),
             after: Vec::with_capacity(BUFSIZE),
         };
-        let f = try!(File::open(s));
+        let f = File::open(s)?;
         let br = BufReader::new(&f);
 
         for line in br.lines() {

@@ -33,21 +33,21 @@ impl Term {
             brush: None,
             output: Output::new(),
         };
-        try!(term.echo(false));
+        term.echo(false)?;
         term.query_cursor();
-        try!(term.buffering(false));
-        try!(io::stdout().flush());
+        term.buffering(false)?;
+        io::stdout().flush()?;
         Ok(term)
     }
 
     pub fn release(&mut self) -> ResultBox<()> {
-        try!(self.buffering(true));
-        try!(self.echo(true));
+        self.buffering(true)?;
+        self.echo(true)?;
         if let Some(ref cursor) = self.initial_cursor.clone() {
             self.move_cursor(cursor.x + 1, cursor.y + 1);
         }
         self.rmcup();
-        try!(io::stdout().flush());
+        io::stdout().flush()?;
         Ok(())
     }
 
@@ -142,7 +142,7 @@ impl Term {
             }
             buf.set_len(res as usize);
         }
-        Ok(try!(String::from_utf8(buf)))
+        Ok(String::from_utf8(buf)?)
     }
 
     fn buffering(&mut self, on: bool) -> Result<()> {

@@ -25,7 +25,7 @@ impl Output {
             self.offset += offset;
         }
         if self.offset == self.buffer.len() {
-            try!(io::stdout().flush());
+            io::stdout().flush()?;
             self.clear();
         }
         Ok(())

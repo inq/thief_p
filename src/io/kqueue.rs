@@ -85,9 +85,9 @@ impl Kqueue {
 
     pub fn kevent(&mut self, handler: &mut Handler) -> ResultBox<()> {
         loop {
-            try!(self.fetch_events());
+            self.fetch_events()?;
             for e in self.events.iter() {
-                try!(handler.handle(e.ident as usize));
+                handler.handle(e.ident as usize)?;
             }
         }
     }

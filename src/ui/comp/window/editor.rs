@@ -122,7 +122,7 @@ impl Editor {
             width: usize::max_value(),
             height: usize::max_value(),
         };
-        try!(editor.load_file(s));
+        editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
         editor.buffer.set_cursor(0, 0);
@@ -134,7 +134,7 @@ impl Editor {
     }
 
     fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {
-        self.buffer = try!(buf::Buffer::from_file(s));
+        self.buffer = buf::Buffer::from_file(s)?;
         Ok(())
     }
 }
