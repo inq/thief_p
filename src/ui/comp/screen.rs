@@ -9,16 +9,7 @@ pub struct Screen {
     overlaps: Vec<ScreenChild>,
 }
 
-pub enum ScreenChild {
-    CommandBar(CommandBar),
-    HSplit(HSplit),
-}
-
-impl Default for ScreenChild {
-    fn default() -> ScreenChild {
-        ScreenChild::HSplit(Default::default())
-    }
-}
+def_child!(ScreenChild <- HSplit, CommandBar);
 
 impl Component for Screen {
     has_view!();
@@ -80,43 +71,5 @@ impl Parent for Screen {
         vec![&self.hsplit].into_iter()
             .chain(self.overlaps.iter())
             .collect()
-    }
-}
-
-
-impl Component for ScreenChild {
-    fn get_view_mut(&mut self) -> &mut View {
-        match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.get_view_mut(),
-            ScreenChild::HSplit(ref mut sc) => sc.get_view_mut(),
-        }
-    }
-
-    fn get_view(&self) -> &View {
-        match *self {
-            ScreenChild::CommandBar(ref sc) => sc.get_view(),
-            ScreenChild::HSplit(ref sc) => sc.get_view(),
-        }
-    }
-
-    fn on_resize(&mut self) {
-        match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.on_resize(),
-            ScreenChild::HSplit(ref mut sc) => sc.on_resize(),
-        }
-    }
-
-    fn refresh(&self) -> Response {
-        match *self {
-            ScreenChild::CommandBar(ref sc) => sc.refresh(),
-            ScreenChild::HSplit(ref sc) => sc.refresh(),
-        }
-    }
-
-    fn handle(&mut self, e: Event) -> Response {
-        match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.handle(e),
-            ScreenChild::HSplit(ref mut sc) => sc.handle(e),
-        }
     }
 }
