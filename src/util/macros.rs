@@ -1,3 +1,12 @@
+/// Boilerplate for ui elements which have a view.
+#[macro_export]
+macro_rules! has_view {
+    () => {
+        fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+        fn get_view(&self) -> &View { &self.view }
+    }
+}
+
 #[macro_export]
 macro_rules! def_error {
     ( $($x:ident: $y:expr,)* ) => {

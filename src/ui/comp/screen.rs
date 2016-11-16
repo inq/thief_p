@@ -21,8 +21,7 @@ impl Default for ScreenChild {
 }
 
 impl Component for Screen {
-    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-    fn get_view(&self) -> &View { &self.view }
+    has_view!();
 
     fn on_resize(&mut self) {
         self.hsplit.resize(1, 1, self.view.width - 2, self.view.height - 2);

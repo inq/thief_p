@@ -10,8 +10,7 @@ pub struct HSplit {
 }
 
 impl Component for HSplit {
-    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-    fn get_view(&self) -> &View { &self.view }
+    has_view!();
 
     /// Resize each child windows.
     fn on_resize(&mut self) {

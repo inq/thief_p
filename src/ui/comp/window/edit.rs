@@ -10,8 +10,7 @@ pub struct Edit {
 }
 
 impl Component for Edit {
-    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-    fn get_view(&self) -> &View { &self.view }
+    has_view!();
 
     fn on_resize(&mut self) {
         self.editor.resize(0, 0, self.view.width, self.view.height);

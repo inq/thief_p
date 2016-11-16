@@ -9,8 +9,7 @@ pub struct LineNumber {
 }
 
 impl Component for LineNumber {
-    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-    fn get_view(&self) -> &View { &self.view }
+    has_view!();
 
     /// Ignore width & force the width to be its own size.
     fn on_resize(&mut self) {

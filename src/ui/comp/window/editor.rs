@@ -17,8 +17,7 @@ pub struct Editor {
 }
 
 impl Component for Editor {
-    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-    fn get_view(&self) -> &View { &self.view }
+    has_view!();
 
     fn on_resize(&mut self) {
         self.line_number.resize(0, 0, Default::default(), self.view.height);
