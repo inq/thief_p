@@ -9,20 +9,27 @@ macro_rules! has_view {
 
 #[macro_export]
 macro_rules! def_child_func {
+    ( @inner $h: ident, $x:ident, [$($arg:ident),*] ) => {
+        $h.$x($($arg,)*)
+    };
+    ( @outer $s:ident, $x:ident, [$($vs:ident),*], $rem:tt ) => {
+        match *$s {
+            $( ScreenChild::$vs(ref sc) => def_child_func!(@inner sc, $x, $rem) ),*
+        }
+    };
+    ( @outer_mut $s:ident, $x:ident, [$($vs:ident),*], $rem:tt ) => {
+        match *$s {
+            $( ScreenChild::$vs(ref mut sc) => def_child_func!(@inner sc, $x, $rem) ),*
+        }
+    };
     ( mut $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
         fn $x(&mut self, $( $arg: $argt,)*) -> $y {
-            match *self {
-                ScreenChild::CommandBar(ref mut sc) => sc.$x( $($arg,)* ),
-                ScreenChild::HSplit(ref mut sc) => sc.$x( $($arg,)* ),
-            }
+            def_child_func!(@outer_mut self, $x, [CommandBar, HSplit], [$($arg),*] )
         }
     };
     ( $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
         fn $x(&self, $($arg,)*) -> $y {
-            match *self {
-                ScreenChild::CommandBar(ref sc) => sc.$x( $($arg:$argt,)* ),
-                ScreenChild::HSplit(ref sc) => sc.$x( $($arg:$argt,)* ),
-            }
+            def_child_func!(@outer self, $x, [CommandBar, HSplit], [$($arg),*] )
         }
     }
 }

@@ -83,7 +83,6 @@ impl Parent for Screen {
     }
 }
 
-
 impl Component for ScreenChild {
     def_child_func!(mut get_view_mut(): &mut View);
     def_child_func!(get_view(): &View);
