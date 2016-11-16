@@ -2,7 +2,7 @@ use std::path::Path;
 use buf;
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
-use ui::comp::{Component, Child, View};
+use ui::comp::{Component, View};
 use util::ResultBox;
 use super::LineNumber;
 
@@ -17,8 +17,14 @@ pub struct Editor {
 }
 
 impl Component for Editor {
-    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
-        self.x_off = self.line_number.resize(usize::max_value(), height).0 + 1;
+    fn get_view(&self) -> &View {
+        &self.view
+    }
+
+    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
+        self.x_off = self.line_number.resize(0, 0, Default::default(), height).0 + 1;
+        self.view.x = x;
+        self.view.y = y;
         self.view.width = width;
         self.view.height = height;
         (width, height)
@@ -109,14 +115,14 @@ impl Editor {
     }
 
     /// Initializer with file.
-    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
+    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Editor> {
         let mut editor = Editor::new();
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
         editor.line_number.current = 0;
         editor.buffer.set_cursor(0, 0);
-        Ok(Child::new(Box::new(editor)))
+        Ok(editor)
     }
 
     fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {

@@ -1,16 +1,21 @@
 use ui::res::{Buffer, Brush, Color, Cursor, Response, Refresh, Sequence};
-use ui::comp::{Child, Component};
+use ui::comp::{Component, View};
 
 #[derive(Default)]
 pub struct CommandBar {
-    width: usize,
-    height: usize,
+    view: View,
 }
 
 impl Component for CommandBar {
-    fn resize(&mut self, width: usize, _: usize) -> (usize, usize) {
-        self.width = width;
-        self.height = 1;
+    fn get_view(&self) -> &View {
+        &self.view
+    }
+
+    fn resize(&mut self, x: usize, y: usize, width: usize, _: usize) -> (usize, usize) {
+        self.view.x = x;
+        self.view.y = y;
+        self.view.width = width;
+        self.view.height = 1;
         (width, 1)
     }
 
@@ -20,18 +25,11 @@ impl Component for CommandBar {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&b, self.width, self.height)
+                buf: Buffer::blank(&b, self.view.width, self.view.height)
             }),
             sequence: vec![
                 Sequence::Move(Cursor { x: 0, y: 0 }),
             ]
         }
-    }
-}
-
-impl CommandBar {
-    pub fn new() -> Child {
-        let cb: CommandBar = Default::default();
-        Child::new(Box::new(cb))
     }
 }
