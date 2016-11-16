@@ -109,6 +109,7 @@ impl Line {
 
     /// Convert to a string.
     /// This can be used for the debugging purpose.
+    #[cfg(test)]
     pub fn to_string(&self) -> String {
         let mut res = self.prevs.to_owned();
         res.push_str(&self.nexts.chars().rev().collect::<String>());
@@ -116,50 +117,54 @@ impl Line {
     }
 }
 
-#[test]
-fn test_basic_operations() {
-    let mut t: Line = Default::default();
-    t.push_before(&String::from("hello"));
-    assert_eq!(t.to_string(), "hello");
-    t.push_after(&String::from("world"));
-    assert_eq!(t.to_string(), "helloworld");
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_move_cursor() {
-    let mut t: Line = Default::default();
-    t.push_before(&String::from("hello"));
-    t.push_after(&String::from("world"));
-    for _ in 0..5 {
-        assert_eq!(t.move_cursor(true), true);
+    #[test]
+    fn test_basic_operations() {
+        let mut t: Line = Default::default();
+        t.push_before(&String::from("hello"));
+        assert_eq!(t.to_string(), "hello");
+        t.push_after(&String::from("world"));
+        assert_eq!(t.to_string(), "helloworld");
     }
-    assert_eq!(t.move_cursor(true), false);
-    assert_eq!(t.after, "");
-    for _ in 0..10 {
-        assert_eq!(t.move_cursor(false), true);
+
+    #[test]
+    fn test_move_cursor() {
+        let mut t: Line = Default::default();
+        t.push_before(&String::from("hello"));
+        t.push_after(&String::from("world"));
+        for _ in 0..5 {
+            assert_eq!(t.move_right(), true);
+        }
+        assert_eq!(t.move_right(), false);
+        assert_eq!(t.nexts, "");
+        for _ in 0..10 {
+            assert_eq!(t.move_left(), true);
+        }
+        assert_eq!(t.move_left(), false);
+        assert_eq!(t.prevs, "");
     }
-    assert_eq!(t.move_cursor(false), false);
-    assert_eq!(t.prevs, "");
-}
 
-#[test]
-fn test_insert() {
-    let mut t: Line = Default::default();
-    t.insert('h');
-    assert_eq!(t.to_string(), "h");
-    t.push_before(&String::from("ell"));
-    t.push_after(&String::from("world"));
-    t.insert('o');
-    assert_eq!(t.to_string(), "helloworld");
+    #[test]
+    fn test_insert() {
+        let mut t: Line = Default::default();
+        t.insert('h');
+        assert_eq!(t.to_string(), "h");
+        t.push_before(&String::from("ell"));
+        t.push_after(&String::from("world"));
+        t.insert('o');
+        assert_eq!(t.to_string(), "helloworld");
+    }
 
-}
-
-#[test]
-fn test_break_line() {
-    let mut t: Line = Default::default();
-    t.push_before(&String::From("hello"));
-    t.push_after(&String::from("world"));
-    let u = t.break_line();
-    assert_eq!(t.to_string(), "world");
-    assert_eq!(u.to_string(), "hello");
+    #[test]
+    fn test_break_line() {
+        let mut t: Line = Default::default();
+        t.push_before(&String::from("hello"));
+        t.push_after(&String::from("world"));
+        let u = t.break_line();
+        assert_eq!(t.to_string(), "world");
+        assert_eq!(u.to_string(), "hello");
+    }
 }

@@ -1,35 +1,32 @@
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
-use ui::comp::{EditWindow, Parent, Child, Component};
+use ui::comp::{View, Parent, Component, Window};
 
 #[derive(Default)]
 pub struct HSplit {
-    windows: Vec<Child>,
+    view: View,
+    windows: Vec<Window>,
     focused: usize,
-    width: usize,
-    height: usize,
 }
 
 impl Component for HSplit {
-    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
-        self.width = width;
-        self.height = height;
-        let borders = self.windows.len() + 1;
+    has_view!();
+
+    /// Resize each child windows.
+    fn on_resize(&mut self) {
         let windows = self.windows.len();
-        let mut offset = 0;
+        let borders = windows + 1;
+        let mut offset = 1;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
-            let w = (self.width - borders + i + 1) / windows;
-            child.comp.resize(w, self.height - 2);
-            child.x = offset;
-            child.y = 1;
+            let w = (self.view.width - borders + i) / windows;
+            child.resize(offset, 1, w, self.view.height - 2);
             offset += w + 1;
         }
-        (width, height)
     }
 
     fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-        let buffer = Buffer::blank(&b, self.width, self.height);
+        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
         self.refresh_children(buffer)
     }
 
@@ -40,8 +37,8 @@ impl Component for HSplit {
                 self.refresh()
             },
             _ => {
-                let res = self.windows[self.focused].comp.handle(e);
-                self.transform(&self.windows[self.focused], res)
+                let res = self.windows[self.focused].handle(e);
+                self.windows[self.focused].transform(res)
             }
         }
     }
@@ -51,8 +48,11 @@ impl HSplit {
     fn toggle_split(&mut self) {
         let ws = self.windows.len() % 3 + 1;
         self.set_children(ws);
-        let (w, h) = (self.width, self.height);
-        self.resize(w, h);
+        let x = self.view.x;
+        let y = self.view.y;
+        let w = self.view.width;
+        let h = self.view.height;
+        self.resize(x, y, w, h);
     }
 
     pub fn set_children(&mut self, children: usize) {
@@ -62,24 +62,25 @@ impl HSplit {
             self.windows.truncate(children)
         } else {
             for _ in 0..(children - self.windows.len()) {
-                self.windows.push(EditWindow::new())
+                self.windows.push(Window::new_edit())
             }
         }
     }
 
-    pub fn new(windows: usize) -> Child {
+    pub fn new(windows: usize) -> HSplit {
         let mut res: HSplit = Default::default();
         res.set_children(windows);
-        Child::new(Box::new(res))
+        res
     }
 }
 
 impl Parent for HSplit {
-    fn children_mut(&mut self) -> Vec<&mut Child> {
+    type Child = Window;
+    fn children_mut(&mut self) -> Vec<&mut Window> {
         self.windows.iter_mut().collect()
     }
 
-    fn children(&self) -> Vec<&Child> {
+    fn children(&self) -> Vec<&Window> {
         self.windows.iter().collect()
     }
 }

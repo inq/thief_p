@@ -2,31 +2,30 @@ use std::path::Path;
 use buf;
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
-use ui::comp::{Component, Child};
+use ui::comp::{Component, View};
 use util::ResultBox;
 use super::LineNumber;
 
 #[derive(Default)]
 pub struct Editor {
+    view: View,
     line_number: LineNumber,
     buffer: buf::Buffer,
     cursor: Cursor,
     x_off: usize,
-    width: usize,
-    height: usize,
     brush: Brush,
 }
 
 impl Component for Editor {
-    fn resize(&mut self, width: usize, height: usize) -> (usize, usize) {
-        self.x_off = self.line_number.resize(usize::max_value(), height).0 + 1;
-        self.width = width;
-        self.height = height;
-        (width, height)
+    has_view!();
+
+    fn on_resize(&mut self) {
+        self.line_number.resize(0, 0, Default::default(), self.view.height);
+        self.x_off = self.line_number.get_view().width + 1;
     }
 
     fn refresh(&self) -> Response {
-        let mut buffer = Buffer::blank(&self.brush, self.width, self.height);
+        let mut buffer = Buffer::blank(&self.brush, self.view.width, self.view.height);
         // Draw line_number
         if let Some(Refresh { x, y, buf }) = self.line_number.refresh().refresh {
             buffer.draw(&buf, 0 + x, 0 + y);
@@ -53,9 +52,9 @@ impl Component for Editor {
                     // Scroll upward
                     self.line_number.current = self.cursor.y;
                     self.refresh()
-                } else if self.cursor.y - self.line_number.current >= self.height {
+                } else if self.cursor.y - self.line_number.current >= self.view.height {
                     // Scroll downward
-                    self.line_number.current = self.cursor.y - self.height + 1;
+                    self.line_number.current = self.cursor.y - self.view.height + 1;
                     self.refresh()
                 } else {
                     // Do not scroll
@@ -67,8 +66,8 @@ impl Component for Editor {
             }
             Event::Char { c } => {
                 self.buffer.insert(c);
-                let req = self.width - self.x_off - self.cursor.x;
-                let mut after_cursor = String::with_capacity(self.width);
+                let req = self.view.width - self.x_off - self.cursor.x;
+                let mut after_cursor = String::with_capacity(self.view.width);
                 self.cursor.x += 1;
                 after_cursor.push(c);
                 after_cursor.push_str(&self.buffer.after_cursor(req));
@@ -110,14 +109,14 @@ impl Editor {
     }
 
     /// Initializer with file.
-    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Child> {
+    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Editor> {
         let mut editor = Editor::new();
         editor.load_file(s)?;
         editor.cursor = Cursor { x: 0, y: 0 };
         editor.line_number.set_max(100);
         editor.line_number.current = 0;
         editor.buffer.set_cursor(0, 0);
-        Ok(Child::new(Box::new(editor)))
+        Ok(editor)
     }
 
     fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {

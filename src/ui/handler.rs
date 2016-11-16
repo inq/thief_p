@@ -19,7 +19,7 @@ impl Handler {
     pub fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Resize { w: width, h: height } => {
-                self.screen.resize(width, height);
+                self.screen.resize(0, 0, width, height);
                 self.screen.refresh()
             },
             Event::Ctrl { c: 'q' } => {

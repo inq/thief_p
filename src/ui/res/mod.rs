@@ -51,19 +51,20 @@ impl Response {
         }
     }
 
-    pub fn translate(&mut self, tx: usize, ty: usize) {
+    pub fn translate(mut self, tx: usize, ty: usize) -> Response {
         if let Some(Refresh { ref mut x, ref mut y, .. }) = self.refresh {
             *x += tx;
             *y += ty;
         }
-        for seq in self.sequence.iter_mut() {
-            match *seq {
-                Sequence::Move(Cursor{ref mut x, ref mut y}) => {
+        for r in self.sequence.iter_mut() {
+            match *r {
+                Sequence::Move(Cursor { ref mut x, ref mut y }) => {
                     *x += tx;
                     *y += ty;
                 }
                 _ => (),
             }
         }
+        self
     }
 }
