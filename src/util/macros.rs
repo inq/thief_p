@@ -9,19 +9,19 @@ macro_rules! has_view {
 
 #[macro_export]
 macro_rules! def_child_func {
-    ( mut $x:ident: $y:ty ) => {
-        fn $x(&mut self) -> $y {
+    ( mut $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
+        fn $x(&mut self, $( $arg: $argt,)*) -> $y {
             match *self {
-                ScreenChild::CommandBar(ref mut sc) => sc.$x(),
-                ScreenChild::HSplit(ref mut sc) => sc.$x(),
+                ScreenChild::CommandBar(ref mut sc) => sc.$x( $($arg,)* ),
+                ScreenChild::HSplit(ref mut sc) => sc.$x( $($arg,)* ),
             }
         }
     };
-    ( $x:ident: $y:ty ) => {
-        fn $x(&self) -> $y {
+    ( $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
+        fn $x(&self, $($arg,)*) -> $y {
             match *self {
-                ScreenChild::CommandBar(ref sc) => sc.$x(),
-                ScreenChild::HSplit(ref sc) => sc.$x(),
+                ScreenChild::CommandBar(ref sc) => sc.$x( $($arg:$argt,)* ),
+                ScreenChild::HSplit(ref sc) => sc.$x( $($arg:$argt,)* ),
             }
         }
     }
