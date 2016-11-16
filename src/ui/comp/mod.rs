@@ -71,6 +71,14 @@ pub trait Parent {
     }
 }
 
+#[derive(Default)]
+pub struct View {
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
+}
+
 pub struct Child {
     pub comp: Box<Component>,
     pub x: usize,
