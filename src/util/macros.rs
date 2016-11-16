@@ -8,52 +8,64 @@ macro_rules! has_view {
 
 /// Merge elements into a enum. Default value is the first element.
 macro_rules! def_child {
-    ( @default $target:ident, $first:ident, $($r:ident),* ) => {
+    ( @default $target:ident, $first:ident) => {
+        // Default value implementation
         impl Default for $target {
             fn default() -> $target {
                 $target::$first(Default::default())
             }
         }
     };
+    ( @default $target:ident, $first:ident, $($r:ident),* ) => {
+        // Default value implementation
+        impl Default for $target {
+            fn default() -> $target {
+                $target::$first(Default::default())
+            }
+        }
+    };
+    ( @inner $child: ident, $func:ident, [$($arg:ident),*] ) => {
+        // The innermost part
+        $child.$func($($arg,)*)
+    };
+    ( @match_mut $target:ident, $s:ident, $func:ident, [$($src:ident),*], $args:tt ) => {
+        // The match body of the mutable form
+        match *$s {
+            $( $target::$src(ref mut _child) => def_child!(@inner _child, $func, $args) ),*
+        }
+    };
+    ( @match_imm $target:ident, $s:ident, $func:ident, [$($src:ident),*], $args:tt ) => {
+        // The match body of the immutable form
+        match *$s {
+            $( $target::$src(ref _child) => def_child!(@inner _child, $func, $args) ),*
+        }
+    };
+    ( @child_mut $target:ident, $srcs:tt, $x:ident( $($arg:ident: $argt:ty),* ): $y:ty ) => {
+        // Mutable form of Component implementation
+        fn $x(&mut self, $( $arg: $argt,)*) -> $y {
+            def_child!(@match_mut $target, self, $x, $srcs, [$($arg),*] )
+        }
+    };
+    ( @child_imm $target:ident, $srcs:tt, $x:ident( $($arg:ident: $argt:ty),* ): $y:ty ) => {
+        // Immutable form of Component implementation
+        fn $x(&self, $($arg,)*) -> $y {
+            def_child!(@match_imm $target, self, $x, $srcs, [$($arg),*] )
+        }
+    };
     ( $target:ident <- $($src:ident),* ) => {
+        // The entry point
         pub enum $target {
             $($src($src)),*
         }
         def_child!(@default $target, $($src),*);
-        impl Component for ScreenChild {
-            def_child_func!(mut get_view_mut(): &mut View);
-            def_child_func!(get_view(): &View);
-            def_child_func!(mut on_resize(): ());
-            def_child_func!(refresh(): Response);
-            def_child_func!(mut handle(e: Event): Response);
+        impl Component for $target {
+            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut View);
+            def_child!(@child_imm $target, [$($src),*], get_view(): &View);
+            def_child!(@child_mut $target, [$($src),*], on_resize(): ());
+            def_child!(@child_imm $target, [$($src),*], refresh(): Response);
+            def_child!(@child_mut $target, [$($src),*], handle(e: Event): Response);
         }
     };
-}
-
-macro_rules! def_child_func {
-    ( @inner $h: ident, $x:ident, [$($arg:ident),*] ) => {
-        $h.$x($($arg,)*)
-    };
-    ( @outer $s:ident, $x:ident, [$($vs:ident),*], $rem:tt ) => {
-        match *$s {
-            $( ScreenChild::$vs(ref sc) => def_child_func!(@inner sc, $x, $rem) ),*
-        }
-    };
-    ( @outer_mut $s:ident, $x:ident, [$($vs:ident),*], $rem:tt ) => {
-        match *$s {
-            $( ScreenChild::$vs(ref mut sc) => def_child_func!(@inner sc, $x, $rem) ),*
-        }
-    };
-    ( mut $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
-        fn $x(&mut self, $( $arg: $argt,)*) -> $y {
-            def_child_func!(@outer_mut self, $x, [CommandBar, HSplit], [$($arg),*] )
-        }
-    };
-    ( $x:ident ( $($arg:ident: $argt:ty),* ): $y:ty ) => {
-        fn $x(&self, $($arg,)*) -> $y {
-            def_child_func!(@outer self, $x, [CommandBar, HSplit], [$($arg),*] )
-        }
-    }
 }
 
 macro_rules! def_error {
