@@ -61,7 +61,7 @@ impl Screen {
 
 impl Parent for Screen {
     type Child = ScreenChild;
-    fn children_mut<'a>(&'a mut self) -> Vec<&'a mut ScreenChild> {
+    fn children_mut(&mut self) -> Vec<&mut ScreenChild> {
         vec![&mut self.hsplit].into_iter()
             .chain(self.overlaps.iter_mut())
             .collect()
