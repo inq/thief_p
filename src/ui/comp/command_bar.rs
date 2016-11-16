@@ -7,16 +7,12 @@ pub struct CommandBar {
 }
 
 impl Component for CommandBar {
-    fn get_view(&self) -> &View {
-        &self.view
-    }
+    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+    fn get_view(&self) -> &View { &self.view }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, _: usize) -> (usize, usize) {
-        self.view.x = x;
-        self.view.y = y;
-        self.view.width = width;
+    /// Force the height to be 1.
+    fn on_resize(&mut self) {
         self.view.height = 1;
-        (width, 1)
     }
 
     fn refresh(&self) -> Response {

@@ -9,17 +9,15 @@ pub struct LineNumber {
 }
 
 impl Component for LineNumber {
-    fn get_view(&self) -> &View {
-        &self.view
+    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+    fn get_view(&self) -> &View { &self.view }
+
+    /// Ignore width & force the width to be its own size.
+    fn on_resize(&mut self) {
+        self.update_width();
     }
 
-    fn resize(&mut self, x: usize, y: usize, _: usize, height: usize) -> (usize, usize) {
-        self.view.x = x;
-        self.view.y = y;
-        self.view.height = height;
-        (self.view.width, height)
-    }
-
+    /// Draw the line numbers.
     fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.view.width, self.view.height);
@@ -36,8 +34,13 @@ impl Component for LineNumber {
 }
 
 impl LineNumber {
+    #[inline]
+    fn update_width(&mut self) {
+        self.view.width = format!("{}", self.max).len() + 1;
+    }
+
     pub fn set_max(&mut self, max: usize) {
         self.max = max;
-        self.view.width = format!("{}", self.max).len() + 1;
+        self.update_width();
     }
 }

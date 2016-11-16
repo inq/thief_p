@@ -2,10 +2,6 @@ use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
 use ui::comp::{View, Parent, Component, Window};
 
-use std::io::{stderr, Write};
-
-
-
 #[derive(Default)]
 pub struct HSplit {
     view: View,
@@ -14,34 +10,24 @@ pub struct HSplit {
 }
 
 impl Component for HSplit {
-    fn get_view(&self) -> &View {
-        &self.view
-    }
+    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+    fn get_view(&self) -> &View { &self.view }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
-        self.view.x = x;
-        self.view.y = y;
-        self.view.width = width;
-        self.view.height = height;
-        // Resize each children.
-        let borders = self.windows.len() + 1;
+    /// Resize each child windows.
+    fn on_resize(&mut self) {
         let windows = self.windows.len();
+        let borders = windows + 1;
         let mut offset = 1;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
             let w = (self.view.width - borders + i) / windows;
-            writeln!(&mut stderr(), "HSplit {}!", w);
             child.resize(offset, 1, w, self.view.height - 2);
             offset += w + 1;
         }
-        (width, height)
     }
 
     fn refresh(&self) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
         let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-
-
-
         self.refresh_children(buffer)
     }
 

@@ -17,17 +17,12 @@ pub struct Editor {
 }
 
 impl Component for Editor {
-    fn get_view(&self) -> &View {
-        &self.view
-    }
+    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+    fn get_view(&self) -> &View { &self.view }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
-        self.x_off = self.line_number.resize(0, 0, Default::default(), height).0 + 1;
-        self.view.x = x;
-        self.view.y = y;
-        self.view.width = width;
-        self.view.height = height;
-        (width, height)
+    fn on_resize(&mut self) {
+        self.line_number.resize(0, 0, Default::default(), self.view.height);
+        self.x_off = self.line_number.get_view().width + 1;
     }
 
     fn refresh(&self) -> Response {

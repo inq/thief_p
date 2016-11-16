@@ -11,9 +11,6 @@ pub use self::hsplit::HSplit;
 use ui::res::{Buffer, Cursor, Response, Refresh, Sequence};
 use io::Event;
 
-
-use std::io::{stderr, Write};
-
 #[derive(Default)]
 pub struct View {
     pub x: usize,
@@ -22,10 +19,23 @@ pub struct View {
     pub height: usize,
 }
 
+impl View {
+    fn update(&mut self, x: usize, y: usize, width: usize, height: usize) {
+        *self = View { x: x, y: y, width: width, height: height }
+    }
+}
+
 pub trait Component {
     fn get_view(&self) -> &View;
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize);
+    fn get_view_mut(&mut self) -> &mut View;
+    fn on_resize(&mut self);
     fn refresh(&self) -> Response;
+    /// Resize the component; Call the on_resize function.
+    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) {
+        self.get_view_mut().update(x, y, width, height);
+        self.on_resize();
+    }
+    /// Handle the given event.
     fn handle(&mut self, _: Event) -> Response {
         Default::default()
     }

@@ -27,9 +27,15 @@ impl Component for Window {
         }
     }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
+    fn get_view_mut(&mut self) -> &mut View {
         match *self {
-            Window::Edit(ref mut ew) => ew.resize(x, y, width, height),
+            Window::Edit(ref mut ew) => ew.get_view_mut(),
+        }
+    }
+
+    fn on_resize(&mut self) {
+        match *self {
+            Window::Edit(ref mut ew) => ew.on_resize(),
         }
     }
 

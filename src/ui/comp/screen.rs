@@ -9,7 +9,7 @@ pub struct Screen {
     overlaps: Vec<ScreenChild>,
 }
 
-enum ScreenChild {
+pub enum ScreenChild {
     CommandBar(CommandBar),
     HSplit(HSplit),
 }
@@ -21,20 +21,14 @@ impl Default for ScreenChild {
 }
 
 impl Component for Screen {
-    fn get_view(&self) -> &View {
-        &self.view
-    }
+    fn get_view_mut(&mut self) -> &mut View { &mut self.view }
+    fn get_view(&self) -> &View { &self.view }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
-        self.view.x = x;
-        self.view.y = y;
-        self.view.width = width;
-        self.view.height = height;
-        self.hsplit.resize(1, 1, width - 2, height - 2);
+    fn on_resize(&mut self) {
+        self.hsplit.resize(1, 1, self.view.width - 2, self.view.height - 2);
         for &mut ref mut child in self.overlaps.iter_mut() {
-            child.resize(0, height - 1, width, 3);
+            child.resize(0, self.view.height - 1, self.view.width, 3);
         }
-        (width, height)
     }
 
     fn refresh(&self) -> Response {
@@ -92,6 +86,13 @@ impl Parent for Screen {
 
 
 impl Component for ScreenChild {
+    fn get_view_mut(&mut self) -> &mut View {
+        match *self {
+            ScreenChild::CommandBar(ref mut sc) => sc.get_view_mut(),
+            ScreenChild::HSplit(ref mut sc) => sc.get_view_mut(),
+        }
+    }
+
     fn get_view(&self) -> &View {
         match *self {
             ScreenChild::CommandBar(ref sc) => sc.get_view(),
@@ -99,10 +100,10 @@ impl Component for ScreenChild {
         }
     }
 
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) -> (usize, usize) {
+    fn on_resize(&mut self) {
         match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.resize(x, y, width, height),
-            ScreenChild::HSplit(ref mut sc) => sc.resize(x, y, width, height),
+            ScreenChild::CommandBar(ref mut sc) => sc.on_resize(),
+            ScreenChild::HSplit(ref mut sc) => sc.on_resize(),
         }
     }
 
