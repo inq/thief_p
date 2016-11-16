@@ -8,6 +8,18 @@ macro_rules! has_view {
 }
 
 #[macro_export]
+macro_rules! def_child_func {
+    ( mut $x:ident ) => {
+        fn $x(&mut self) -> &mut View {
+            match *self {
+                ScreenChild::CommandBar(ref mut sc) => sc.$x(),
+                ScreenChild::HSplit(ref mut sc) => sc.$x(),
+            }
+        }
+    }
+}
+
+#[macro_export]
 macro_rules! def_error {
     ( $($x:ident: $y:expr,)* ) => {
         #[derive(Debug)]

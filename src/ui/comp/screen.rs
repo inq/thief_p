@@ -85,12 +85,7 @@ impl Parent for Screen {
 
 
 impl Component for ScreenChild {
-    fn get_view_mut(&mut self) -> &mut View {
-        match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.get_view_mut(),
-            ScreenChild::HSplit(ref mut sc) => sc.get_view_mut(),
-        }
-    }
+    def_child_func!(mut get_view_mut);
 
     fn get_view(&self) -> &View {
         match *self {
