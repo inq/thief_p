@@ -85,28 +85,10 @@ impl Parent for Screen {
 
 
 impl Component for ScreenChild {
-    def_child_func!(mut get_view_mut);
-
-    fn get_view(&self) -> &View {
-        match *self {
-            ScreenChild::CommandBar(ref sc) => sc.get_view(),
-            ScreenChild::HSplit(ref sc) => sc.get_view(),
-        }
-    }
-
-    fn on_resize(&mut self) {
-        match *self {
-            ScreenChild::CommandBar(ref mut sc) => sc.on_resize(),
-            ScreenChild::HSplit(ref mut sc) => sc.on_resize(),
-        }
-    }
-
-    fn refresh(&self) -> Response {
-        match *self {
-            ScreenChild::CommandBar(ref sc) => sc.refresh(),
-            ScreenChild::HSplit(ref sc) => sc.refresh(),
-        }
-    }
+    def_child_func!(mut get_view_mut: &mut View);
+    def_child_func!(get_view: &View);
+    def_child_func!(mut on_resize: ());
+    def_child_func!(refresh: Response);
 
     fn handle(&mut self, e: Event) -> Response {
         match *self {

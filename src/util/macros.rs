@@ -9,11 +9,19 @@ macro_rules! has_view {
 
 #[macro_export]
 macro_rules! def_child_func {
-    ( mut $x:ident ) => {
-        fn $x(&mut self) -> &mut View {
+    ( mut $x:ident: $y:ty ) => {
+        fn $x(&mut self) -> $y {
             match *self {
                 ScreenChild::CommandBar(ref mut sc) => sc.$x(),
                 ScreenChild::HSplit(ref mut sc) => sc.$x(),
+            }
+        }
+    };
+    ( $x:ident: $y:ty ) => {
+        fn $x(&self) -> $y {
+            match *self {
+                ScreenChild::CommandBar(ref sc) => sc.$x(),
+                ScreenChild::HSplit(ref sc) => sc.$x(),
             }
         }
     }
