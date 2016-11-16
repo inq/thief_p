@@ -1,5 +1,4 @@
 /// Boilerplate for ui elements which have a view.
-
 macro_rules! has_view {
     () => {
         fn get_view_mut(&mut self) -> &mut View { &mut self.view }
@@ -7,18 +6,20 @@ macro_rules! has_view {
     }
 }
 
+/// Merge elements into a enum. Default value is the first element.
 macro_rules! def_child {
+    ( @default $target:ident, $first:ident, $($r:ident),* ) => {
+        impl Default for $target {
+            fn default() -> $target {
+                $target::$first(Default::default())
+            }
+        }
+    };
     ( $target:ident <- $($src:ident),* ) => {
         pub enum $target {
             $($src($src)),*
         }
-
-        impl Default for ScreenChild {
-            fn default() -> ScreenChild {
-                ScreenChild::HSplit(Default::default())
-            }
-        }
-
+        def_child!(@default $target, $($src),*);
         impl Component for ScreenChild {
             def_child_func!(mut get_view_mut(): &mut View);
             def_child_func!(get_view(): &View);
@@ -26,7 +27,7 @@ macro_rules! def_child {
             def_child_func!(refresh(): Response);
             def_child_func!(mut handle(e: Event): Response);
         }
-    }
+    };
 }
 
 macro_rules! def_child_func {

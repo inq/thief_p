@@ -9,7 +9,7 @@ pub struct Screen {
     overlaps: Vec<ScreenChild>,
 }
 
-def_child!(ScreenChild <- CommandBar, HSplit);
+def_child!(ScreenChild <- HSplit, CommandBar);
 
 impl Component for Screen {
     has_view!();
