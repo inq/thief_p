@@ -1,5 +1,5 @@
 /// Boilerplate for ui elements which have a view.
-#[macro_export]
+
 macro_rules! has_view {
     () => {
         fn get_view_mut(&mut self) -> &mut View { &mut self.view }
@@ -7,7 +7,28 @@ macro_rules! has_view {
     }
 }
 
-#[macro_export]
+macro_rules! def_child {
+    ( $target:ident <- $($src:ident),* ) => {
+        pub enum $target {
+            $($src($src)),*
+        }
+
+        impl Default for ScreenChild {
+            fn default() -> ScreenChild {
+                ScreenChild::HSplit(Default::default())
+            }
+        }
+
+        impl Component for ScreenChild {
+            def_child_func!(mut get_view_mut(): &mut View);
+            def_child_func!(get_view(): &View);
+            def_child_func!(mut on_resize(): ());
+            def_child_func!(refresh(): Response);
+            def_child_func!(mut handle(e: Event): Response);
+        }
+    }
+}
+
 macro_rules! def_child_func {
     ( @inner $h: ident, $x:ident, [$($arg:ident),*] ) => {
         $h.$x($($arg,)*)
@@ -34,7 +55,6 @@ macro_rules! def_child_func {
     }
 }
 
-#[macro_export]
 macro_rules! def_error {
     ( $($x:ident: $y:expr,)* ) => {
         #[derive(Debug)]

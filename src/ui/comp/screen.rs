@@ -9,16 +9,7 @@ pub struct Screen {
     overlaps: Vec<ScreenChild>,
 }
 
-pub enum ScreenChild {
-    CommandBar(CommandBar),
-    HSplit(HSplit),
-}
-
-impl Default for ScreenChild {
-    fn default() -> ScreenChild {
-        ScreenChild::HSplit(Default::default())
-    }
-}
+def_child!(ScreenChild <- CommandBar, HSplit);
 
 impl Component for Screen {
     has_view!();
@@ -81,12 +72,4 @@ impl Parent for Screen {
             .chain(self.overlaps.iter())
             .collect()
     }
-}
-
-impl Component for ScreenChild {
-    def_child_func!(mut get_view_mut(): &mut View);
-    def_child_func!(get_view(): &View);
-    def_child_func!(mut on_resize(): ());
-    def_child_func!(refresh(): Response);
-    def_child_func!(mut handle(e: Event): Response);
 }
