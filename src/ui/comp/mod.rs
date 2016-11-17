@@ -39,9 +39,9 @@ pub trait Component {
     fn handle(&mut self, _: Event) -> Response {
         Default::default()
     }
-    /// Apply offset of the child to the responses.
-    fn transform(&self, resp: Response) -> Response {
-        resp.translate(self.get_view().x, self.get_view().y)
+    /// Propage event to children. This calls handle, and then translate.
+    fn propagate(&mut self, e: Event) -> Response {
+        self.handle(e).translate(self.get_view().x, self.get_view().y)
     }
 }
 

@@ -31,10 +31,7 @@ impl Component for Screen {
     fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Ctrl { c: 'r' } => self.command_bar(),
-            _ => {
-                let res = self.hsplit.handle(e);
-                self.hsplit.transform(res)
-            }
+            _ => self.hsplit.propagate(e)
         }
     }
 }

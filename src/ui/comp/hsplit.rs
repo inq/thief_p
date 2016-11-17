@@ -36,10 +36,7 @@ impl Component for HSplit {
                 self.toggle_split();
                 self.refresh()
             },
-            _ => {
-                let res = self.windows[self.focused].handle(e);
-                self.windows[self.focused].transform(res)
-            }
+            _ => self.windows[self.focused].propagate(e)
         }
     }
 }
