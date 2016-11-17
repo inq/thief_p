@@ -27,7 +27,7 @@ impl Component for Edit {
         match e {
             _ => {
                 let res = self.editor.handle(e);
-                self.transform(res)
+                self.editor.transform(res)
             }
         }
     }
