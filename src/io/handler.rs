@@ -46,18 +46,11 @@ impl Handler {
         }
         self.ipt_buf.push_str(&ipt);
         let mut cur = self.ipt_buf.clone();
-        let mut done = false;
-        while !done {
-            let (res, next) = Event::from_string(cur);
-            match res {
-                Some(e) => {
-                    if let Event::Pair { x, y } = e {
-                        self.term.initial_cursor(&Cursor { x: x, y: y });
-                    }
-                    self.ui.send(e)?
-                }
-                None => done = true,
+        while let (Some(e), next) = Event::from_string(&cur) {
+            if let Event::Pair { x, y } = e {
+                self.term.initial_cursor(&Cursor { x: x, y: y });
             }
+            self.ui.send(e)?;
             cur = next.clone();
         }
         self.ipt_buf.clear();
