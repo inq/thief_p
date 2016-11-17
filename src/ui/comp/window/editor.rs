@@ -64,6 +64,9 @@ impl Component for Editor {
                     }
                 }
             }
+            Event::Ctrl { c } => { // CR
+                Default::default()
+            }
             Event::Char { c } => {
                 self.buffer.insert(c);
                 let req = self.view.width - self.x_off - self.cursor.x;

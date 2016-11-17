@@ -21,7 +21,7 @@ impl Event {
         }
     }
 
-    pub fn from_string(s: String) -> (Option<Event>, String) {
+    pub fn from_string(s: &String) -> (Option<Event>, String) {
         let mut it = s.chars();
         match it.next() {
             Some('\u{1b}') => from_escape(&s),
