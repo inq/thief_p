@@ -65,7 +65,10 @@ impl Component for Editor {
                 }
             }
             Event::Ctrl { c } => { // CR
-                Default::default()
+                self.buffer.break_line();
+                self.cursor.x = self.buffer.get_x();
+                self.cursor.y = self.buffer.get_y();
+                self.refresh()
             }
             Event::Char { c } => {
                 self.buffer.insert(c);
