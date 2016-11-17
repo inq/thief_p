@@ -32,6 +32,7 @@ impl Line {
     pub fn break_line(&mut self) -> Line {
         let res = mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE));
         let x = res.len();
+        self.x = 0;
         Line {
             prevs: res,
             nexts: String::with_capacity(BUFSIZE),
