@@ -25,10 +25,7 @@ impl Component for Edit {
 
     fn handle(&mut self, e: Event) -> Response {
         match e {
-            _ => {
-                let res = self.editor.handle(e);
-                self.editor.transform(res)
-            }
+            _ => self.editor.propagate(e)
         }
     }
 }
