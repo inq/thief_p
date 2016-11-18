@@ -171,10 +171,12 @@ impl Term {
                 termios.c_lflag |= libc::ICANON;
                 termios.c_lflag |= libc::ECHO;
                 termios.c_iflag |= libc::ICRNL;
+                termios.c_lflag |= libc::ISIG;
             } else {
                 termios.c_lflag &= !libc::ICANON;
                 termios.c_lflag &= !libc::ECHO;
                 termios.c_iflag &= !libc::ICRNL;
+                termios.c_lflag &= !libc::ISIG;
             }
             if libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) == -1 {
                 return Err(Error::Tcsetattr);

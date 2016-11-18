@@ -21,7 +21,6 @@ pub struct Handler {
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
         let term = Term::new()?;
-        ::io::signal::init()?;
 
         let (w, h) = term.get_size()?;
         ui.send(Event::Resize { w: w, h: h })?;

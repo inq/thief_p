@@ -1,6 +1,5 @@
 mod event;
 mod handler;
-mod signal;
 mod term;
 mod kqueue;
 

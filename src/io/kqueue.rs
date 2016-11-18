@@ -48,7 +48,7 @@ impl Kqueue {
                                    self.events.as_mut_ptr(),
                                    self.events.capacity() as i32,
                                    &libc::timespec {
-                                       tv_sec: 10,
+                                       tv_sec: 0,
                                        tv_nsec: 0,
                                    });
             if res == -1 {
@@ -72,7 +72,7 @@ impl Kqueue {
                          ::std::ptr::null_mut(),
                          0,
                          &libc::timespec {
-                             tv_sec: 10,
+                             tv_sec: 0,
                              tv_nsec: 0,
                          })
         };
