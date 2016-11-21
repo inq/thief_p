@@ -30,6 +30,7 @@ pub struct Refresh {
 pub enum Sequence {
     Move(Cursor),
     Line(Line),
+    Char(Char),
     Show(bool),
     Quit,
 }

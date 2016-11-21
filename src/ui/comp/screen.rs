@@ -7,7 +7,6 @@ pub struct Screen {
     view: View,
     hsplit: ScreenChild,
     command_bar: ScreenChild,
-    show_command_bar: bool,
 }
 
 def_child!(ScreenChild <- HSplit, CommandBar);
@@ -30,12 +29,35 @@ impl Component for Screen {
     fn handle(&mut self, e: Event) -> Response {
         match e {
             Event::Ctrl { c: 'c' } => self.activate_command_bar(),
-            _ => self.hsplit.propagate(e)
+            _ => {
+                if self.command_bar().active {
+                    self.command_bar.propagate(e)
+                } else {
+                    self.hsplit.propagate(e)
+                }
+            }
         }
     }
 }
 
 impl Screen {
+    #[inline]
+    fn command_bar_mut(&mut self) -> &mut CommandBar {
+        if let ScreenChild::CommandBar(ref mut c) = self.command_bar {
+            c
+        } else {
+            unreachable!()
+        }
+    }
+    #[inline]
+    fn command_bar(&self) -> &CommandBar {
+        if let ScreenChild::CommandBar(ref c) = self.command_bar {
+            c
+        } else {
+            unreachable!()
+        }
+    }
+
     /// Resize the command bar; the bottom-side of the screen.
     #[inline]
     fn resize_command_bar(&mut self) {
@@ -45,7 +67,7 @@ impl Screen {
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self) -> Response {
-        self.show_command_bar = true;
+        self.command_bar_mut().active = true;
         self.resize_command_bar();
         // TODO: Make concise.
         self.command_bar.refresh().translate(
@@ -65,7 +87,7 @@ impl Screen {
 impl Parent for Screen {
     type Child = ScreenChild;
     fn children_mut(&mut self) -> Vec<&mut ScreenChild> {
-        if self.show_command_bar {
+        if self.command_bar().active {
             vec![&mut self.hsplit, &mut self.command_bar].into_iter()
                 .collect()
         } else {
@@ -75,7 +97,7 @@ impl Parent for Screen {
     }
 
     fn children(&self) -> Vec<&ScreenChild> {
-        if self.show_command_bar {
+        if self.command_bar().active {
             vec![&self.hsplit, &self.command_bar].into_iter()
                 .collect()
         } else {

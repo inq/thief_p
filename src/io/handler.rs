@@ -76,6 +76,9 @@ impl Handler {
                     Sequence::Line(l) => {
                         self.term.write_ui_line(&l);
                     }
+                    Sequence::Char(c) => {
+                        self.term.write_ui_char(&c);
+                    }
                     Sequence::Show(b) => {
                         self.term.show_cursor(b);
                     }

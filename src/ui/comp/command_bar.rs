@@ -1,9 +1,23 @@
-use ui::res::{Buffer, Brush, Color, Cursor, Response, Refresh, Sequence};
+use io::Event;
+use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
-#[derive(Default)]
 pub struct CommandBar {
+    pub active: bool,
+    data: String,
     view: View,
+    background: Brush,
+}
+
+impl Default for CommandBar {
+    fn default() -> CommandBar {
+        CommandBar {
+            active: false,
+            data: String::with_capacity(80),
+            view: Default::default(),
+            background: Brush::new(Color::new(220, 220, 220), Color::new(60, 30, 30)),
+        }
+    }
 }
 
 impl Component for CommandBar {
@@ -14,16 +28,32 @@ impl Component for CommandBar {
         self.view.height = 1;
     }
 
+    /// Handle the keyboard input.
+    fn handle(&mut self, e: Event) -> Response {
+        match e {
+            Event::Char { c } => {
+                self.data.push(c);
+                Response {
+                    sequence: vec! [
+                        Sequence::Char(Char::new(c, self.background.clone())),
+                    ],
+                    ..Default::default()
+                }
+            }
+            _ => Default::default()
+        }
+    }
+
     fn refresh(&self) -> Response {
-        let b = Brush::new(Color::new(220, 220, 220), Color::new(60, 30, 30));
         Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&b, self.view.width, self.view.height)
+                buf: Buffer::blank(&self.background, self.view.width, self.view.height)
             }),
             sequence: vec![
                 Sequence::Move(Cursor { x: 0, y: 0 }),
+                Sequence::Line(Line::new_from_str(&self.data, &self.background))
             ]
         }
     }
