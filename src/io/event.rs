@@ -41,7 +41,6 @@ impl Event {
 /// Read integer characters with termination symbol.
 #[inline]
 fn read_num(s: &mut Chars, seed: usize, d: char) -> Option<usize> {
-    let mut s = s.peekable();
     let mut acc = seed;
     while let Some(c) = s.next() {
         if c >= '0' && c <= '9' {
