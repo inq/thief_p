@@ -4,7 +4,7 @@ use libc;
 use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
-use ui::{Brush, Line, Buffer, Cursor};
+use ui::{Brush, Line, Char, Buffer, Cursor};
 use util::ResultBox;
 
 def_error! {
@@ -97,6 +97,17 @@ impl Term {
         }
     }
 
+    /// Draw ui::Char after the cursor.
+    pub fn write_ui_char(&mut self, c: &Char) {
+        if self.brush != Some(c.brush.clone()) {
+            let br = self.brush.clone();
+            self.color(&br);
+            self.brush = Some(c.brush.clone());
+        }
+        // TODO: Optimize
+        self.write(&c.chr.to_string());
+    }
+
     /// Draw ui::Buffer at the coordinate.
     pub fn write_ui_buffer(&mut self, x: usize, y: usize, buf: &Buffer) {
         self.move_cursor(x, y);
@@ -171,10 +182,12 @@ impl Term {
                 termios.c_lflag |= libc::ICANON;
                 termios.c_lflag |= libc::ECHO;
                 termios.c_iflag |= libc::ICRNL;
+                termios.c_lflag |= libc::ISIG;
             } else {
                 termios.c_lflag &= !libc::ICANON;
                 termios.c_lflag &= !libc::ECHO;
                 termios.c_iflag &= !libc::ICRNL;
+                termios.c_lflag &= !libc::ISIG;
             }
             if libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &termios) == -1 {
                 return Err(Error::Tcsetattr);

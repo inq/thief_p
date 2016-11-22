@@ -6,7 +6,7 @@ use ui::comp::{CommandBar, HSplit, Parent, Component, View};
 pub struct Screen {
     view: View,
     hsplit: ScreenChild,
-    overlaps: Vec<ScreenChild>,
+    command_bar: ScreenChild,
 }
 
 def_child!(ScreenChild <- HSplit, CommandBar);
@@ -16,9 +16,7 @@ impl Component for Screen {
 
     fn on_resize(&mut self) {
         self.hsplit.resize(1, 1, self.view.width - 2, self.view.height - 2);
-        for &mut ref mut child in self.overlaps.iter_mut() {
-            child.resize(0, self.view.height - 1, self.view.width, 3);
-        }
+        self.resize_command_bar();
     }
 
     fn refresh(&self) -> Response {
@@ -30,27 +28,57 @@ impl Component for Screen {
     /// Send some functions into command bar. Otherwise, into hsplit.
     fn handle(&mut self, e: Event) -> Response {
         match e {
-            Event::Ctrl { c: 'r' } => self.command_bar(),
-            _ => self.hsplit.propagate(e)
+            Event::Ctrl { c: 'c' } => self.activate_command_bar(),
+            _ => {
+                if self.command_bar().active {
+                    self.command_bar.propagate(e)
+                } else {
+                    self.hsplit.propagate(e)
+                }
+            }
         }
     }
 }
 
 impl Screen {
-    pub fn command_bar(&mut self) -> Response {
-        if self.overlaps.len() == 0 {
-            let bar = ScreenChild::CommandBar(Default::default());
-            let res = bar.refresh();
-            self.overlaps.push(bar);
-            res
+    #[inline]
+    fn command_bar_mut(&mut self) -> &mut CommandBar {
+        if let ScreenChild::CommandBar(ref mut c) = self.command_bar {
+            c
         } else {
-            Default::default()
+            unreachable!()
         }
+    }
+    #[inline]
+    fn command_bar(&self) -> &CommandBar {
+        if let ScreenChild::CommandBar(ref c) = self.command_bar {
+            c
+        } else {
+            unreachable!()
+        }
+    }
+
+    /// Resize the command bar; the bottom-side of the screen.
+    #[inline]
+    fn resize_command_bar(&mut self) {
+        self.command_bar.resize(0, self.view.height - 1, self.view.width, 1);
+    }
+
+    /// Activate command bar, and redrew the corresponding area.
+    #[inline]
+    pub fn activate_command_bar(&mut self) -> Response {
+        self.command_bar_mut().active = true;
+        self.resize_command_bar();
+        // TODO: Make concise.
+        self.command_bar.refresh().translate(
+            self.command_bar.get_view().x,
+            self.command_bar.get_view().y)
     }
 
     pub fn new() -> Screen {
         Screen {
             hsplit: ScreenChild::HSplit(HSplit::new(1)),
+            command_bar: ScreenChild::CommandBar(Default::default()),
             ..Default::default()
         }
     }
@@ -59,14 +87,22 @@ impl Screen {
 impl Parent for Screen {
     type Child = ScreenChild;
     fn children_mut(&mut self) -> Vec<&mut ScreenChild> {
-        vec![&mut self.hsplit].into_iter()
-            .chain(self.overlaps.iter_mut())
-            .collect()
+        if self.command_bar().active {
+            vec![&mut self.hsplit, &mut self.command_bar].into_iter()
+                .collect()
+        } else {
+            vec![&mut self.hsplit].into_iter()
+                .collect()
+        }
     }
 
     fn children(&self) -> Vec<&ScreenChild> {
-        vec![&self.hsplit].into_iter()
-            .chain(self.overlaps.iter())
-            .collect()
+        if self.command_bar().active {
+            vec![&self.hsplit, &self.command_bar].into_iter()
+                .collect()
+        } else {
+            vec![&self.hsplit].into_iter()
+                .collect()
+        }
     }
 }

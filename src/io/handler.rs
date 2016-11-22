@@ -21,7 +21,6 @@ pub struct Handler {
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
         let term = Term::new()?;
-        ::io::signal::init()?;
 
         let (w, h) = term.get_size()?;
         ui.send(Event::Resize { w: w, h: h })?;
@@ -76,6 +75,9 @@ impl Handler {
                     }
                     Sequence::Line(l) => {
                         self.term.write_ui_line(&l);
+                    }
+                    Sequence::Char(c) => {
+                        self.term.write_ui_char(&c);
                     }
                     Sequence::Show(b) => {
                         self.term.show_cursor(b);
