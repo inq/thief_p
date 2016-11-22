@@ -1,4 +1,5 @@
 use std::char;
+use std::str::Bytes;
 use regex::Regex;
 
 #[derive(Debug)]
@@ -31,6 +32,29 @@ impl Event {
     }
 }
 
+/// Check for CSI characters.
+#[inline]
+fn check_csi(s: &mut Bytes) -> bool {
+    s.next() == Some(b'\x1b') && s.next() == Some(b'[')
+}
+
+/// Read integer characters with termination symbol.
+#[inline]
+fn read_num(s: &mut Bytes, d: u8) -> Option<i32> {
+    let mut s = s.peekable();
+    let mut acc = 0i32;
+    while let Some(c) = s.next() {
+        if c >= b'0' && c <= b'9' {
+            acc = acc * 10 + (c - b'0') as i32;
+        } else if c == d {
+            return Some(acc)
+        } else {
+            return None
+        }
+    }
+    None
+}
+
 fn check_pair(s: &String) -> Option<(Event, String)> {
     let re = Regex::new(r"^\x{1b}\[(\d+);(\d+)R").unwrap();
     re.captures(s).and_then(|caps| {
@@ -40,7 +64,7 @@ fn check_pair(s: &String) -> Option<(Event, String)> {
         },
               s.chars().skip(caps.at(0).unwrap().len()).collect()))
     })
-}
+ }
 
 fn check_prefix(s: &String, t: &str) -> Option<String> {
     if s.starts_with(&t) {
@@ -69,3 +93,21 @@ fn from_escape(s: &String) -> (Option<Event>, String) {
         }
     }
 }
+
+#[test]
+fn test_check_csi() {
+    let correct = String::from("\x1b[Hello");
+    let wrong = String::from("[Hi]");
+    assert!(check_csi(&mut correct.bytes()));
+    assert!(!check_csi(&mut wrong.bytes()));
+}
+
+#[test]
+fn test_read_num() {
+    let correct = String::from("1234;");
+    let wrong = String::from("a");
+    assert_eq!(read_num(&mut correct.bytes(), b';'), Some(1234));
+    assert_eq!(read_num(&mut correct.bytes(), b'-'), None);
+    assert_eq!(read_num(&mut wrong.bytes(), b';'), None);
+}
+
