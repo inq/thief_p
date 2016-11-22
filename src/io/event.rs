@@ -40,12 +40,12 @@ fn check_csi(s: &mut Bytes) -> bool {
 
 /// Read integer characters with termination symbol.
 #[inline]
-fn read_num(s: &mut Bytes, d: u8) -> Option<i32> {
+fn read_num(s: &mut Bytes, d: u8) -> Option<usize> {
     let mut s = s.peekable();
-    let mut acc = 0i32;
+    let mut acc = 0usize;
     while let Some(c) = s.next() {
         if c >= b'0' && c <= b'9' {
-            acc = acc * 10 + (c - b'0') as i32;
+            acc = acc * 10 + (c - b'0') as usize;
         } else if c == d {
             return Some(acc)
         } else {
@@ -55,16 +55,21 @@ fn read_num(s: &mut Bytes, d: u8) -> Option<i32> {
     None
 }
 
+/// Try to read `CSIx;yR`.
 fn check_pair(s: &String) -> Option<(Event, String)> {
-    let re = Regex::new(r"^\x{1b}\[(\d+);(\d+)R").unwrap();
-    re.captures(s).and_then(|caps| {
-        Some((Event::Pair {
-            x: caps.at(2).unwrap().parse().unwrap(),
-            y: caps.at(1).unwrap().parse().unwrap(),
-        },
-              s.chars().skip(caps.at(0).unwrap().len()).collect()))
+    let mut it = s.bytes();
+    if !check_csi(&mut it) {
+        return None
+    }
+    read_num(&mut it, b';').and_then(|x| {
+        read_num(&mut it, b'R').map(|y| {
+            (
+                Event::Pair { x: x, y: y },
+                String::from("")
+            )
+        })
     })
- }
+}
 
 fn check_prefix(s: &String, t: &str) -> Option<String> {
     if s.starts_with(&t) {
