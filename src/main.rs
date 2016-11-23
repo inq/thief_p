@@ -6,7 +6,7 @@ mod util;
 mod buf;
 mod io;
 mod ui;
-mod cmd;
+mod hq;
 
 use ui::Ui;
 use std::fs::File;

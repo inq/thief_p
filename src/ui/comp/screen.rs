@@ -1,3 +1,4 @@
+use hq::Hq;
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Response};
 use ui::comp::{CommandBar, HSplit, Parent, Component, View};
@@ -19,21 +20,21 @@ impl Component for Screen {
         self.resize_command_bar();
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
         let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer)
+        self.refresh_children(buffer, hq)
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, e: Event) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            Event::Ctrl { c: 'c' } => self.activate_command_bar(),
+            Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
             _ => {
                 if self.command_bar().active {
-                    self.command_bar.propagate(e)
+                    self.command_bar.propagate(e, hq)
                 } else {
-                    self.hsplit.propagate(e)
+                    self.hsplit.propagate(e, hq)
                 }
             }
         }
@@ -66,11 +67,11 @@ impl Screen {
 
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
-    pub fn activate_command_bar(&mut self) -> Response {
+    pub fn activate_command_bar(&mut self, hq: &mut Hq) -> Response {
         self.command_bar_mut().active = true;
         self.resize_command_bar();
         // TODO: Make concise.
-        self.command_bar.refresh().translate(
+        self.command_bar.refresh(hq).translate(
             self.command_bar.get_view().x,
             self.command_bar.get_view().y)
     }

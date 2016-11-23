@@ -6,6 +6,7 @@ pub use self::editor::Editor;
 pub use self::line_number::LineNumber;
 pub use self::edit::Edit;
 
+use hq::Hq;
 use io::Event;
 use ui::res::{Response};
 use ui::comp::{Component, View};

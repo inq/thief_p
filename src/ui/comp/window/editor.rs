@@ -1,16 +1,13 @@
-use std::path::Path;
-use buf;
+use hq::Hq;
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
-use util::ResultBox;
 use super::LineNumber;
 
 #[derive(Default)]
 pub struct Editor {
     view: View,
     line_number: LineNumber,
-    buffer: buf::Buffer,
     cursor: Cursor,
     x_off: usize,
     brush: Brush,
@@ -20,18 +17,20 @@ impl Component for Editor {
     has_view!();
 
     fn on_resize(&mut self) {
+        self.line_number.set_max(100);
         self.line_number.resize(0, 0, Default::default(), self.view.height);
         self.x_off = self.line_number.get_view().width + 1;
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> Response {
+        // TODO: implement
         let mut buffer = Buffer::blank(&self.brush, self.view.width, self.view.height);
         // Draw line_number
-        if let Some(Refresh { x, y, buf }) = self.line_number.refresh().refresh {
+        if let Some(Refresh { x, y, buf }) = self.line_number.refresh(hq).refresh {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(&self.buffer, self.x_off, 0, self.line_number.current);
+        buffer.draw_buffer(hq.buf().unwrap(), self.x_off, 0, self.line_number.current);
         Response {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
@@ -42,20 +41,20 @@ impl Component for Editor {
     }
 
     /// Move cursor left and right, or Type a character.
-    fn handle(&mut self, e: Event) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
             Event::Move { x, y } => {
-                self.buffer.move_cursor(x, y);
-                self.cursor.x = self.buffer.get_x();
-                self.cursor.y = self.buffer.get_y();
+                hq.buf().unwrap().move_cursor(x, y);
+                self.cursor.x = hq.buf().unwrap().get_x();
+                self.cursor.y = hq.buf().unwrap().get_y();
                 if self.cursor.y < self.line_number.current {
                     // Scroll upward
                     self.line_number.current = self.cursor.y;
-                    self.refresh()
+                    self.refresh(hq)
                 } else if self.cursor.y - self.line_number.current >= self.view.height {
                     // Scroll downward
                     self.line_number.current = self.cursor.y - self.view.height + 1;
-                    self.refresh()
+                    self.refresh(hq)
                 } else {
                     // Do not scroll
                     Response {
@@ -65,18 +64,18 @@ impl Component for Editor {
                 }
             }
             Event::Ctrl { c: 'm' } => { // CR
-                self.buffer.break_line();
-                self.cursor.x = self.buffer.get_x();
-                self.cursor.y = self.buffer.get_y();
-                self.refresh()
+                hq.buf().unwrap().break_line();
+                self.cursor.x = hq.buf().unwrap().get_x();
+                self.cursor.y = hq.buf().unwrap().get_y();
+                self.refresh(hq)
             }
             Event::Char { c } => {
-                self.buffer.insert(c);
+                hq.buf().unwrap().insert(c);
                 let req = self.view.width - self.x_off - self.cursor.x;
                 let mut after_cursor = String::with_capacity(self.view.width);
                 self.cursor.x += 1;
                 after_cursor.push(c);
-                after_cursor.push_str(&self.buffer.after_cursor(req));
+                after_cursor.push_str(&hq.buf().unwrap().after_cursor(req));
                 Response {
                     sequence: vec![
                         Sequence::Show(false),
@@ -112,21 +111,5 @@ impl Editor {
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             ..Default::default()
         }
-    }
-
-    /// Initializer with file.
-    pub fn new_with_file<S: AsRef<Path> + ?Sized>(s: &S) -> ResultBox<Editor> {
-        let mut editor = Editor::new();
-        editor.load_file(s)?;
-        editor.cursor = Cursor { x: 0, y: 0 };
-        editor.line_number.set_max(100);
-        editor.line_number.current = 0;
-        editor.buffer.set_cursor(0, 0);
-        Ok(editor)
-    }
-
-    fn load_file<S: AsRef<Path> + ?Sized>(&mut self, s: &S) -> ResultBox<()> {
-        self.buffer = buf::Buffer::from_file(s)?;
-        Ok(())
     }
 }

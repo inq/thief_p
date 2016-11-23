@@ -1,3 +1,4 @@
+use hq::Hq;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, View};
 
@@ -17,7 +18,7 @@ impl Component for LineNumber {
     }
 
     /// Draw the line numbers.
-    fn refresh(&self) -> Response {
+    fn refresh(&self, _: &mut Hq) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.view.width, self.view.height);
         for (i, line) in buffer.lines.iter_mut().enumerate() {

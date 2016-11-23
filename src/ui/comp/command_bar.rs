@@ -1,4 +1,4 @@
-use cmd;
+use hq::Hq;
 use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
@@ -30,16 +30,9 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn handle(&mut self, e: Event) -> Response {
+    fn handle(&mut self, e: Event, _: &mut Hq) -> Response {
         match e {
             Event::Ctrl { c: 'm' } => { // Return
-                match cmd::query(&self.data) {
-                    cmd::Response::Something => {
-                        // TODO: do something
-                        ()
-                    }
-                    _ => ()
-                }
                 Default::default()
             }
             Event::Char { c } => {
@@ -55,7 +48,7 @@ impl Component for CommandBar {
         }
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self, _: &mut Hq) -> Response {
         Response {
             refresh: Some(Refresh {
                 x: 0,
