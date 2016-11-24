@@ -8,6 +8,7 @@ use super::LineNumber;
 pub struct Editor {
     view: View,
     line_number: LineNumber,
+    file_name: String,
     cursor: Cursor,
     x_off: usize,
     brush: Brush,
@@ -30,7 +31,8 @@ impl Component for Editor {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(hq.buf().unwrap(), self.x_off, 0, self.line_number.current);
+        buffer.draw_buffer(hq.buf(&self.file_name).unwrap(),
+                           self.x_off, 0, self.line_number.current);
         Response {
             refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
             sequence: vec![
@@ -44,9 +46,12 @@ impl Component for Editor {
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
             Event::Move { x, y } => {
-                hq.buf().unwrap().move_cursor(x, y);
-                self.cursor.x = hq.buf().unwrap().get_x();
-                self.cursor.y = hq.buf().unwrap().get_y();
+                {
+                    let b = hq.buf(&self.file_name).unwrap();
+                    b.move_cursor(x, y);
+                    self.cursor.x = b.get_x();
+                    self.cursor.y = b.get_y();
+                }
                 if self.cursor.y < self.line_number.current {
                     // Scroll upward
                     self.line_number.current = self.cursor.y;
@@ -64,18 +69,24 @@ impl Component for Editor {
                 }
             }
             Event::Ctrl { c: 'm' } => { // CR
-                hq.buf().unwrap().break_line();
-                self.cursor.x = hq.buf().unwrap().get_x();
-                self.cursor.y = hq.buf().unwrap().get_y();
+                {
+                    let b = hq.buf(&self.file_name).unwrap();
+                    b.break_line();
+                    self.cursor.x = b.get_x();
+                    self.cursor.y = b.get_y();
+                }
                 self.refresh(hq)
             }
             Event::Char { c } => {
-                hq.buf().unwrap().insert(c);
-                let req = self.view.width - self.x_off - self.cursor.x;
                 let mut after_cursor = String::with_capacity(self.view.width);
-                self.cursor.x += 1;
-                after_cursor.push(c);
-                after_cursor.push_str(&hq.buf().unwrap().after_cursor(req));
+                {
+                    let b = hq.buf(&self.file_name).unwrap();
+                    let req = self.view.width - self.x_off - self.cursor.x;
+                    self.cursor.x += 1;
+                    b.insert(c);
+                    after_cursor.push(c);
+                    after_cursor.push_str(&b.after_cursor(req));
+                }
                 Response {
                     sequence: vec![
                         Sequence::Show(false),
@@ -108,6 +119,7 @@ impl Editor {
     /// Basic initializer.
     pub fn new() -> Editor {
         Editor {
+            file_name: String::from("LICENSE"),
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             ..Default::default()
         }
