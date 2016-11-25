@@ -11,8 +11,9 @@ pub struct Handler {
 
 impl Handler {
     pub fn new() -> Handler {
-        let mut hq: Hq = Default::default();
-        let _ = hq.open_file("LICENSE").unwrap_or_else(|x| panic!(String::from(x.description())));
+        let mut hq = Hq::new();
+        let _ = hq.cmd("open-file", "LICENSE")
+            .unwrap_or_else(|x| panic!(String::from(x.description())));
         Handler {
             screen: Screen::new(),
             hq: hq,
