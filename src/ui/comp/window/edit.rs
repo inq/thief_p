@@ -1,3 +1,4 @@
+use hq::Hq;
 use io::Event;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Parent, View};
@@ -16,16 +17,16 @@ impl Component for Edit {
         self.editor.resize(0, 0, self.view.width, self.view.height);
     }
 
-    fn refresh(&self) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> Response {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(100, 200, 200));
         let buffer = Buffer::blank(&b, self.view.width, self.view.height);
 
-        self.refresh_children(buffer)
+        self.refresh_children(buffer, hq)
     }
 
-    fn handle(&mut self, e: Event) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            _ => self.editor.propagate(e)
+            _ => self.editor.propagate(e, hq)
         }
     }
 }
@@ -34,7 +35,7 @@ impl Edit {
     /// Initializer.
     pub fn new() -> Edit {
         Edit {
-            editor: Editor::new_with_file("LICENSE").unwrap(),
+            editor: Editor::new(),
             ..Default::default()
         }
     }
