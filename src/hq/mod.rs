@@ -40,10 +40,14 @@ impl Hq {
 
     /// Receive a function name or argument.
     pub fn call(&mut self, command: &str) -> Option<Event> {
-        if self.current.len() == 0 {
-            self.current.push(String::from(command));
-            Some(Event::Notify { s: String::from("Hello!") })
-        } else {
+        if self.current.len() == 0 {  // function name
+            if let Some(_) = self.commands.get(command) {
+                self.current.push(String::from(command));
+                Some(Event::Notify { s: String::from("Found the command.") })
+            } else {
+                Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
+            }
+        } else { // argument
             Some(Event::Notify { s: String::from("Not implemented.") })
         }
     }
