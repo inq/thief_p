@@ -1,10 +1,8 @@
-mod screen;
 mod window;
 mod command_bar;
 mod hsplit;
 
 pub use self::command_bar::CommandBar;
-pub use self::screen::Screen;
 pub use self::window::Window;
 pub use self::hsplit::HSplit;
 

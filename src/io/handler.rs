@@ -1,10 +1,11 @@
 use std::convert::From;
 use libc;
 
+use hq::Hq;
 use io::kqueue::Kqueue;
 use io::event::Event;
 use io::term::Term;
-use ui::{self, Ui, Cursor, Refresh, Sequence};
+use ui::{self, Ui, Component, Cursor, Refresh, Sequence};
 use util::ResultBox;
 
 def_error! {
@@ -15,13 +16,18 @@ def_error! {
 pub struct Handler {
     term: Term,
     ui: Ui,
+    hq: Hq,
     ipt_buf: String,
 }
 
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
+        let mut hq = Hq::new();
+        let _ = hq.cmd("open-file", "LICENSE")
+            .unwrap_or_else(|x| panic!(String::from(x.description())));
         Ok(Handler {
             term: Term::new()?,
+            hq: hq,
             ui: ui,
             ipt_buf: String::with_capacity(32),
         })
@@ -57,9 +63,8 @@ impl Handler {
 
     // Handle event from the Ui.
     fn handle_event(&mut self, e: Event) -> ResultBox<()> {
-        let resp = self.ui.handle(e);
+        let resp = self.ui.handle(e, &mut self.hq);
         if let Some(Refresh { x, y, buf }) = resp.refresh {
-            println!("REFRESH");
             self.term.write_ui_buffer(x, y, &buf);
         }
         for resp in resp.sequence {
