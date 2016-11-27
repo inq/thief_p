@@ -46,7 +46,7 @@ impl Hq {
     fn open_file(&mut self, s: &str) -> ResultBox<String> {
         let file_name = Path::new(s).file_name().ok_or(Error::NoFileName)?
             .to_str().ok_or(Error::InvalidFileName)?;
-        let mut buf = Buffer::from_file(s)?;
+        let buf = Buffer::from_file(s)?;
         self.buffers.insert(String::from(file_name), buf);
         self.buffers.get_mut(file_name).ok_or(Error::Internal)?.set_cursor(0, 0);
         Ok(String::from(file_name))
