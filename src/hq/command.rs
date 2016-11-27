@@ -18,5 +18,4 @@ impl Command {
             func: func,
         }
     }
-
 }

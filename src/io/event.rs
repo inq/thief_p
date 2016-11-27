@@ -9,6 +9,7 @@ pub enum Event {
     Meta { c: char },
     Pair { x: usize, y: usize },
     Resize { w: usize, h: usize },
+    Notify { s: String },
     Escape,
 }
 

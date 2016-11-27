@@ -32,6 +32,7 @@ pub enum Sequence {
     Line(Line),
     Char(Char),
     Show(bool),
+    Command(String),
     Quit,
 }
 

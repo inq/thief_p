@@ -67,19 +67,27 @@ impl Handler {
         if let Some(Refresh { x, y, buf }) = resp.refresh {
             self.term.write_ui_buffer(x, y, &buf);
         }
+        let mut next: Option<Event> = None;
         for resp in resp.sequence {
             match resp {
                 Sequence::Move(c) => self.term.move_cursor(c.x, c.y),
                 Sequence::Line(l) => self.term.write_ui_line(&l),
                 Sequence::Char(c) => self.term.write_ui_char(&c),
                 Sequence::Show(b) => self.term.show_cursor(b),
+                Sequence::Command(c) => {
+                    next = self.hq.call(&c);
+                }
                 Sequence::Quit => {
                     self.term.release()?;
                     return Err(From::from(Error::Exit));
                 }
             }
         }
-        Ok(())
+        if let Some(e) = next {
+            self.handle_event(e)
+        } else {
+            Ok(())
+        }
     }
 
     // Handle resize event of terminal.

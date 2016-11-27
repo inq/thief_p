@@ -33,15 +33,17 @@ impl Component for CommandBar {
     fn handle(&mut self, e: Event, _: &mut Hq) -> Response {
         match e {
             Event::Ctrl { c: 'm' } => { // Return
-                Default::default()
+                Response {
+                    sequence: vec![Sequence::Command(self.data.clone())],
+                    ..Default::default()
+                }
             }
             Event::Char { c } => {
                 self.data.push(c);
                 Response {
-                    sequence: vec! [
+                    sequence: vec![
                         Sequence::Char(Char::new(c, self.background.clone())),
-                    ],
-                    ..Default::default()
+                    ],..Default::default()
                 }
             }
             _ => Default::default()

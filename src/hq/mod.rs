@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::path::{self, Path};
 use buf::Buffer;
 use util::ResultBox;
+use io::Event;
 
 mod command;
 
@@ -18,7 +19,8 @@ def_error! {
 #[derive(Default)]
 pub struct Hq {
     buffers: BTreeMap<String, Buffer>,
-    commands: BTreeMap<String, Command>
+    commands: BTreeMap<String, Command>,
+    current: Vec<String>,
 }
 
 impl Hq {
@@ -34,6 +36,16 @@ impl Hq {
         let mut hq: Hq = Default::default();
         hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
         hq
+    }
+
+    /// Receive a function name or argument.
+    pub fn call(&mut self, command: &str) -> Option<Event> {
+        if self.current.len() == 0 {
+            self.current.push(String::from(command));
+            Some(Event::Notify { s: String::from("Hello!") })
+        } else {
+            Some(Event::Notify { s: String::from("Not implemented.") })
+        }
     }
 
     pub fn cmd(&mut self, command: &str, arg: &str) -> ResultBox<String> {
