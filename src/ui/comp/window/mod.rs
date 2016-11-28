@@ -8,7 +8,7 @@ pub use self::edit::Edit;
 
 use hq::Hq;
 use io::Event;
-use ui::res::{Response};
+use ui::res::Response;
 use ui::comp::{Component, View};
 
 def_child!(Window <- Edit);

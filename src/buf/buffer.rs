@@ -60,7 +60,7 @@ impl Buffer {
                 prevs.push(Line::from_string(&s));
             }
         }
-        let cur = prevs.pop().unwrap_or_default();;
+        let cur = prevs.pop().unwrap_or_default();
         Ok(Buffer {
             prevs: prevs,
             cur: cur,
@@ -180,18 +180,14 @@ mod tests {
         let mut buf: Buffer = Default::default();
         buf.break_line();
         assert_eq!(buf.to_string(), "\n\n");
-        let mut buf = Buffer {
-            cur: Line::from_string(&String::from("Hello, world!")),
-            ..Default::default()
-        };
+        let mut buf =
+            Buffer { cur: Line::from_string(&String::from("Hello, world!")), ..Default::default() };
         assert_eq!(buf.to_string(), "Hello, world!\n");
         buf.cur.set_cursor(usize::max_value());
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf = Buffer {
-            cur: Line::from_string(&String::from("Hello, world!")),
-            ..Default::default()
-        };
+        let mut buf =
+            Buffer { cur: Line::from_string(&String::from("Hello, world!")), ..Default::default() };
         buf.cur.set_cursor(5);
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello\n, world!\n");

@@ -9,6 +9,8 @@ pub enum Event {
     Meta { c: char },
     Pair { x: usize, y: usize },
     Resize { w: usize, h: usize },
+    Notify { s: String },
+    OpenBuffer { s: String },
     Escape,
 }
 
@@ -25,7 +27,8 @@ impl Event {
         let mut it = s.chars();
         let res = match it.next() {
             Some('\x1b') => {
-                if it.next() == Some('[') { // CSI
+                if it.next() == Some('[') {
+                    // CSI
                     process_csi(&mut it)
                 } else {
                     None
@@ -46,9 +49,9 @@ fn read_num(s: &mut Chars, seed: usize, d: char) -> Option<usize> {
         if c >= '0' && c <= '9' {
             acc = acc * 10 + c.to_digit(10).unwrap() as usize;
         } else if c == d {
-            return Some(acc)
+            return Some(acc);
         } else {
-            return None
+            return None;
         }
     }
     None
@@ -57,9 +60,8 @@ fn read_num(s: &mut Chars, seed: usize, d: char) -> Option<usize> {
 /// Try to read `CSIx;yR`.
 #[inline]
 fn check_pair(it: &mut Chars, seed: usize) -> Option<Event> {
-    read_num(it, seed, ';').and_then(|y| {
-        read_num(it, seed, 'R').map(|x| Event::Pair { x: x, y: y })
-    })
+    read_num(it, seed, ';')
+        .and_then(|y| read_num(it, seed, 'R').map(|x| Event::Pair { x: x, y: y }))
 }
 
 /// After check
@@ -67,12 +69,12 @@ fn check_pair(it: &mut Chars, seed: usize) -> Option<Event> {
 fn process_csi(s: &mut Chars) -> Option<Event> {
     if let Some(c) = s.next() {
         match c {
-            '0' ... '9' => check_pair(s, c.to_digit(10).unwrap() as usize),
+            '0'...'9' => check_pair(s, c.to_digit(10).unwrap() as usize),
             'A' => Some(Event::Move { x: 0, y: -1 }),
             'B' => Some(Event::Move { x: 0, y: 1 }),
             'C' => Some(Event::Move { x: 1, y: 0 }),
             'D' => Some(Event::Move { x: -1, y: 0 }),
-            _ => Some(Event::Meta { c : c as char })
+            _ => Some(Event::Meta { c: c as char }),
         }
     } else {
         Some(Event::Escape)
@@ -87,4 +89,3 @@ fn test_read_num() {
     assert_eq!(read_num(&mut correct.chars(), 0, '-'), None);
     assert_eq!(read_num(&mut wrong.chars(), 0, ';'), None);
 }
-

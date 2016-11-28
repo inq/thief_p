@@ -2,7 +2,7 @@ use hq::Hq;
 use io::Event;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Parent, View};
-use super::{Editor};
+use super::Editor;
 
 #[derive(Default)]
 pub struct Edit {
@@ -26,7 +26,7 @@ impl Component for Edit {
 
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            _ => self.editor.propagate(e, hq)
+            _ => self.editor.propagate(e, hq),
         }
     }
 }
@@ -34,10 +34,7 @@ impl Component for Edit {
 impl Edit {
     /// Initializer.
     pub fn new() -> Edit {
-        Edit {
-            editor: Editor::new(),
-            ..Default::default()
-        }
+        Edit { editor: Editor::new(), ..Default::default() }
     }
 }
 

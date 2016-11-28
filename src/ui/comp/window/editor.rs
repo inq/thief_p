@@ -8,7 +8,7 @@ use super::LineNumber;
 pub struct Editor {
     view: View,
     line_number: LineNumber,
-    file_name: String,
+    buffer_name: String,
     cursor: Cursor,
     x_off: usize,
     brush: Brush,
@@ -31,23 +31,30 @@ impl Component for Editor {
             buffer.draw(&buf, 0 + x, 0 + y);
         }
         // Draw the others
-        buffer.draw_buffer(hq.buf(&self.file_name).unwrap(),
-                           self.x_off, 0, self.line_number.current);
+        buffer.draw_buffer(hq.buf(&self.buffer_name).unwrap(),
+                           self.x_off,
+                           0,
+                           self.line_number.current);
         Response {
-            refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
-            sequence: vec![
-                Sequence::Show(true),
-                self.move_cursor(),
-            ]
+            refresh: Some(Refresh {
+                x: 0,
+                y: 0,
+                buf: buffer,
+            }),
+            sequence: vec![Sequence::Show(true), self.move_cursor()],
         }
     }
 
     /// Move cursor left and right, or Type a character.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
+            Event::OpenBuffer { s } => {
+                self.buffer_name = s;
+                Default::default()
+            }
             Event::Move { x, y } => {
                 {
-                    let b = hq.buf(&self.file_name).unwrap();
+                    let b = hq.buf(&self.buffer_name).unwrap();
                     b.move_cursor(x, y);
                     self.cursor.x = b.get_x();
                     self.cursor.y = b.get_y();
@@ -62,15 +69,13 @@ impl Component for Editor {
                     self.refresh(hq)
                 } else {
                     // Do not scroll
-                    Response {
-                        sequence: vec![self.move_cursor()],
-                        ..Default::default()
-                    }
+                    Response { sequence: vec![self.move_cursor()], ..Default::default() }
                 }
             }
-            Event::Ctrl { c: 'm' } => { // CR
+            Event::Ctrl { c: 'm' } => {
+                // CR
                 {
-                    let b = hq.buf(&self.file_name).unwrap();
+                    let b = hq.buf(&self.buffer_name).unwrap();
                     b.break_line();
                     self.cursor.x = b.get_x();
                     self.cursor.y = b.get_y();
@@ -80,7 +85,7 @@ impl Component for Editor {
             Event::Char { c } => {
                 let mut after_cursor = String::with_capacity(self.view.width);
                 {
-                    let b = hq.buf(&self.file_name).unwrap();
+                    let b = hq.buf(&self.buffer_name).unwrap();
                     let req = self.view.width - self.x_off - self.cursor.x;
                     self.cursor.x += 1;
                     b.insert(c);
@@ -88,16 +93,14 @@ impl Component for Editor {
                     after_cursor.push_str(&b.after_cursor(req));
                 }
                 Response {
-                    sequence: vec![
-                        Sequence::Show(false),
-                        Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
-                        Sequence::Move(self.cursor_translated()),
-                        Sequence::Show(true),
-                    ],
+                    sequence: vec![Sequence::Show(false),
+                                   Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
+                                   Sequence::Move(self.cursor_translated()),
+                                   Sequence::Show(true)],
                     ..Default::default()
                 }
             }
-            _ => Default::default()
+            _ => Default::default(),
         }
     }
 }
@@ -119,7 +122,7 @@ impl Editor {
     /// Basic initializer.
     pub fn new() -> Editor {
         Editor {
-            file_name: String::from("LICENSE"),
+            buffer_name: String::from("<empty>"),
             brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
             ..Default::default()
         }

@@ -32,22 +32,24 @@ pub enum Sequence {
     Line(Line),
     Char(Char),
     Show(bool),
+    Command(String),
     Quit,
 }
 
 impl Response {
     /// Shorthand for quit event.
     pub fn quit() -> Response {
-        Response {
-            sequence: vec![Sequence::Quit],
-            ..Default::default()
-        }
+        Response { sequence: vec![Sequence::Quit], ..Default::default() }
     }
 
     /// Shorthand for refresh.
     pub fn refresh(x: usize, y: usize, buf: Buffer) -> Response {
         Response {
-            refresh: Some(Refresh { x: x, y: y, buf: buf }),
+            refresh: Some(Refresh {
+                x: x,
+                y: y,
+                buf: buf,
+            }),
             ..Default::default()
         }
     }

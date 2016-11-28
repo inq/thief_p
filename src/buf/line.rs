@@ -25,7 +25,7 @@ impl Default for Line {
 impl Line {
     /// Return the terminal x of the cursor.
     pub fn get_x(&self) -> usize {
-       self.x
+        self.x
     }
 
     /// Break the line.
@@ -75,7 +75,11 @@ impl Line {
 
     /// Append string before cursor.
     pub fn push_before(&mut self, str: &String) {
-        self.x += str.chars().map({|c| util::term_width(c)}).sum();
+        self.x += str.chars()
+            .map({
+                |c| util::term_width(c)
+            })
+            .sum();
         self.prevs.push_str(str);
     }
 

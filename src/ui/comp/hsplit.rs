@@ -36,8 +36,8 @@ impl Component for HSplit {
             Event::Ctrl { c: 'd' } => {
                 self.toggle_split();
                 self.refresh(hq)
-            },
-            _ => self.windows[self.focused].propagate(e, hq)
+            }
+            _ => self.windows[self.focused].propagate(e, hq),
         }
     }
 }
