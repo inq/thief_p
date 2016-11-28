@@ -13,8 +13,8 @@ impl Color {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Brush {
-    fg: Color,
-    bg: Color,
+    pub fg: Color,
+    pub bg: Color,
 }
 
 impl Brush {

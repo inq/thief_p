@@ -1,19 +1,20 @@
 use std::path::Path;
 use std::fs;
 use util::ResultBox;
+use ui::{Style, Formatted};
 
 def_error! {
     Internal: "internal error",
 }
 
-#[derive(Debug)]
-enum EntryType {
+#[derive(Debug, PartialEq)]
+pub enum EntryType {
     File,
     Directory,
 }
 
 #[derive(Debug)]
-struct Entry {
+pub struct Entry {
     name: String,
     file_type: EntryType,
 }
@@ -31,6 +32,11 @@ impl Entry {
             file_type: file_type,
         }
     }
+
+    /// Return if it is a directory.
+    pub fn is_dir(&self) -> bool {
+        self.file_type == EntryType::Directory
+    }
 }
 
 impl Filesys {
@@ -43,6 +49,7 @@ impl Filesys {
         fs
     }
 
+    /// Refresh the files.
     fn update(&mut self, path: &str) -> ResultBox<()> {
         self.path = String::from(path);
         self.files.clear();
@@ -54,12 +61,26 @@ impl Filesys {
                 EntryType::File
             };
             self.files.push(Entry::new(entry.path()
-                                       .file_name()
-                                       .ok_or(Error::Internal)?
-                                       .to_str()
-                                       .ok_or(Error::Internal)?, entry_type));
+                                           .file_name()
+                                           .ok_or(Error::Internal)?
+                                           .to_str()
+                                           .ok_or(Error::Internal)?,
+                                       entry_type));
         }
         Ok(())
+    }
+
+    pub fn render(&self) -> Vec<Formatted> {
+        let mut res = vec![];
+        for entry in self.files.iter() {
+            let style = if entry.is_dir() {
+                Style::Directory
+            } else {
+                Style::File
+            };
+            res.push(Formatted::new().push(style, &entry.name));
+        }
+        res
     }
 }
 

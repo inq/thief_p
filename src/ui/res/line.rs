@@ -1,6 +1,5 @@
 use buf;
-use ui::res::char::Char;
-use ui::res::color::Brush;
+use ui::res::{Brush, Char, Formatted};
 
 #[derive(Debug, Clone)]
 pub struct Line {
@@ -49,6 +48,15 @@ impl Line {
         for (i, chr) in src.chars.iter().enumerate() {
             if x + i < self.width {
                 self.chars[x + i] = chr.clone();
+            }
+        }
+    }
+
+    /// Draw the formatted string here.
+    pub fn draw_formatted(&mut self, src: &Formatted, x: usize) {
+        for i in 0..src.len() {
+            if let Some((style, c)) = src.get(i) {
+                self.chars[x + i].overwrite(style, c);
             }
         }
     }

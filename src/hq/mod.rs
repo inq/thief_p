@@ -18,11 +18,11 @@ def_error! {
     NoElement: "no element.",
 }
 
-#[derive(Default)]
 pub struct Hq {
     buffers: BTreeMap<String, Buffer>,
     commands: BTreeMap<String, Command>,
     current: Vec<String>,
+    fs: Filesys,
 }
 
 impl Hq {
@@ -35,10 +35,19 @@ impl Hq {
     }
 
     pub fn new() -> Hq {
-        let mut hq: Hq = Default::default();
+        let mut hq = Hq {
+            buffers: Default::default(),
+            commands: Default::default(),
+            current: Default::default(),
+            fs: Filesys::new(),
+        };
         hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
         hq.buffers.insert(String::from("<empty>"), Default::default());
         hq
+    }
+
+    pub fn fs(&mut self) -> Result<&mut Filesys> {
+        Ok(&mut self.fs)
     }
 
     /// Receive a function name or argument.

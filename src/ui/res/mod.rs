@@ -1,4 +1,5 @@
 mod buffer;
+mod formatted;
 mod color;
 mod char;
 mod line;
@@ -7,6 +8,7 @@ pub use self::buffer::Buffer;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
+pub use self::formatted::{Style, Formatted};
 
 #[derive(Debug, Default, Clone)]
 pub struct Cursor {

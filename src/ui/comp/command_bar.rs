@@ -57,7 +57,11 @@ impl Component for CommandBar {
     /// Force the height.
     fn on_resize(&mut self) {
         let height_parent = self.view.height;
-        self.view.height = if self.status == Status::Navigate { height_parent / 3 } else { 1 };
+        self.view.height = if self.status == Status::Navigate {
+            height_parent / 3
+        } else {
+            1
+        };
         self.view.y = height_parent - self.view.height;
     }
 
@@ -67,7 +71,7 @@ impl Component for CommandBar {
             Event::Navigate { msg } => {
                 // Turn on the navigator
                 self.status = Status::Navigate;
-                Default::default()
+                self.refresh(hq)
             }
             Event::Notify { s } => {
                 // Notify from Hq
@@ -95,21 +99,28 @@ impl Component for CommandBar {
                         self.data.push(c);
                         self.refresh(hq)
                     }
-                    Status::Navigate => {
-                        self.refresh(hq)
-                    }
+                    Status::Navigate => self.refresh(hq),
                 }
             }
             _ => Default::default(),
         }
     }
 
-    fn refresh(&self, _: &mut Hq) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> Response {
+        let buf = if self.status == Status::Navigate {
+            let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
+            for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
+                res.draw_formatted(formatted, 2, i);
+            }
+            res
+        } else {
+            Buffer::blank(&self.background, self.view.width, self.view.height)
+        };
         Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
+                buf: buf,
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
                            Sequence::Line(Line::new_from_str(&self.data, &self.background))],
