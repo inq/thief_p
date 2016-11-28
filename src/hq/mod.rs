@@ -35,6 +35,7 @@ impl Hq {
     pub fn new() -> Hq {
         let mut hq: Hq = Default::default();
         hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
+        hq.buffers.insert(String::from("<empty>"), Default::default());
         hq
     }
 
@@ -43,18 +44,27 @@ impl Hq {
         if self.current.len() == 0 {  // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Notify { s: String::from("Found the command.") })
+                Some(Event::Notify { s: String::from("Input the argument 1.") })
             } else {
                 Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
             }
         } else { // argument
-            Some(Event::Notify { s: String::from("Not implemented.") })
+            if let Some(_) = self.commands.get(&self.current[0]) {
+                let funcname = self.current[0].clone();
+                if let Ok(bufname) = self.run(&funcname, command) {
+                    Some(Event::OpenBuffer { s: String::from(bufname) })
+                } else {
+                    Some(Event::Notify { s: String::from("Cannot open the file.") })
+                }
+            } else {
+                self.current.clear();
+                Some(Event::Notify { s: String::from("Internal error.") })
+            }
         }
     }
 
-    pub fn cmd(&mut self, command: &str, arg: &str) -> ResultBox<String> {
+    pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
         let t: Vec<_> = self.commands.keys().cloned().collect();
-        println!("{:?}", t);
         let func = self.commands.get(command).ok_or(Error::NoElement)?.func;
         func(self, arg)
     }

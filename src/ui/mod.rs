@@ -47,6 +47,13 @@ impl Component for Ui {
             },
             Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
             Event::Ctrl { c: 'q' } => Response::quit(),
+            Event::OpenBuffer { s: _ } => {
+                if let UiChild::CommandBar(ref mut c) = self.command_bar {
+                    c.active = false;
+                }
+                self.hsplit.propagate(e, hq);
+                self.refresh(hq)
+            }
             _ => {
                 if self.command_bar().active {
                     self.command_bar.propagate(e, hq)

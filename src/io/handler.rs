@@ -23,8 +23,8 @@ pub struct Handler {
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
         let mut hq = Hq::new();
-        let _ = hq.cmd("open-file", "LICENSE")
-            .unwrap_or_else(|x| panic!(String::from(x.description())));
+        //let _ = hq.cmd("open-file", "LICENSE")
+        //.unwrap_or_else(|x| panic!(String::from(x.description())));
         Ok(Handler {
             term: Term::new()?,
             hq: hq,
