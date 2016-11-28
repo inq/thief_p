@@ -55,6 +55,7 @@ impl Component for CommandBar {
     /// Handle the keyboard input.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
+            Event::Navigate { msg } => self.notify(&msg),
             Event::Notify { s } => {
                 // Notify from Hq
                 self.notify(&s)

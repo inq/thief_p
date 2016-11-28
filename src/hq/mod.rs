@@ -45,7 +45,7 @@ impl Hq {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Notify { s: String::from("Input the argument 1.") })
+                Some(Event::Navigate { msg: String::from("open-file: ") })
             } else {
                 Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
             }

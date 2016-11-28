@@ -38,6 +38,7 @@ impl Component for Ui {
     /// Send some functions into command bar. Otherwise, into hsplit.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
+            Event::Navigate { .. } => self.command_bar.propagate(e, hq),
             Event::Resize { w: width, h: height } => {
                 self.resize(0, 0, width, height);
                 self.refresh(hq)
@@ -45,9 +46,7 @@ impl Component for Ui {
             Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
             Event::Ctrl { c: 'q' } => Response::quit(),
             Event::OpenBuffer { s: _ } => {
-                if let UiChild::CommandBar(ref mut c) = self.command_bar {
-                    c.active = false;
-                }
+                self.command_bar_mut().active = false;
                 self.hsplit.propagate(e, hq);
                 self.refresh(hq)
             }
