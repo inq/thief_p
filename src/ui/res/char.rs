@@ -1,4 +1,4 @@
-use ui::res::color::Brush;
+use ui::{Style, Brush, Color};
 use util;
 
 #[derive(Clone, Debug)]
@@ -17,5 +17,13 @@ impl Char {
 
     pub fn width(&self) -> usize {
         util::term_width(self.chr)
+    }
+
+    pub fn overwrite(&mut self, s: Style, c: char) {
+        self.chr = c;
+        self.brush.fg = match s {
+            Style::File => Color::new(200, 100, 100),
+            Style::Directory => Color::new(100, 100, 200),
+        }
     }
 }

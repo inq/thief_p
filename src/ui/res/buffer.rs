@@ -1,6 +1,7 @@
 use buf;
 use ui::res::color::Brush;
 use ui::res::line::Line;
+use ui::res::formatted::Formatted;
 
 #[derive(Debug)]
 pub struct Buffer {
@@ -35,6 +36,13 @@ impl Buffer {
             if y + i < self.height {
                 self.lines[y + i].draw(line, x);
             }
+        }
+    }
+
+    /// Draw the formatted string here.
+    pub fn draw_formatted(&mut self, src: &Formatted, x: usize, y: usize) {
+        if let Some(ref mut line) = self.lines.get_mut(y) {
+            line.draw_formatted(src, x)
         }
     }
 

@@ -24,7 +24,7 @@ impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
         Ok(Handler {
             term: Term::new()?,
-            hq: Hq::new(),
+            hq: Hq::new()?,
             ui: ui,
             ipt_buf: String::with_capacity(32),
         })

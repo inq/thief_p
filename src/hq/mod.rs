@@ -6,7 +6,9 @@ use util::ResultBox;
 use io::Event;
 
 mod command;
+mod fs;
 
+use hq::fs::Filesys;
 use hq::command::Command;
 
 def_error! {
@@ -16,11 +18,11 @@ def_error! {
     NoElement: "no element.",
 }
 
-#[derive(Default)]
 pub struct Hq {
     buffers: BTreeMap<String, Buffer>,
     commands: BTreeMap<String, Command>,
     current: Vec<String>,
+    fs: Filesys,
 }
 
 impl Hq {
@@ -32,11 +34,21 @@ impl Hq {
         self.commands.insert(String::from(name), res);
     }
 
-    pub fn new() -> Hq {
-        let mut hq: Hq = Default::default();
+    /// Initialize.
+    pub fn new() -> ResultBox<Hq> {
+        let mut hq = Hq {
+            buffers: Default::default(),
+            commands: Default::default(),
+            current: Default::default(),
+            fs: Filesys::new()?,
+        };
         hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
         hq.buffers.insert(String::from("<empty>"), Default::default());
-        hq
+        Ok(hq)
+    }
+
+    pub fn fs(&mut self) -> Result<&mut Filesys> {
+        Ok(&mut self.fs)
     }
 
     /// Receive a function name or argument.
@@ -45,7 +57,7 @@ impl Hq {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Notify { s: String::from("Input the argument 1.") })
+                Some(Event::Navigate { msg: String::from("open-file: ") })
             } else {
                 Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
             }

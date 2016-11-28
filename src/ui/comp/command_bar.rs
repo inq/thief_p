@@ -3,15 +3,18 @@ use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
+#[derive(PartialEq)]
 pub enum Status {
     Standby,
     Notify,
+    Navigate,
 }
 
 pub struct CommandBar {
     pub active: bool,
     status: Status,
     data: String,
+    message: String,
     view: View,
     background: Brush,
 }
@@ -22,6 +25,7 @@ impl Default for CommandBar {
             status: Status::Standby,
             active: false,
             data: String::with_capacity(80),
+            message: String::with_capacity(80),
             view: Default::default(),
             background: Brush::new(Color::new(220, 220, 220), Color::new(60, 30, 30)),
         }
@@ -42,19 +46,37 @@ impl CommandBar {
                            Sequence::Line(Line::new_from_str(msg, &self.background))],
         }
     }
+
+    /// Return the height.
+    pub fn height(&self) -> usize {
+        if self.active { self.view.height } else { 0 }
+    }
 }
 
 impl Component for CommandBar {
     has_view!();
 
-    /// Force the height to be 1.
+    /// Force the height.
     fn on_resize(&mut self) {
-        self.view.height = 1;
+        let height_parent = self.view.height;
+        self.view.height = if self.status == Status::Navigate {
+            height_parent / 3
+        } else {
+            1
+        };
+        self.view.y = height_parent - self.view.height;
     }
 
     /// Handle the keyboard input.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
+            Event::Navigate { msg } => {
+                // Turn on the navigator
+                self.data.clear();
+                self.message = String::from(msg);
+                self.status = Status::Navigate;
+                self.refresh(hq)
+            }
             Event::Notify { s } => {
                 // Notify from Hq
                 self.notify(&s)
@@ -81,18 +103,34 @@ impl Component for CommandBar {
                         self.data.push(c);
                         self.refresh(hq)
                     }
+                    Status::Navigate => {
+                        self.data.push(c);
+                        Response {
+                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
+                            ..Default::default()
+                        }
+                    }
                 }
             }
             _ => Default::default(),
         }
     }
 
-    fn refresh(&self, _: &mut Hq) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> Response {
+        let buf = if self.status == Status::Navigate {
+            let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
+            for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
+                res.draw_formatted(formatted, 0, i + 1);
+            }
+            res
+        } else {
+            Buffer::blank(&self.background, self.view.width, self.view.height)
+        };
         Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
+                buf: buf,
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
                            Sequence::Line(Line::new_from_str(&self.data, &self.background))],
