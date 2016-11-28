@@ -22,12 +22,8 @@ impl Component for LineNumber {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(220, 180, 180));
         let mut buffer = Buffer::blank(&b, self.view.width, self.view.height);
         for (i, line) in buffer.lines.iter_mut().enumerate() {
-            line.draw_str(
-                &format!(
-                    "{:width$}",
-                    i + self.current,
-                    width = self.view.width - 1),
-                0);
+            line.draw_str(&format!("{:width$}", i + self.current, width = self.view.width - 1),
+                          0);
         }
         Response::refresh(0, 0, buffer)
     }

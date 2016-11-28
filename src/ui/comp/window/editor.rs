@@ -32,13 +32,16 @@ impl Component for Editor {
         }
         // Draw the others
         buffer.draw_buffer(hq.buf(&self.buffer_name).unwrap(),
-                           self.x_off, 0, self.line_number.current);
+                           self.x_off,
+                           0,
+                           self.line_number.current);
         Response {
-            refresh: Some(Refresh { x: 0, y: 0, buf: buffer }),
-            sequence: vec![
-                Sequence::Show(true),
-                self.move_cursor(),
-            ]
+            refresh: Some(Refresh {
+                x: 0,
+                y: 0,
+                buf: buffer,
+            }),
+            sequence: vec![Sequence::Show(true), self.move_cursor()],
         }
     }
 
@@ -66,13 +69,11 @@ impl Component for Editor {
                     self.refresh(hq)
                 } else {
                     // Do not scroll
-                    Response {
-                        sequence: vec![self.move_cursor()],
-                        ..Default::default()
-                    }
+                    Response { sequence: vec![self.move_cursor()], ..Default::default() }
                 }
             }
-            Event::Ctrl { c: 'm' } => { // CR
+            Event::Ctrl { c: 'm' } => {
+                // CR
                 {
                     let b = hq.buf(&self.buffer_name).unwrap();
                     b.break_line();
@@ -92,16 +93,14 @@ impl Component for Editor {
                     after_cursor.push_str(&b.after_cursor(req));
                 }
                 Response {
-                    sequence: vec![
-                        Sequence::Show(false),
-                        Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
-                        Sequence::Move(self.cursor_translated()),
-                        Sequence::Show(true),
-                    ],
+                    sequence: vec![Sequence::Show(false),
+                                   Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
+                                   Sequence::Move(self.cursor_translated()),
+                                   Sequence::Show(true)],
                     ..Default::default()
                 }
             }
-            _ => Default::default()
+            _ => Default::default(),
         }
     }
 }

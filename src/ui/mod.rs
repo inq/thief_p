@@ -1,9 +1,6 @@
 mod comp;
 mod res;
 
-use util::Chan;
-use std::{thread, result};
-use std::sync::mpsc;
 use io::Event;
 use hq::Hq;
 use ui::comp::{CommandBar, HSplit, Parent, View};
@@ -44,7 +41,7 @@ impl Component for Ui {
             Event::Resize { w: width, h: height } => {
                 self.resize(0, 0, width, height);
                 self.refresh(hq)
-            },
+            }
             Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
             Event::Ctrl { c: 'q' } => Response::quit(),
             Event::OpenBuffer { s: _ } => {
@@ -95,9 +92,9 @@ impl Ui {
         self.command_bar_mut().active = true;
         self.resize_command_bar();
         // TODO: Make concise.
-        self.command_bar.refresh(hq).translate(
-            self.command_bar.get_view().x,
-            self.command_bar.get_view().y)
+        self.command_bar
+            .refresh(hq)
+            .translate(self.command_bar.get_view().x, self.command_bar.get_view().y)
     }
 
     pub fn new() -> Result<Ui> {
@@ -114,20 +111,24 @@ impl Parent for Ui {
     type Child = UiChild;
     fn children_mut(&mut self) -> Vec<&mut UiChild> {
         if self.command_bar().active {
-            vec![&mut self.hsplit, &mut self.command_bar].into_iter()
+            vec![&mut self.hsplit, &mut self.command_bar]
+                .into_iter()
                 .collect()
         } else {
-            vec![&mut self.hsplit].into_iter()
+            vec![&mut self.hsplit]
+                .into_iter()
                 .collect()
         }
     }
 
     fn children(&self) -> Vec<&UiChild> {
         if self.command_bar().active {
-            vec![&self.hsplit, &self.command_bar].into_iter()
+            vec![&self.hsplit, &self.command_bar]
+                .into_iter()
                 .collect()
         } else {
-            vec![&self.hsplit].into_iter()
+            vec![&self.hsplit]
+                .into_iter()
                 .collect()
         }
     }

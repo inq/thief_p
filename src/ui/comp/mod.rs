@@ -20,7 +20,12 @@ pub struct View {
 
 impl View {
     fn update(&mut self, x: usize, y: usize, width: usize, height: usize) {
-        *self = View { x: x, y: y, width: width, height: height }
+        *self = View {
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+        }
     }
 }
 
@@ -51,7 +56,11 @@ pub trait Parent {
 
     /// Draw the children and transform each sequenced results.
     fn refresh_children(&self, buffer: Buffer, hq: &mut Hq) -> Response {
-        let mut refresh = Refresh { x: 0, y: 0, buf: buffer };
+        let mut refresh = Refresh {
+            x: 0,
+            y: 0,
+            buf: buffer,
+        };
         let mut sequence = vec![];
         for &ref child in self.children() {
             let resp = child.refresh(hq);

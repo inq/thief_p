@@ -36,12 +36,10 @@ impl CommandBar {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height)
+                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
             }),
-            sequence: vec![
-                Sequence::Move(Cursor { x: 0, y: 0 }),
-                Sequence::Line(Line::new_from_str(msg, &self.background))
-            ]
+            sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
+                           Sequence::Line(Line::new_from_str(msg, &self.background))],
         }
     }
 }
@@ -57,10 +55,12 @@ impl Component for CommandBar {
     /// Handle the keyboard input.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            Event::Notify { s } => { // Notify from Hq
+            Event::Notify { s } => {
+                // Notify from Hq
                 self.notify(&s)
             }
-            Event::Ctrl { c: 'm' } => { // Return
+            Event::Ctrl { c: 'm' } => {
+                // Return
                 Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
@@ -71,9 +71,8 @@ impl Component for CommandBar {
                     Status::Standby => {
                         self.data.push(c);
                         Response {
-                            sequence: vec![
-                                Sequence::Char(Char::new(c, self.background.clone())),
-                            ],..Default::default()
+                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
+                            ..Default::default()
                         }
                     }
                     Status::Notify => {
@@ -84,7 +83,7 @@ impl Component for CommandBar {
                     }
                 }
             }
-            _ => Default::default()
+            _ => Default::default(),
         }
     }
 
@@ -93,12 +92,10 @@ impl Component for CommandBar {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height)
+                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
             }),
-            sequence: vec![
-                Sequence::Move(Cursor { x: 0, y: 0 }),
-                Sequence::Line(Line::new_from_str(&self.data, &self.background))
-            ]
+            sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
+                           Sequence::Line(Line::new_from_str(&self.data, &self.background))],
         }
     }
 }

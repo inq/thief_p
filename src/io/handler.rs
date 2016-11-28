@@ -5,7 +5,7 @@ use hq::Hq;
 use io::kqueue::Kqueue;
 use io::event::Event;
 use io::term::Term;
-use ui::{self, Ui, Component, Cursor, Refresh, Sequence};
+use ui::{Ui, Component, Cursor, Refresh, Sequence};
 use util::ResultBox;
 
 def_error! {
@@ -22,12 +22,9 @@ pub struct Handler {
 
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
-        let mut hq = Hq::new();
-        //let _ = hq.cmd("open-file", "LICENSE")
-        //.unwrap_or_else(|x| panic!(String::from(x.description())));
         Ok(Handler {
             term: Term::new()?,
-            hq: hq,
+            hq: Hq::new(),
             ui: ui,
             ipt_buf: String::with_capacity(32),
         })

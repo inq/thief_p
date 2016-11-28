@@ -1,6 +1,6 @@
 /// HQ: Headquarters.
 use std::collections::BTreeMap;
-use std::path::{self, Path};
+use std::path::Path;
 use buf::Buffer;
 use util::ResultBox;
 use io::Event;
@@ -41,14 +41,16 @@ impl Hq {
 
     /// Receive a function name or argument.
     pub fn call(&mut self, command: &str) -> Option<Event> {
-        if self.current.len() == 0 {  // function name
+        if self.current.len() == 0 {
+            // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
                 Some(Event::Notify { s: String::from("Input the argument 1.") })
             } else {
                 Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
             }
-        } else { // argument
+        } else {
+            // argument
             if let Some(_) = self.commands.get(&self.current[0]) {
                 let funcname = self.current[0].clone();
                 if let Ok(bufname) = self.run(&funcname, command) {
@@ -64,14 +66,15 @@ impl Hq {
     }
 
     pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
-        let t: Vec<_> = self.commands.keys().cloned().collect();
         let func = self.commands.get(command).ok_or(Error::NoElement)?.func;
         func(self, arg)
     }
 
     fn open_file(&mut self, s: &str) -> ResultBox<String> {
-        let file_name = Path::new(s).file_name().ok_or(Error::NoFileName)?
-            .to_str().ok_or(Error::InvalidFileName)?;
+        let file_name = Path::new(s).file_name()
+            .ok_or(Error::NoFileName)?
+            .to_str()
+            .ok_or(Error::InvalidFileName)?;
         let buf = Buffer::from_file(s)?;
         self.buffers.insert(String::from(file_name), buf);
         self.buffers.get_mut(file_name).ok_or(Error::Internal)?.set_cursor(0, 0);
