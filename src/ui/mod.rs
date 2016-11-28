@@ -25,8 +25,9 @@ impl Component for Ui {
     has_view!();
 
     fn on_resize(&mut self) {
-        self.hsplit.resize(1, 1, self.view.width - 2, self.view.height - 2);
         self.resize_command_bar();
+        let height = self.view.height - self.command_bar().height() - 1;
+        self.hsplit.resize(1, 1, self.view.width - 2, height);
     }
 
     fn refresh(&self, hq: &mut Hq) -> Response {
@@ -38,7 +39,12 @@ impl Component for Ui {
     /// Send some functions into command bar. Otherwise, into hsplit.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            Event::Navigate { .. } => self.command_bar.propagate(e, hq),
+            Event::Navigate { .. } => {
+                self.command_bar.propagate(e, hq);
+                self.on_resize();
+                self.refresh(hq)
+
+            }
             Event::Resize { w: width, h: height } => {
                 self.resize(0, 0, width, height);
                 self.refresh(hq)
@@ -82,7 +88,7 @@ impl Ui {
     /// Resize the command bar; the bottom-side of the ui.
     #[inline]
     fn resize_command_bar(&mut self) {
-        self.command_bar.resize(0, self.view.height - 1, self.view.width, 1);
+        self.command_bar.resize(0, 0, self.view.width, self.view.height);
     }
 
     /// Activate command bar, and redrew the corresponding area.

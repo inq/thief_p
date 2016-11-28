@@ -3,9 +3,11 @@ use io::Event;
 use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
+#[derive(PartialEq)]
 pub enum Status {
     Standby,
     Notify,
+    Navigate,
 }
 
 pub struct CommandBar {
@@ -42,20 +44,31 @@ impl CommandBar {
                            Sequence::Line(Line::new_from_str(msg, &self.background))],
         }
     }
+
+    /// Return the height.
+    pub fn height(&self) -> usize {
+        self.view.height
+    }
 }
 
 impl Component for CommandBar {
     has_view!();
 
-    /// Force the height to be 1.
+    /// Force the height.
     fn on_resize(&mut self) {
-        self.view.height = 1;
+        let height_parent = self.view.height;
+        self.view.height = if self.status == Status::Navigate { height_parent / 3 } else { 1 };
+        self.view.y = height_parent - self.view.height;
     }
 
     /// Handle the keyboard input.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
         match e {
-            Event::Navigate { msg } => self.notify(&msg),
+            Event::Navigate { msg } => {
+                // Turn on the navigator
+                self.status = Status::Navigate;
+                Default::default()
+            }
             Event::Notify { s } => {
                 // Notify from Hq
                 self.notify(&s)
@@ -80,6 +93,9 @@ impl Component for CommandBar {
                         self.status = Status::Standby;
                         self.data.clear();
                         self.data.push(c);
+                        self.refresh(hq)
+                    }
+                    Status::Navigate => {
                         self.refresh(hq)
                     }
                 }
