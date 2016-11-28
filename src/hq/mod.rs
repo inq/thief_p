@@ -6,7 +6,9 @@ use util::ResultBox;
 use io::Event;
 
 mod command;
+mod fs;
 
+use hq::fs::Filesys;
 use hq::command::Command;
 
 def_error! {
