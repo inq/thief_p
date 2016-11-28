@@ -43,7 +43,6 @@ impl Component for Ui {
                 self.command_bar.propagate(e, hq);
                 self.on_resize();
                 self.refresh(hq)
-
             }
             Event::Resize { w: width, h: height } => {
                 self.resize(0, 0, width, height);
@@ -53,6 +52,7 @@ impl Component for Ui {
             Event::Ctrl { c: 'q' } => Response::quit(),
             Event::OpenBuffer { s: _ } => {
                 self.command_bar_mut().active = false;
+                self.on_resize();
                 self.hsplit.propagate(e, hq);
                 self.refresh(hq)
             }

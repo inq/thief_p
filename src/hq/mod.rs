@@ -34,16 +34,17 @@ impl Hq {
         self.commands.insert(String::from(name), res);
     }
 
-    pub fn new() -> Hq {
+    /// Initialize.
+    pub fn new() -> ResultBox<Hq> {
         let mut hq = Hq {
             buffers: Default::default(),
             commands: Default::default(),
             current: Default::default(),
-            fs: Filesys::new(),
+            fs: Filesys::new()?,
         };
         hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
         hq.buffers.insert(String::from("<empty>"), Default::default());
-        hq
+        Ok(hq)
     }
 
     pub fn fs(&mut self) -> Result<&mut Filesys> {

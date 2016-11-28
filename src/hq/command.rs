@@ -8,7 +8,7 @@ pub struct Command {
 }
 
 impl Command {
-    // Create a new command. It must be done at the initialization phase.
+    /// Create a new command. It must be done at the initialization phase.
     pub fn new(name: &str,
                args: Vec<String>,
                func: fn(&mut Hq, &str) -> ResultBox<String>)

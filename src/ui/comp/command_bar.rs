@@ -14,6 +14,7 @@ pub struct CommandBar {
     pub active: bool,
     status: Status,
     data: String,
+    message: String,
     view: View,
     background: Brush,
 }
@@ -24,6 +25,7 @@ impl Default for CommandBar {
             status: Status::Standby,
             active: false,
             data: String::with_capacity(80),
+            message: String::with_capacity(80),
             view: Default::default(),
             background: Brush::new(Color::new(220, 220, 220), Color::new(60, 30, 30)),
         }
@@ -47,7 +49,7 @@ impl CommandBar {
 
     /// Return the height.
     pub fn height(&self) -> usize {
-        self.view.height
+        if self.active { self.view.height } else { 0 }
     }
 }
 
@@ -70,6 +72,8 @@ impl Component for CommandBar {
         match e {
             Event::Navigate { msg } => {
                 // Turn on the navigator
+                self.data.clear();
+                self.message = String::from(msg);
                 self.status = Status::Navigate;
                 self.refresh(hq)
             }
@@ -99,7 +103,13 @@ impl Component for CommandBar {
                         self.data.push(c);
                         self.refresh(hq)
                     }
-                    Status::Navigate => self.refresh(hq),
+                    Status::Navigate => {
+                        self.data.push(c);
+                        Response {
+                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
+                            ..Default::default()
+                        }
+                    }
                 }
             }
             _ => Default::default(),
@@ -110,7 +120,7 @@ impl Component for CommandBar {
         let buf = if self.status == Status::Navigate {
             let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
             for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
-                res.draw_formatted(formatted, 2, i);
+                res.draw_formatted(formatted, 0, i + 1);
             }
             res
         } else {

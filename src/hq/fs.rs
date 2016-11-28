@@ -1,4 +1,3 @@
-use std::path::Path;
 use std::fs;
 use util::ResultBox;
 use ui::{Style, Formatted};
@@ -40,13 +39,14 @@ impl Entry {
 }
 
 impl Filesys {
-    pub fn new() -> Filesys {
+    /// Initialze.
+    pub fn new() -> ResultBox<Filesys> {
         let mut fs = Filesys {
             path: String::new(),
             files: vec![],
         };
-        fs.update(".");
-        fs
+        fs.update(".")?;
+        Ok(fs)
     }
 
     /// Refresh the files.
