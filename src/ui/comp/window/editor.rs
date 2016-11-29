@@ -1,6 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
+use buf::BackspaceRes;
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 use super::LineNumber;
@@ -68,7 +69,7 @@ impl Component for Editor {
             Event::Ctrl { c: 'k' } => {
                 // Kill-line
                 hq.buf(&self.buffer_name)?.kill_line();
-                let blanks = vec![' '; self.view.width - self.x_off - self.cursor.x]
+                let blanks = vec![' '; self.spaces_after_cursor()]
                     .into_iter()
                     .collect::<String>();
                 Ok(Response {
@@ -103,12 +104,35 @@ impl Component for Editor {
                 self.cursor = hq.buf(&self.buffer_name)?.break_line();
                 self.refresh(hq)
             }
+            Event::Char { c: '\x7f' } => {
+                // Backspace
+                match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
+                    BackspaceRes::Normal(mut after_cursor) => {
+                        after_cursor.push(' ');
+                        self.cursor.x -= 1;
+                        Ok(Response {
+                            sequence: vec![Sequence::Show(false),
+                                           Sequence::Move(self.cursor_translated()),
+                                           Sequence::Line(Line::new_from_str(&after_cursor,
+                                                                             &self.brush)),
+                                           Sequence::Move(self.cursor_translated()),
+                                           Sequence::Show(true)],
+                            ..Default::default()
+                        })
+                    }
+                    BackspaceRes::PrevLine(cursor) => {
+                        self.cursor = cursor;
+                        self.refresh(hq)
+                    }
+                    _ => Ok(Default::default()),
+                }
+            }
             Event::Char { c } => {
                 let mut after_cursor = String::with_capacity(self.view.width);
-                let req = self.view.width - self.x_off - self.cursor.x;
                 self.cursor.x += 1;
                 after_cursor.push(c);
-                after_cursor.push_str(&hq.buf(&self.buffer_name)?.insert(c, req));
+                after_cursor.push_str(&hq.buf(&self.buffer_name)?
+                    .insert(c, self.spaces_after_cursor()));
                 Ok(Response {
                     sequence: vec![Sequence::Show(false),
                                    Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
@@ -123,6 +147,11 @@ impl Component for Editor {
 }
 
 impl Editor {
+    #[inline]
+    fn spaces_after_cursor(&self) -> usize {
+        self.view.width - self.x_off - self.cursor.x
+    }
+
     fn cursor_translated(&self) -> Cursor {
         let mut cur = self.cursor.clone();
         cur.x += self.x_off;

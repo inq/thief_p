@@ -24,6 +24,12 @@ impl Default for Buffer {
     }
 }
 
+pub enum BackspaceRes {
+    Normal(String),
+    PrevLine(common::Pair),
+    UnChanged,
+}
+
 impl Buffer {
     /// Return the ith element.
     pub fn get(&self, i: usize) -> Option<&Line> {
@@ -134,6 +140,21 @@ impl Buffer {
             self.move_down(x);
         }
         self.cur.set_cursor(x);
+    }
+
+    /// Backspace.
+    pub fn backspace(&mut self, limit: usize) -> BackspaceRes {
+        if self.cur.backspace() {
+            BackspaceRes::Normal(self.after_cursor(limit))
+        } else {
+            if let Some(line) = self.prevs.pop() {
+                self.cur.prepend(line);
+                self.x = self.cur.get_x();
+                BackspaceRes::PrevLine(self.get_xy())
+            } else {
+                BackspaceRes::UnChanged
+            }
+        }
     }
 
     /// Move cursor.

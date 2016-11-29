@@ -112,6 +112,19 @@ impl Line {
         }
     }
 
+    /// Prepend a line to this.
+    pub fn prepend(&mut self, mut target: Line) {
+        mem::swap(&mut self.prevs, &mut target.prevs);
+        self.prevs.push_str(&target.nexts.chars().rev().collect::<String>());
+        self.prevs.push_str(&target.prevs);
+        self.x = self.prevs
+            .chars()
+            .map({
+                |c| util::term_width(c)
+            })
+            .sum();
+    }
+
     /// Move to the begining of the line.
     #[inline]
     pub fn move_begin(&mut self) {
@@ -128,6 +141,12 @@ impl Line {
             self.x += util::term_width(c);
             self.prevs.push(c);
         }
+    }
+
+    /// Delete single character before cursor.
+    #[inline]
+    pub fn backspace(&mut self) -> bool {
+        self.prevs.pop().is_some()
     }
 
     /// Delete every characters after cursor.
