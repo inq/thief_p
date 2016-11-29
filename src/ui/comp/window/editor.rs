@@ -64,6 +64,10 @@ impl Component for Editor {
                 self.cursor = hq.buf(&self.buffer_name).unwrap().move_end_of_line();
                 Response { sequence: vec![self.move_cursor()], ..Default::default() }
             }
+            Event::Ctrl { c: 'n' } => self.handle(Event::Move { x: 0, y: 1 }, hq),
+            Event::Ctrl { c: 'p' } => self.handle(Event::Move { x: 0, y: -1 }, hq),
+            Event::Ctrl { c: 'f' } => self.handle(Event::Move { x: 1, y: 0 }, hq),
+            Event::Ctrl { c: 'b' } => self.handle(Event::Move { x: -1, y: 0 }, hq),
             Event::Move { x, y } => {
                 self.cursor = hq.buf(&self.buffer_name).unwrap().move_cursor(x, y);
                 if self.cursor.y < self.line_number.current {
