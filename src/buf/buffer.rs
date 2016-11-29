@@ -173,6 +173,7 @@ impl Buffer {
     /// Insert a char at the location of the cursur.
     pub fn insert(&mut self, c: char, limit: usize) -> String {
         self.cur.insert(c);
+        self.x = self.get_x();
         self.after_cursor(limit)
     }
 
