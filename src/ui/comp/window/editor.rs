@@ -1,7 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use buf::BackspaceRes;
+use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 use super::LineNumber;
@@ -66,20 +66,6 @@ impl Component for Editor {
                 self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
                 Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
             }
-            Event::Ctrl { c: 'k' } => {
-                // Kill-line
-                hq.buf(&self.buffer_name)?.kill_line();
-                let blanks = vec![' '; self.spaces_after_cursor()]
-                    .into_iter()
-                    .collect::<String>();
-                Ok(Response {
-                    sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&blanks, &self.brush)),
-                                   Sequence::Move(self.cursor_translated()),
-                                   Sequence::Show(true)],
-                    ..Default::default()
-                })
-            }
             Event::Ctrl { c: 'n' } => self.handle(Event::Move { x: 0, y: 1 }, hq),
             Event::Ctrl { c: 'p' } => self.handle(Event::Move { x: 0, y: -1 }, hq),
             Event::Ctrl { c: 'f' } => self.handle(Event::Move { x: 1, y: 0 }, hq),
@@ -103,6 +89,29 @@ impl Component for Editor {
                 // CR
                 self.cursor = hq.buf(&self.buffer_name)?.break_line();
                 self.refresh(hq)
+            }
+            Event::Ctrl { c: 'k' } => {
+                // Kill-line
+                match hq.buf(&self.buffer_name)?.kill_line() {
+                    KillLineRes::Normal => {
+                        let blanks = vec![' '; self.spaces_after_cursor()]
+                            .into_iter()
+                            .collect::<String>();
+                        Ok(Response {
+                            sequence: vec![Sequence::Show(false),
+                                           Sequence::Line(Line::new_from_str(&blanks,
+                                                                             &self.brush)),
+                                           Sequence::Move(self.cursor_translated()),
+                                           Sequence::Show(true)],
+                            ..Default::default()
+                        })
+                    }
+                    KillLineRes::Empty(cursor) => {
+                        self.cursor = cursor;
+                        self.refresh(hq)
+                    }
+                    _ => Ok(Default::default()),
+                }
             }
             Event::Char { c: '\x7f' } => {
                 // Backspace

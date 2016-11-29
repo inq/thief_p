@@ -27,7 +27,13 @@ impl Default for Buffer {
 pub enum BackspaceRes {
     Normal(String),
     PrevLine(common::Pair),
-    UnChanged,
+    Unchanged,
+}
+
+pub enum KillLineRes {
+    Normal,
+    Empty(common::Pair),
+    Unchanged,
 }
 
 impl Buffer {
@@ -86,12 +92,6 @@ impl Buffer {
         })
     }
 
-    /// Delete every characters after cursor.
-    #[inline]
-    pub fn kill_line(&mut self) {
-        self.cur.kill();
-    }
-
     /// Move up the cursor.
     #[inline]
     fn move_up(&mut self, offset: usize) {
@@ -142,6 +142,21 @@ impl Buffer {
         self.cur.set_cursor(x);
     }
 
+    /// Delete every characters after cursor.
+    #[inline]
+    pub fn kill_line(&mut self) -> KillLineRes {
+        if self.cur.kill() {
+            KillLineRes::Normal
+        } else {
+            if let Some(line) = self.nexts.pop() {
+                self.cur.append(line);
+                KillLineRes::Empty(self.get_xy())
+            } else {
+                KillLineRes::Unchanged
+            }
+        }
+    }
+
     /// Backspace.
     pub fn backspace(&mut self, limit: usize) -> BackspaceRes {
         if self.cur.backspace() {
@@ -152,7 +167,7 @@ impl Buffer {
                 self.x = self.cur.get_x();
                 BackspaceRes::PrevLine(self.get_xy())
             } else {
-                BackspaceRes::UnChanged
+                BackspaceRes::Unchanged
             }
         }
     }

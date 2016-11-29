@@ -116,13 +116,18 @@ impl Line {
     pub fn prepend(&mut self, mut target: Line) {
         mem::swap(&mut self.prevs, &mut target.prevs);
         self.prevs.push_str(&target.nexts.chars().rev().collect::<String>());
-        self.prevs.push_str(&target.prevs);
         self.x = self.prevs
             .chars()
             .map({
                 |c| util::term_width(c)
             })
             .sum();
+    }
+
+    /// Append a line to this.
+    pub fn append(&mut self, mut target: Line) {
+        mem::swap(&mut self.nexts, &mut target.nexts);
+        self.nexts.push_str(&target.prevs.chars().rev().collect::<String>());
     }
 
     /// Move to the begining of the line.
@@ -149,10 +154,12 @@ impl Line {
         self.prevs.pop().is_some()
     }
 
-    /// Delete every characters after cursor.
+    /// Delete every characters after cursor. Return true iff there is any deleted character.
     #[inline]
-    pub fn kill(&mut self) {
+    pub fn kill(&mut self) -> bool {
+        let res = self.nexts.len() > 0;
         self.nexts.clear();
+        res
     }
 
     /// Convert to a string.
