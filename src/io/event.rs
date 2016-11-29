@@ -7,6 +7,7 @@ pub enum Event {
     Ctrl { c: char },
     Move { x: i8, y: i8 },
     Meta { c: char },
+    Single { n: usize },
     Pair { x: usize, y: usize },
     Resize { w: usize, h: usize },
     Navigate { msg: String },
@@ -44,15 +45,13 @@ impl Event {
 
 /// Read integer characters with termination symbol.
 #[inline]
-fn read_num(s: &mut Chars, seed: usize, d: char) -> Option<usize> {
+fn read_num(s: &mut Chars, seed: usize) -> Option<(usize, char)> {
     let mut acc = seed;
     while let Some(c) = s.next() {
         if c >= '0' && c <= '9' {
             acc = acc * 10 + c.to_digit(10).unwrap() as usize;
-        } else if c == d {
-            return Some(acc);
         } else {
-            return None;
+            return Some((acc, c));
         }
     }
     None
@@ -60,9 +59,18 @@ fn read_num(s: &mut Chars, seed: usize, d: char) -> Option<usize> {
 
 /// Try to read `CSIx;yR`.
 #[inline]
-fn check_pair(it: &mut Chars, seed: usize) -> Option<Event> {
-    read_num(it, seed, ';')
-        .and_then(|y| read_num(it, seed, 'R').map(|x| Event::Pair { x: x, y: y }))
+fn check_num(it: &mut Chars, seed: usize) -> Option<Event> {
+    match read_num(it, seed) {
+        Some((y, ';')) => {
+            if let Some((x, 'R')) = read_num(it, seed) {
+                Some(Event::Pair { x: x, y: y })
+            } else {
+                None
+            }
+        }
+        Some((n, '~')) => Some(Event::Single { n: n }),
+        _ => None,
+    }
 }
 
 /// After check
@@ -70,7 +78,7 @@ fn check_pair(it: &mut Chars, seed: usize) -> Option<Event> {
 fn process_csi(s: &mut Chars) -> Option<Event> {
     if let Some(c) = s.next() {
         match c {
-            '0'...'9' => check_pair(s, c.to_digit(10).unwrap() as usize),
+            '0'...'9' => check_num(s, c.to_digit(10).unwrap() as usize),
             'A' => Some(Event::Move { x: 0, y: -1 }),
             'B' => Some(Event::Move { x: 0, y: 1 }),
             'C' => Some(Event::Move { x: 1, y: 0 }),
