@@ -2,6 +2,7 @@ use std::io::{BufReader, BufRead};
 use std::{fs, mem, path};
 use super::line::Line;
 use util::ResultBox;
+use common;
 
 pub struct Buffer {
     cur: Line,
@@ -23,6 +24,18 @@ impl Default for Buffer {
     }
 }
 
+pub enum BackspaceRes {
+    Normal(String),
+    PrevLine(common::Pair),
+    Unchanged,
+}
+
+pub enum KillLineRes {
+    Normal,
+    Empty(common::Pair),
+    Unchanged,
+}
+
 impl Buffer {
     /// Return the ith element.
     pub fn get(&self, i: usize) -> Option<&Line> {
@@ -41,13 +54,24 @@ impl Buffer {
     }
 
     /// Get the x position of the cursor.
+    #[inline]
     pub fn get_x(&self) -> usize {
         self.cur.get_x()
     }
 
     /// Get the y position of the cursor.
+    #[inline]
     pub fn get_y(&self) -> usize {
         self.prevs.len()
+    }
+
+    /// Get the position of the cursor.
+    #[inline]
+    pub fn get_xy(&self) -> common::Pair {
+        common::Pair {
+            x: self.get_x(),
+            y: self.get_y(),
+        }
     }
 
     /// Construct a buffer from a file.
@@ -68,12 +92,8 @@ impl Buffer {
         })
     }
 
-    /// Read characters after cursor.
-    pub fn after_cursor(&self, limit: usize) -> String {
-        self.cur.after_cursor(limit)
-    }
-
     /// Move up the cursor.
+    #[inline]
     fn move_up(&mut self, offset: usize) {
         if let Some(l) = self.prevs.pop() {
             self.nexts.push(mem::replace(&mut self.cur, l));
@@ -82,11 +102,33 @@ impl Buffer {
     }
 
     /// Move down the cursor.
+    #[inline]
     fn move_down(&mut self, offset: usize) {
         if let Some(l) = self.nexts.pop() {
             self.prevs.push(mem::replace(&mut self.cur, l));
             self.cur.set_cursor(offset);
         }
+    }
+
+    /// Move to the beginning of the line.
+    #[inline]
+    pub fn move_begin_of_line(&mut self) -> common::Pair {
+        self.cur.move_begin();
+        self.get_xy()
+    }
+
+    /// Move to the end of the line
+    #[inline]
+    pub fn move_end_of_line(&mut self) -> common::Pair {
+        self.cur.move_end();
+        self.get_xy()
+    }
+
+    /// Break the line at the location of the cursor.
+    #[inline]
+    pub fn break_line(&mut self) -> common::Pair {
+        self.prevs.push(self.cur.break_line());
+        self.get_xy()
     }
 
     /// Set the cursor by the given coordinate.
@@ -100,8 +142,38 @@ impl Buffer {
         self.cur.set_cursor(x);
     }
 
+    /// Delete every characters after cursor.
+    #[inline]
+    pub fn kill_line(&mut self) -> KillLineRes {
+        if self.cur.kill() {
+            KillLineRes::Normal
+        } else {
+            if let Some(line) = self.nexts.pop() {
+                self.cur.append(line);
+                KillLineRes::Empty(self.get_xy())
+            } else {
+                KillLineRes::Unchanged
+            }
+        }
+    }
+
+    /// Backspace.
+    pub fn backspace(&mut self, limit: usize) -> BackspaceRes {
+        if self.cur.backspace() {
+            BackspaceRes::Normal(self.after_cursor(limit))
+        } else {
+            if let Some(line) = self.prevs.pop() {
+                self.cur.prepend(line);
+                self.x = self.cur.get_x();
+                BackspaceRes::PrevLine(self.get_xy())
+            } else {
+                BackspaceRes::Unchanged
+            }
+        }
+    }
+
     /// Move cursor.
-    pub fn move_cursor(&mut self, dx: i8, dy: i8) {
+    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> common::Pair {
         if dx != 0 {
             if dx > 0 {
                 if !self.cur.move_right() {
@@ -122,16 +194,23 @@ impl Buffer {
                 self.move_up(x);
             }
         }
+        common::Pair {
+            x: self.get_x(),
+            y: self.get_y(),
+        }
+    }
+
+    /// Read characters after cursor.
+    #[inline]
+    fn after_cursor(&self, limit: usize) -> String {
+        self.cur.after_cursor(limit)
     }
 
     /// Insert a char at the location of the cursur.
-    pub fn insert(&mut self, c: char) {
-        self.cur.insert(c)
-    }
-
-    /// Break the line at the location of the cursor.
-    pub fn break_line(&mut self) {
-        self.prevs.push(self.cur.break_line());
+    pub fn insert(&mut self, c: char, limit: usize) -> String {
+        self.cur.insert(c);
+        self.x = self.get_x();
+        self.after_cursor(limit)
     }
 
     /// Convert to a string.

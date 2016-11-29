@@ -1,5 +1,6 @@
 use hq::Hq;
 use io::Event;
+use util::ResultBox;
 use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
@@ -68,7 +69,7 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
             Event::Navigate { msg } => {
                 // Turn on the navigator
@@ -79,23 +80,23 @@ impl Component for CommandBar {
             }
             Event::Notify { s } => {
                 // Notify from Hq
-                self.notify(&s)
+                Ok(self.notify(&s))
             }
             Event::Ctrl { c: 'm' } => {
                 // Return
-                Response {
+                Ok(Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
-                }
+                })
             }
             Event::Char { c } => {
                 match self.status {
                     Status::Standby => {
                         self.data.push(c);
-                        Response {
+                        Ok(Response {
                             sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
                             ..Default::default()
-                        }
+                        })
                     }
                     Status::Notify => {
                         self.status = Status::Standby;
@@ -105,18 +106,18 @@ impl Component for CommandBar {
                     }
                     Status::Navigate => {
                         self.data.push(c);
-                        Response {
+                        Ok(Response {
                             sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
                             ..Default::default()
-                        }
+                        })
                     }
                 }
             }
-            _ => Default::default(),
+            _ => Ok(Default::default()),
         }
     }
 
-    fn refresh(&self, hq: &mut Hq) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let buf = if self.status == Status::Navigate {
             let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
             for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
@@ -126,7 +127,7 @@ impl Component for CommandBar {
         } else {
             Buffer::blank(&self.background, self.view.width, self.view.height)
         };
-        Response {
+        Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
@@ -134,6 +135,6 @@ impl Component for CommandBar {
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
                            Sequence::Line(Line::new_from_str(&self.data, &self.background))],
-        }
+        })
     }
 }

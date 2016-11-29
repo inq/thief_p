@@ -7,6 +7,7 @@ mod buf;
 mod io;
 mod ui;
 mod hq;
+mod common;
 
 use ui::Ui;
 use std::fs::File;

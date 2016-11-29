@@ -112,6 +112,56 @@ impl Line {
         }
     }
 
+    /// Prepend a line to this.
+    pub fn prepend(&mut self, mut target: Line) {
+        mem::swap(&mut self.prevs, &mut target.prevs);
+        self.prevs.push_str(&target.nexts.chars().rev().collect::<String>());
+        self.x = self.prevs
+            .chars()
+            .map({
+                |c| util::term_width(c)
+            })
+            .sum();
+    }
+
+    /// Append a line to this.
+    pub fn append(&mut self, mut target: Line) {
+        mem::swap(&mut self.nexts, &mut target.nexts);
+        self.nexts.push_str(&target.prevs.chars().rev().collect::<String>());
+    }
+
+    /// Move to the begining of the line.
+    #[inline]
+    pub fn move_begin(&mut self) {
+        while let Some(c) = self.prevs.pop() {
+            self.nexts.push(c);
+        }
+        self.x = 0;
+    }
+
+    /// Move to the end of the line.
+    #[inline]
+    pub fn move_end(&mut self) {
+        while let Some(c) = self.nexts.pop() {
+            self.x += util::term_width(c);
+            self.prevs.push(c);
+        }
+    }
+
+    /// Delete single character before cursor.
+    #[inline]
+    pub fn backspace(&mut self) -> bool {
+        self.prevs.pop().is_some()
+    }
+
+    /// Delete every characters after cursor. Return true iff there is any deleted character.
+    #[inline]
+    pub fn kill(&mut self) -> bool {
+        let res = self.nexts.len() > 0;
+        self.nexts.clear();
+        res
+    }
+
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]
