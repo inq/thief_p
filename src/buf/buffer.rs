@@ -89,6 +89,18 @@ impl Buffer {
         }
     }
 
+    /// Move to the beginning of the line.
+    #[inline]
+    pub fn move_begin_of_line(&mut self) {
+        self.cur.move_begin();
+    }
+
+    /// Move to the end of the line
+    #[inline]
+    pub fn move_end_of_line(&mut self) {
+        self.cur.move_end();
+    }
+
     /// Set the cursor by the given coordinate.
     pub fn set_cursor(&mut self, x: usize, y: usize) {
         while self.prevs.len() > y {

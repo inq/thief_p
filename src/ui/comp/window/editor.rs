@@ -52,6 +52,24 @@ impl Component for Editor {
                 self.buffer_name = s;
                 Default::default()
             }
+            Event::Single { n: 1 } | Event::Ctrl { c: 'a' } => {  // HOME
+                {
+                    let b = hq.buf(&self.buffer_name).unwrap();
+                    b.move_begin_of_line();
+                    self.cursor.x = b.get_x();
+                    self.cursor.y = b.get_y();
+                }
+                Response { sequence: vec![self.move_cursor()], ..Default::default() }
+            }
+            Event::Single { n: 4 } | Event::Ctrl { c: 'e' } => {  // END
+                {
+                    let b = hq.buf(&self.buffer_name).unwrap();
+                    b.move_end_of_line();
+                    self.cursor.x = b.get_x();
+                    self.cursor.y = b.get_y();
+                }
+                Response { sequence: vec![self.move_cursor()], ..Default::default() }
+            }
             Event::Move { x, y } => {
                 {
                     let b = hq.buf(&self.buffer_name).unwrap();

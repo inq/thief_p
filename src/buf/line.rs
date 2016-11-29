@@ -112,6 +112,24 @@ impl Line {
         }
     }
 
+    /// Move to the begining of the line.
+    #[inline]
+    pub fn move_begin(&mut self) {
+        while let Some(c) = self.prevs.pop() {
+            self.nexts.push(c);
+        }
+        self.x = 0;
+    }
+
+    /// Move to the end of the line.
+    #[inline]
+    pub fn move_end(&mut self) {
+        while let Some(c) = self.nexts.pop() {
+            self.x += util::term_width(c);
+            self.prevs.push(c);
+        }
+    }
+
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]
