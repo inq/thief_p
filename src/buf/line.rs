@@ -130,6 +130,12 @@ impl Line {
         }
     }
 
+    /// Delete every characters after cursor.
+    #[inline]
+    pub fn kill(&mut self) {
+        self.nexts.clear();
+    }
+
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]

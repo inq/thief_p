@@ -64,6 +64,20 @@ impl Component for Editor {
                 self.cursor = hq.buf(&self.buffer_name).unwrap().move_end_of_line();
                 Response { sequence: vec![self.move_cursor()], ..Default::default() }
             }
+            Event::Ctrl { c: 'k' } => {
+                // Kill-line
+                hq.buf(&self.buffer_name).unwrap().kill_line();
+                let blanks = vec![' '; self.view.width - self.x_off - self.cursor.x]
+                    .into_iter()
+                    .collect::<String>();
+                Response {
+                    sequence: vec![Sequence::Show(false),
+                                   Sequence::Line(Line::new_from_str(&blanks, &self.brush)),
+                                   Sequence::Move(self.cursor_translated()),
+                                   Sequence::Show(true)],
+                    ..Default::default()
+                }
+            }
             Event::Ctrl { c: 'n' } => self.handle(Event::Move { x: 0, y: 1 }, hq),
             Event::Ctrl { c: 'p' } => self.handle(Event::Move { x: 0, y: -1 }, hq),
             Event::Ctrl { c: 'f' } => self.handle(Event::Move { x: 1, y: 0 }, hq),

@@ -80,6 +80,12 @@ impl Buffer {
         })
     }
 
+    /// Delete every characters after cursor.
+    #[inline]
+    pub fn kill_line(&mut self) {
+        self.cur.kill();
+    }
+
     /// Move up the cursor.
     #[inline]
     fn move_up(&mut self, offset: usize) {
