@@ -9,6 +9,7 @@ pub use self::hsplit::HSplit;
 use hq::Hq;
 use ui::res::{Buffer, Cursor, Response, Refresh, Sequence};
 use io::Event;
+use util::ResultBox;
 
 #[derive(Default)]
 pub struct View {
@@ -33,19 +34,19 @@ pub trait Component {
     fn get_view(&self) -> &View;
     fn get_view_mut(&mut self) -> &mut View;
     fn on_resize(&mut self);
-    fn refresh(&self, hq: &mut Hq) -> Response;
+    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response>;
     /// Resize the component; Call the on_resize function.
     fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) {
         self.get_view_mut().update(x, y, width, height);
         self.on_resize();
     }
     /// Handle the given event.
-    fn handle(&mut self, _: Event, _: &mut Hq) -> Response {
-        Default::default()
+    fn handle(&mut self, _: Event, _: &mut Hq) -> ResultBox<Response> {
+        Ok(Default::default())
     }
     /// Propage event to children. This calls handle, and then translate.
-    fn propagate(&mut self, e: Event, hq: &mut Hq) -> Response {
-        self.handle(e, hq).translate(self.get_view().x, self.get_view().y)
+    fn propagate(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
+        Ok(self.handle(e, hq)?.translate(self.get_view().x, self.get_view().y))
     }
 }
 
@@ -55,7 +56,7 @@ pub trait Parent {
     fn children(&self) -> Vec<&Self::Child>;
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&self, buffer: Buffer, hq: &mut Hq) -> Response {
+    fn refresh_children(&self, buffer: Buffer, hq: &mut Hq) -> ResultBox<Response> {
         let mut refresh = Refresh {
             x: 0,
             y: 0,
@@ -63,7 +64,7 @@ pub trait Parent {
         };
         let mut sequence = vec![];
         for &ref child in self.children() {
-            let resp = child.refresh(hq);
+            let resp = child.refresh(hq)?;
             if let Some(Refresh { x, y, buf }) = resp.refresh {
                 refresh.buf.draw(&buf, child.get_view().x + x, child.get_view().y + y)
             }
@@ -81,9 +82,9 @@ pub trait Parent {
                 }
             }
         }
-        Response {
+        Ok(Response {
             refresh: Some(refresh),
             sequence: sequence,
-        }
+        })
     }
 }

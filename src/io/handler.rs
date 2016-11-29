@@ -60,7 +60,7 @@ impl Handler {
 
     // Handle event from the Ui.
     fn handle_event(&mut self, e: Event) -> ResultBox<()> {
-        let resp = self.ui.handle(e, &mut self.hq);
+        let resp = self.ui.handle(e, &mut self.hq)?;
         if let Some(Refresh { x, y, buf }) = resp.refresh {
             self.term.write_ui_buffer(x, y, &buf);
         }

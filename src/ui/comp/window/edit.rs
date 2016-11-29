@@ -1,5 +1,6 @@
 use hq::Hq;
 use io::Event;
+use util::ResultBox;
 use ui::res::{Response, Buffer, Brush, Color};
 use ui::comp::{Component, Parent, View};
 use super::Editor;
@@ -17,14 +18,13 @@ impl Component for Edit {
         self.editor.resize(0, 0, self.view.width, self.view.height);
     }
 
-    fn refresh(&self, hq: &mut Hq) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(100, 200, 200));
         let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-
         self.refresh_children(buffer, hq)
     }
 
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
             _ => self.editor.propagate(e, hq),
         }

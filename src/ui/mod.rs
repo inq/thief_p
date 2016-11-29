@@ -3,6 +3,7 @@ mod res;
 
 use io::Event;
 use hq::Hq;
+use util::ResultBox;
 use ui::comp::{CommandBar, HSplit, Parent, View};
 
 pub use ui::comp::Component;
@@ -30,17 +31,17 @@ impl Component for Ui {
         self.hsplit.resize(1, 1, self.view.width - 2, height);
     }
 
-    fn refresh(&self, hq: &mut Hq) -> Response {
+    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
         let buffer = Buffer::blank(&b, self.view.width, self.view.height);
         self.refresh_children(buffer, hq)
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> Response {
+    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
             Event::Navigate { .. } => {
-                self.command_bar.propagate(e, hq);
+                self.command_bar.propagate(e, hq)?;
                 self.on_resize();
                 self.refresh(hq)
             }
@@ -49,11 +50,11 @@ impl Component for Ui {
                 self.refresh(hq)
             }
             Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
-            Event::Ctrl { c: 'q' } => Response::quit(),
+            Event::Ctrl { c: 'q' } => Ok(Response::quit()),
             Event::OpenBuffer { s: _ } => {
                 self.command_bar_mut().active = false;
                 self.on_resize();
-                self.hsplit.propagate(e, hq);
+                self.hsplit.propagate(e, hq)?;
                 self.refresh(hq)
             }
             _ => {
@@ -93,13 +94,13 @@ impl Ui {
 
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
-    pub fn activate_command_bar(&mut self, hq: &mut Hq) -> Response {
+    pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.command_bar_mut().active = true;
         self.resize_command_bar();
         // TODO: Make concise.
-        self.command_bar
-            .refresh(hq)
-            .translate(self.command_bar.get_view().x, self.command_bar.get_view().y)
+        Ok(self.command_bar
+            .refresh(hq)?
+            .translate(self.command_bar.get_view().x, self.command_bar.get_view().y))
     }
 
     pub fn new() -> Result<Ui> {
