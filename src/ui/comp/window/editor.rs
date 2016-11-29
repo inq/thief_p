@@ -52,31 +52,20 @@ impl Component for Editor {
                 self.buffer_name = s;
                 Default::default()
             }
-            Event::Single { n: 1 } | Event::Ctrl { c: 'a' } => {  // HOME
-                {
-                    let b = hq.buf(&self.buffer_name).unwrap();
-                    b.move_begin_of_line();
-                    self.cursor.x = b.get_x();
-                    self.cursor.y = b.get_y();
-                }
+            Event::Single { n: 1 } |
+            Event::Ctrl { c: 'a' } => {
+                // HOME
+                self.cursor = hq.buf(&self.buffer_name).unwrap().move_begin_of_line();
                 Response { sequence: vec![self.move_cursor()], ..Default::default() }
             }
-            Event::Single { n: 4 } | Event::Ctrl { c: 'e' } => {  // END
-                {
-                    let b = hq.buf(&self.buffer_name).unwrap();
-                    b.move_end_of_line();
-                    self.cursor.x = b.get_x();
-                    self.cursor.y = b.get_y();
-                }
+            Event::Single { n: 4 } |
+            Event::Ctrl { c: 'e' } => {
+                // END
+                self.cursor = hq.buf(&self.buffer_name).unwrap().move_end_of_line();
                 Response { sequence: vec![self.move_cursor()], ..Default::default() }
             }
             Event::Move { x, y } => {
-                {
-                    let b = hq.buf(&self.buffer_name).unwrap();
-                    b.move_cursor(x, y);
-                    self.cursor.x = b.get_x();
-                    self.cursor.y = b.get_y();
-                }
+                self.cursor = hq.buf(&self.buffer_name).unwrap().move_cursor(x, y);
                 if self.cursor.y < self.line_number.current {
                     // Scroll upward
                     self.line_number.current = self.cursor.y;
@@ -92,24 +81,15 @@ impl Component for Editor {
             }
             Event::Ctrl { c: 'm' } => {
                 // CR
-                {
-                    let b = hq.buf(&self.buffer_name).unwrap();
-                    b.break_line();
-                    self.cursor.x = b.get_x();
-                    self.cursor.y = b.get_y();
-                }
+                self.cursor = hq.buf(&self.buffer_name).unwrap().break_line();
                 self.refresh(hq)
             }
             Event::Char { c } => {
                 let mut after_cursor = String::with_capacity(self.view.width);
-                {
-                    let b = hq.buf(&self.buffer_name).unwrap();
-                    let req = self.view.width - self.x_off - self.cursor.x;
-                    self.cursor.x += 1;
-                    b.insert(c);
-                    after_cursor.push(c);
-                    after_cursor.push_str(&b.after_cursor(req));
-                }
+                let req = self.view.width - self.x_off - self.cursor.x;
+                self.cursor.x += 1;
+                after_cursor.push(c);
+                after_cursor.push_str(&hq.buf(&self.buffer_name).unwrap().insert(c, req));
                 Response {
                     sequence: vec![Sequence::Show(false),
                                    Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),

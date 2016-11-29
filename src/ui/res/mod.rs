@@ -9,12 +9,9 @@ pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
 pub use self::formatted::{Style, Formatted};
+use common::Pair;
 
-#[derive(Debug, Default, Clone)]
-pub struct Cursor {
-    pub x: usize,
-    pub y: usize,
-}
+pub type Cursor = Pair;
 
 #[derive(Default)]
 pub struct Response {
