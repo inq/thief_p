@@ -178,7 +178,7 @@ impl Editor {
     pub fn new() -> Editor {
         Editor {
             buffer_name: String::from("<empty>"),
-            brush: Brush::new(Color::new(0, 0, 0), Color::new(240, 220, 220)),
+            brush: Brush::new(Color::new(200, 200, 200), Color::new(40, 40, 40)),
             ..Default::default()
         }
     }
