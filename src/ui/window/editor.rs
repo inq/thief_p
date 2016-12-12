@@ -4,15 +4,14 @@ use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
-use super::LineNumber;
 
 #[derive(Default)]
 pub struct Editor {
     view: View,
-    line_number: LineNumber,
     buffer_name: String,
     cursor: Cursor,
-    x_off: usize,
+    lines: usize,
+    line_offset: usize,
     brush: Brush,
 }
 
@@ -20,23 +19,17 @@ impl Component for Editor {
     has_view!();
 
     fn on_resize(&mut self) {
-        self.line_number.set_max(100);
-        self.line_number.resize(0, 0, Default::default(), self.view.height);
-        self.x_off = self.line_number.get_view().width + 1;
+        // TODO: implement
     }
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         // TODO: implement
         let mut buffer = Buffer::blank(&self.brush, self.view.width, self.view.height);
-        // Draw line_number
-        if let Some(Refresh { x, y, buf }) = self.line_number.refresh(hq)?.refresh {
-            buffer.draw(&buf, 0 + x, 0 + y);
-        }
         // Draw the others
         buffer.draw_buffer(hq.buf(&self.buffer_name)?,
-                           self.x_off,
+                           self.line_num_width(),
                            0,
-                           self.line_number.current);
+                           self.line_offset);
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
@@ -52,6 +45,7 @@ impl Component for Editor {
         match e {
             Event::OpenBuffer { s } => {
                 self.buffer_name = s;
+                self.lines = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
             }
             Event::Single { n: 1 } |
@@ -72,13 +66,13 @@ impl Component for Editor {
             Event::Ctrl { c: 'b' } => self.handle(Event::Move { x: -1, y: 0 }, hq),
             Event::Move { x, y } => {
                 self.cursor = hq.buf(&self.buffer_name)?.move_cursor(x, y);
-                if self.cursor.y < self.line_number.current {
+                if self.cursor.y < self.line_offset {
                     // Scroll upward
-                    self.line_number.current = self.cursor.y;
+                    self.line_offset = self.cursor.y;
                     self.refresh(hq)
-                } else if self.cursor.y - self.line_number.current >= self.view.height {
+                } else if self.cursor.y - self.line_offset >= self.view.height {
                     // Scroll downward
-                    self.line_number.current = self.cursor.y - self.view.height + 1;
+                    self.line_offset = self.cursor.y - self.view.height + 1;
                     self.refresh(hq)
                 } else {
                     // Do not scroll
@@ -158,19 +152,30 @@ impl Component for Editor {
 impl Editor {
     #[inline]
     fn spaces_after_cursor(&self) -> usize {
-        self.view.width - self.x_off - self.cursor.x
+        self.view.width - self.line_num_width() - self.cursor.x
+    }
+
+    #[inline]
+    fn line_num_width(&self) -> usize {
+        let mut t = self.lines;
+        let mut c = 0;
+        while t > 0 {
+            t /= 10;
+            c += 1;
+        }
+        c + 1
     }
 
     fn cursor_translated(&self) -> Cursor {
         let mut cur = self.cursor.clone();
-        cur.x += self.x_off;
+        cur.x += self.line_num_width();
         cur
     }
 
     fn move_cursor(&self) -> Sequence {
         Sequence::Move(Cursor {
-            x: self.cursor.x + self.x_off,
-            y: self.cursor.y - self.line_number.current,
+            x: self.cursor.x + self.line_num_width(),
+            y: self.cursor.y - self.line_offset,
         })
     }
 

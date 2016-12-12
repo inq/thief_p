@@ -1,13 +1,18 @@
 mod comp;
 mod res;
+mod hsplit;
+mod window;
+mod command_bar;
 
 use io::Event;
 use hq::Hq;
 use util::ResultBox;
-use ui::comp::{CommandBar, HSplit, Parent, View};
+use ui::comp::{Parent, View};
 
 pub use ui::comp::Component;
 pub use ui::res::*;
+use ui::hsplit::HSplit;
+use ui::command_bar::CommandBar;
 
 def_error! {
     Initialized: "already initialized",
