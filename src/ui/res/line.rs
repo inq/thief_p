@@ -64,11 +64,21 @@ impl Line {
         }
     }
 
-    /// Draw the given line buffer into here.
-    pub fn draw_buffer(&mut self, src: &buf::Line, linenum: usize, linenum_width: usize) {
-        self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
-        for (i, c) in src.iter().enumerate() {
-            self.chars[i + linenum_width].chr = c;
+    /// Draw the given line buffer into here. If there is no space, return the remaining.
+    #[inline]
+    pub fn draw_buffer(&mut self, src: &buf::Line, offset: usize, linenum: usize, linenum_width: usize)
+                       -> Option<usize> {
+        if offset == 0 {
+            // Draw the line number only if the offset is zero.
+            self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
         }
+        for (i, c) in src.iter().skip(offset).enumerate() {
+            if i + linenum_width < self.width {
+                self.chars[i + linenum_width].chr = c;
+            } else {
+                return Some(i)
+            }
+        }
+        None
     }
 }

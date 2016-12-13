@@ -44,7 +44,11 @@ impl Buffer {
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else {
-            self.nexts.get(self.nexts.len() + self.prevs.len() - i)
+            if self.nexts.len() + self.prevs.len() > i {
+                self.nexts.get(self.nexts.len() + self.prevs.len() - i)
+            } else {
+                None
+            }
         }
     }
 
