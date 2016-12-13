@@ -51,7 +51,7 @@ impl Buffer {
         for i in 0..src.get_line_num() {
             if i < self.height {
                 if let Some(line) = src.get(i + start_from) {
-                    self.lines[i].draw_buffer(line, linenum_width)
+                    self.lines[i].draw_buffer(line, i, linenum_width)
                 }
             }
         }

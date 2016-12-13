@@ -160,12 +160,16 @@ impl Editor {
     #[inline]
     fn line_num_width(&self) -> usize {
         let mut t = self.lines;
-        let mut c = 0;
-        while t > 0 {
-            t /= 10;
-            c += 1;
+        if t == 0 {
+            2
+        } else {
+            let mut c = 0;
+            while t > 0 {
+                t /= 10;
+                c += 1;
+            }
+            c + 1
         }
-        c + 1
     }
 
     fn cursor_translated(&self) -> Cursor {

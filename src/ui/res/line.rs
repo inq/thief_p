@@ -65,7 +65,8 @@ impl Line {
     }
 
     /// Draw the given line buffer into here.
-    pub fn draw_buffer(&mut self, src: &buf::Line, linenum_width: usize) {
+    pub fn draw_buffer(&mut self, src: &buf::Line, linenum: usize, linenum_width: usize) {
+        self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
         for (i, c) in src.iter().enumerate() {
             self.chars[i + linenum_width].chr = c;
         }
