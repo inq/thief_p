@@ -18,21 +18,17 @@ impl Line {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn bordered(line: &Brush, fill: &Brush, width: usize) -> Line {
-        let mut chars = vec![Char::new(' ', line.clone()); 1];
-        chars.resize(width - 1,
-                     Char {
-                         chr: ' ',
-                         brush: fill.clone(),
-                     });
-        chars.resize(width,
-                     Char {
-                         chr: ' ',
-                         brush: line.clone(),
-                     });
+    /// Initialize a new line with two color brushes.
+    /// The width of the left side is given by `splitter`.
+    #[inline]
+    pub fn new_splitted(width: usize, brush_l: Brush, brush_r: Brush, splitter: usize) -> Line {
         Line {
-            chars: chars,
+            chars: {
+                let mut res = vec![Char::new(' ', brush_l); splitter];
+                let mut tmp = vec![Char::new(' ', brush_r); width - splitter];
+                res.append(&mut tmp);
+                res
+            },
             width: width,
         }
     }
@@ -69,9 +65,9 @@ impl Line {
     }
 
     /// Draw the given line buffer into here.
-    pub fn draw_buffer(&mut self, src: &buf::Line, x: usize) {
+    pub fn draw_buffer(&mut self, src: &buf::Line, linenum_width: usize) {
         for (i, c) in src.iter().enumerate() {
-            self.chars[x + i].chr = c;
+            self.chars[i + linenum_width].chr = c;
         }
     }
 }

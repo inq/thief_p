@@ -11,13 +11,13 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    #[allow(dead_code)]
-    pub fn bordered(line: &Brush, fill: &Brush, width: usize, height: usize) -> Buffer {
-        let mut lines = vec![Line::blank(line, width); 1];
-        lines.resize(height - 1, Line::bordered(line, fill, width));
-        lines.resize(height, Line::blank(line, width));
+    /// Initialize a new buffer with two color brushes.
+    /// The width of the left side is given by `splitter`.
+    pub fn new_splitted(width: usize, height: usize,
+                        brush_l: Brush, brush_r: Brush,
+                        splitter: usize) -> Buffer {
         Buffer {
-            lines: lines,
+            lines: vec![Line::new_splitted(width, brush_l, brush_r, splitter); height],
             width: width,
             height: height,
         }
@@ -47,11 +47,11 @@ impl Buffer {
     }
 
     /// Draw the text buffer here.
-    pub fn draw_buffer(&mut self, src: &buf::Buffer, x: usize, y: usize, off: usize) {
+    pub fn draw_buffer(&mut self, src: &buf::Buffer, start_from: usize, linenum_width: usize) {
         for i in 0..src.get_line_num() {
-            if y + i < self.height {
-                if let Some(line) = src.get(i + off) {
-                    self.lines[y + i].draw_buffer(line, x)
+            if i < self.height {
+                if let Some(line) = src.get(i + start_from) {
+                    self.lines[i].draw_buffer(line, linenum_width)
                 }
             }
         }

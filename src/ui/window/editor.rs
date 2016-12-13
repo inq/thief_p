@@ -24,12 +24,14 @@ impl Component for Editor {
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         // TODO: implement
-        let mut buffer = Buffer::blank(&self.brush, self.view.width, self.view.height);
+        let mut buffer = Buffer::new_splitted(self.view.width, self.view.height,
+                                              Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
+                                              self.brush,
+                                              self.line_num_width());
         // Draw the others
         buffer.draw_buffer(hq.buf(&self.buffer_name)?,
-                           self.line_num_width(),
-                           0,
-                           self.line_offset);
+                           self.line_offset,
+                           self.line_num_width());
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
