@@ -1,10 +1,10 @@
-mod buffer;
+mod rect;
 mod formatted;
 mod color;
 mod char;
 mod line;
 
-pub use self::buffer::Buffer;
+pub use self::rect::Rect;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
@@ -22,7 +22,7 @@ pub struct Response {
 pub struct Refresh {
     pub x: usize,
     pub y: usize,
-    pub buf: Buffer,
+    pub rect: Rect,
 }
 
 #[derive(Debug)]
@@ -42,12 +42,12 @@ impl Response {
     }
 
     /// Shorthand for refresh.
-    pub fn refresh(x: usize, y: usize, buf: Buffer) -> Response {
+    pub fn refresh(x: usize, y: usize, rect: Rect) -> Response {
         Response {
             refresh: Some(Refresh {
                 x: x,
                 y: y,
-                buf: buf,
+                rect: rect,
             }),
             ..Default::default()
         }

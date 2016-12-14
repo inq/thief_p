@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_insert() {
         let mut buf: Buffer = Default::default();
-        buf.insert('h');
+        buf.insert('h', 10);
         assert_eq!(buf.to_string(), "h\n");
     }
 

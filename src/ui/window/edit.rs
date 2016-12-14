@@ -1,7 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use ui::res::{Response, Buffer, Brush, Color};
+use ui::res::{Response, Rect, Brush, Color};
 use ui::comp::{Component, Parent, View};
 use super::Editor;
 
@@ -20,8 +20,8 @@ impl Component for Edit {
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(100, 200, 200));
-        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer, hq)
+        let rect = Rect::blank(&b, self.view.width, self.view.height);
+        self.refresh_children(rect, hq)
     }
 
     fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {

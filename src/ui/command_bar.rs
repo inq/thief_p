@@ -1,7 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
 #[derive(PartialEq)]
@@ -41,7 +41,7 @@ impl CommandBar {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
+                rect: Rect::blank(&self.background, self.view.width, self.view.height),
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
                            Sequence::Line(Line::new_from_str(msg, &self.background))],
@@ -118,20 +118,20 @@ impl Component for CommandBar {
     }
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
-        let buf = if self.status == Status::Navigate {
-            let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
+        let rect = if self.status == Status::Navigate {
+            let mut res = Rect::blank(&self.background, self.view.width, self.view.height);
             for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
             }
             res
         } else {
-            Buffer::blank(&self.background, self.view.width, self.view.height)
+            Rect::blank(&self.background, self.view.width, self.view.height)
         };
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: buf,
+                rect: rect,
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
                            Sequence::Line(Line::new_from_str(&self.data, &self.background))],

@@ -4,34 +4,34 @@ use ui::res::line::Line;
 use ui::res::formatted::Formatted;
 
 #[derive(Debug)]
-pub struct Buffer {
+pub struct Rect {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
 }
 
-impl Buffer {
-    /// Initialize a new buffer with two color brushes.
+impl Rect {
+    /// Initialize a new rectangular buffer with two color brushes.
     /// The width of the left side is given by `splitter`.
     pub fn new_splitted(width: usize, height: usize,
                         brush_l: Brush, brush_r: Brush,
-                        splitter: usize) -> Buffer {
-        Buffer {
+                        splitter: usize) -> Rect {
+        Rect {
             lines: vec![Line::new_splitted(width, brush_l, brush_r, splitter); height],
             width: width,
             height: height,
         }
     }
 
-    pub fn blank(brush: &Brush, width: usize, height: usize) -> Buffer {
-        Buffer {
+    pub fn blank(brush: &Brush, width: usize, height: usize) -> Rect {
+        Rect {
             lines: vec![Line::blank(brush, width); height],
             width: width,
             height: height,
         }
     }
 
-    pub fn draw(&mut self, src: &Buffer, x: usize, y: usize) {
+    pub fn draw(&mut self, src: &Rect, x: usize, y: usize) {
         for (i, line) in src.lines.iter().enumerate() {
             if y + i < self.height {
                 self.lines[y + i].draw(line, x);

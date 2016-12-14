@@ -38,8 +38,8 @@ impl Component for Ui {
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
-        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer, hq)
+        let rect = Rect::blank(&b, self.view.width, self.view.height);
+        self.refresh_children(rect, hq)
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.

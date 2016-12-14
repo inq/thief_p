@@ -4,7 +4,7 @@ use libc;
 use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
-use ui::{Brush, Line, Char, Buffer, Cursor};
+use ui::{Brush, Line, Char, Rect, Cursor};
 use util::ResultBox;
 
 def_error! {
@@ -109,9 +109,9 @@ impl Term {
     }
 
     /// Draw ui::Buffer at the coordinate.
-    pub fn write_ui_buffer(&mut self, x: usize, y: usize, buf: &Buffer) {
+    pub fn write_ui_buffer(&mut self, x: usize, y: usize, rect: &Rect) {
         self.move_cursor(x, y);
-        for (i, l) in buf.lines.iter().enumerate() {
+        for (i, l) in rect.lines.iter().enumerate() {
             self.move_cursor(x, y + i);
             self.write_ui_line(&l);
         }

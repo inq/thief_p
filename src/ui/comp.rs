@@ -1,5 +1,5 @@
 use hq::Hq;
-use ui::res::{Buffer, Cursor, Response, Refresh, Sequence};
+use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
 use io::Event;
 use util::ResultBox;
 
@@ -48,17 +48,17 @@ pub trait Parent {
     fn children(&self) -> Vec<&Self::Child>;
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&self, buffer: Buffer, hq: &mut Hq) -> ResultBox<Response> {
+    fn refresh_children(&self, rect: Rect, hq: &mut Hq) -> ResultBox<Response> {
         let mut refresh = Refresh {
             x: 0,
             y: 0,
-            buf: buffer,
+            rect: rect,
         };
         let mut sequence = vec![];
         for &ref child in self.children() {
             let resp = child.refresh(hq)?;
-            if let Some(Refresh { x, y, buf }) = resp.refresh {
-                refresh.buf.draw(&buf, child.get_view().x + x, child.get_view().y + y)
+            if let Some(Refresh { x, y, rect }) = resp.refresh {
+                refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)
             }
             for r in resp.sequence {
                 match r {

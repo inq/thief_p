@@ -1,7 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use ui::res::{Buffer, Brush, Color, Response};
+use ui::res::{Rect, Brush, Color, Response};
 use ui::comp::{View, Parent, Component};
 use ui::window::Window;
 
@@ -29,8 +29,8 @@ impl Component for HSplit {
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer, hq)
+        let rect = Rect::blank(&b, self.view.width, self.view.height);
+        self.refresh_children(rect, hq)
     }
 
     fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {

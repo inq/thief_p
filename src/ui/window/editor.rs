@@ -2,7 +2,7 @@ use hq::Hq;
 use io::Event;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
-use ui::res::{Buffer, Brush, Color, Cursor, Line, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Line, Rect, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
 #[derive(Default)]
@@ -10,7 +10,8 @@ pub struct Editor {
     view: View,
     buffer_name: String,
     cursor: Cursor,
-    lines: usize,
+    lines: Vec<usize>,
+    line_max: usize,
     line_offset: usize,
     brush: Brush,
 }
@@ -24,19 +25,19 @@ impl Component for Editor {
 
     fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
         // TODO: implement
-        let mut buffer = Buffer::new_splitted(self.view.width, self.view.height,
-                                              Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
-                                              self.brush,
-                                              self.line_num_width());
+        let mut rect = Rect::new_splitted(self.view.width, self.view.height,
+                                          Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
+                                          self.brush,
+                                          self.line_num_width());
         // Draw the others
-        buffer.draw_buffer(hq.buf(&self.buffer_name)?,
-                           self.line_offset,
-                           self.line_num_width());
+        rect.draw_buffer(hq.buf(&self.buffer_name)?,
+                         self.line_offset,
+                         self.line_num_width());
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: buffer,
+                rect: rect,
             }),
             sequence: vec![Sequence::Show(true), self.move_cursor()],
         })
@@ -47,7 +48,7 @@ impl Component for Editor {
         match e {
             Event::OpenBuffer { s } => {
                 self.buffer_name = s;
-                self.lines = hq.buf(&self.buffer_name)?.get_line_num();
+                self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
             }
             Event::Single { n: 1 } |
@@ -159,7 +160,7 @@ impl Editor {
 
     #[inline]
     fn line_num_width(&self) -> usize {
-        let mut t = self.lines;
+        let mut t = self.line_max;
         if t == 0 {
             2
         } else {
