@@ -9,8 +9,8 @@ pub struct Line {
 
 impl Line {
     /// Construct a new line from str.
-    pub fn new_from_str(src: &str, br: &Brush) -> Line {
-        let res: Vec<Char> = src.chars().map(|c| Char::new(c, br.clone())).collect();
+    pub fn new_from_str(src: &str, brush: Brush) -> Line {
+        let res: Vec<Char> = src.chars().map(|c| Char::new(c, brush)).collect();
         let w = res.iter().map(|c| c.width()).sum();
         Line {
             chars: res,
@@ -33,9 +33,11 @@ impl Line {
         }
     }
 
-    pub fn blank(brush: &Brush, width: usize) -> Line {
+    /// Initialize a new empty line.
+    #[inline]
+    pub fn new(width: usize, brush: Brush) -> Line {
         Line {
-            chars: vec![Char::new(' ', brush.clone()); width],
+            chars: vec![Char::new(' ', brush); width],
             width: width,
         }
     }
@@ -66,7 +68,11 @@ impl Line {
 
     /// Draw the given line buffer into here. If there is no space, return the remaining.
     #[inline]
-    pub fn draw_buffer(&mut self, src: &buf::Line, offset: usize, linenum: usize, linenum_width: usize)
+    pub fn draw_buffer(&mut self,
+                       src: &buf::Line,
+                       offset: usize,
+                       linenum: usize,
+                       linenum_width: usize)
                        -> Option<usize> {
         if offset == 0 {
             // Draw the line number only if the offset is zero.
@@ -76,7 +82,7 @@ impl Line {
             if i + linenum_width < self.width {
                 self.chars[i + linenum_width].chr = c;
             } else {
-                return Some(i)
+                return Some(i);
             }
         }
         None

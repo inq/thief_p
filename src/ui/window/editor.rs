@@ -2,7 +2,7 @@ use hq::Hq;
 use io::Event;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
-use ui::res::{Brush, Color, Cursor, Line, Rect, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Line, TextRect, Rect, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
 #[derive(Default)]
@@ -10,29 +10,94 @@ pub struct Editor {
     view: View,
     buffer_name: String,
     cursor: Cursor,
-    lines: Vec<usize>,
     line_max: usize,
     line_offset: usize,
-    brush: Brush,
+    line_cache: Vec<TextRect>,
+    brush_l: Brush,
+    brush_r: Brush,
+}
+
+impl Editor {
+    fn render_lines(&mut self, hq: &mut Hq) {
+        let buf = hq.buf(&self.buffer_name).unwrap();
+        let mut lc = self.line_offset;
+        let mut h = 0;
+        self.line_cache.clear();
+        while let Some(line) = buf.get(lc) {
+            let mut cache = TextRect::new(self.view.width,
+                                          self.brush_l,
+                                          self.brush_r,
+                                          self.line_num_width());
+            cache.draw_line(&buf, lc);
+            h += cache.height();
+            lc += 1;
+            self.line_cache.push(cache);
+            // if h > self.view.height { break; }
+        }
+    }
+
+    #[inline]
+    fn spaces_after_cursor(&self) -> usize {
+        self.view.width - self.line_num_width() - self.cursor.x
+    }
+
+    #[inline]
+    fn line_num_width(&self) -> usize {
+        let mut t = self.line_max;
+        if t == 0 {
+            2
+        } else {
+            let mut c = 0;
+            while t > 0 {
+                t /= 10;
+                c += 1;
+            }
+            c + 1
+        }
+    }
+
+    fn cursor_translated(&self) -> Cursor {
+        let mut cur = self.cursor.clone();
+        cur.x += self.line_num_width();
+        cur
+    }
+
+    fn move_cursor(&self) -> Sequence {
+        Sequence::Move(Cursor {
+            x: self.cursor.x + self.line_num_width(),
+            y: self.cursor.y - self.line_offset,
+        })
+    }
+
+    /// Basic initializer.
+    pub fn new() -> Editor {
+        Editor {
+            buffer_name: String::from("<empty>"),
+            brush_l: Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
+            brush_r: Brush::new(Color::new(200, 200, 200), Color::new(40, 40, 40)),
+            ..Default::default()
+        }
+    }
 }
 
 impl Component for Editor {
     has_view!();
 
-    fn on_resize(&mut self) {
-        // TODO: implement
+    /// Update each of `line_cache`.
+    fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
+        Ok(())
     }
 
-    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
-        // TODO: implement
-        let mut rect = Rect::new_splitted(self.view.width, self.view.height,
-                                          Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
-                                          self.brush,
-                                          self.line_num_width());
-        // Draw the others
-        rect.draw_buffer(hq.buf(&self.buffer_name)?,
-                         self.line_offset,
-                         self.line_num_width());
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+        self.render_lines(hq);
+        let mut rect = Rect::new(self.view.width, 0, self.brush_l);
+        for line in self.line_cache.iter() {
+            if rect.append(&line, self.view.height).is_some() {
+;
+            } else {
+                break;
+            }
+        }
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
@@ -97,7 +162,7 @@ impl Component for Editor {
                         Ok(Response {
                             sequence: vec![Sequence::Show(false),
                                            Sequence::Line(Line::new_from_str(&blanks,
-                                                                             &self.brush)),
+                                                                             self.brush_r)),
                                            Sequence::Move(self.cursor_translated()),
                                            Sequence::Show(true)],
                             ..Default::default()
@@ -120,7 +185,7 @@ impl Component for Editor {
                             sequence: vec![Sequence::Show(false),
                                            Sequence::Move(self.cursor_translated()),
                                            Sequence::Line(Line::new_from_str(&after_cursor,
-                                                                             &self.brush)),
+                                                                             self.brush_r)),
                                            Sequence::Move(self.cursor_translated()),
                                            Sequence::Show(true)],
                             ..Default::default()
@@ -141,57 +206,13 @@ impl Component for Editor {
                     .insert(c, self.spaces_after_cursor()));
                 Ok(Response {
                     sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&after_cursor, &self.brush)),
+                                   Sequence::Line(Line::new_from_str(&after_cursor, self.brush_r)),
                                    Sequence::Move(self.cursor_translated()),
                                    Sequence::Show(true)],
                     ..Default::default()
                 })
             }
             _ => Ok(Default::default()),
-        }
-    }
-}
-
-impl Editor {
-    #[inline]
-    fn spaces_after_cursor(&self) -> usize {
-        self.view.width - self.line_num_width() - self.cursor.x
-    }
-
-    #[inline]
-    fn line_num_width(&self) -> usize {
-        let mut t = self.line_max;
-        if t == 0 {
-            2
-        } else {
-            let mut c = 0;
-            while t > 0 {
-                t /= 10;
-                c += 1;
-            }
-            c + 1
-        }
-    }
-
-    fn cursor_translated(&self) -> Cursor {
-        let mut cur = self.cursor.clone();
-        cur.x += self.line_num_width();
-        cur
-    }
-
-    fn move_cursor(&self) -> Sequence {
-        Sequence::Move(Cursor {
-            x: self.cursor.x + self.line_num_width(),
-            y: self.cursor.y - self.line_offset,
-        })
-    }
-
-    /// Basic initializer.
-    pub fn new() -> Editor {
-        Editor {
-            buffer_name: String::from("<empty>"),
-            brush: Brush::new(Color::new(200, 200, 200), Color::new(40, 40, 40)),
-            ..Default::default()
         }
     }
 }

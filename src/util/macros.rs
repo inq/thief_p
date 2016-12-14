@@ -61,8 +61,8 @@ macro_rules! def_child {
         impl Component for $target {
             def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut View);
             def_child!(@child_imm $target, [$($src),*], get_view(): &View);
-            def_child!(@child_mut $target, [$($src),*], on_resize(): ());
-            def_child!(@child_imm $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<Response>);
+            def_child!(@child_mut $target, [$($src),*], on_resize(hq: &mut Hq): ResultBox<()>);
+            def_child!(@child_mut $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<Response>);
             def_child!(@child_mut $target, [$($src),*],
                        handle(e: Event, hq: &mut Hq): ResultBox<Response>);
         }

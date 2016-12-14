@@ -25,12 +25,18 @@ impl View {
 pub trait Component {
     fn get_view(&self) -> &View;
     fn get_view_mut(&mut self) -> &mut View;
-    fn on_resize(&mut self);
-    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response>;
+    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
     /// Resize the component; Call the on_resize function.
-    fn resize(&mut self, x: usize, y: usize, width: usize, height: usize) {
+    fn resize(&mut self,
+              hq: &mut Hq,
+              x: usize,
+              y: usize,
+              width: usize,
+              height: usize)
+              -> ResultBox<()> {
         self.get_view_mut().update(x, y, width, height);
-        self.on_resize();
+        self.on_resize(hq)
     }
     /// Handle the given event.
     fn handle(&mut self, _: Event, _: &mut Hq) -> ResultBox<Response> {
@@ -48,14 +54,14 @@ pub trait Parent {
     fn children(&self) -> Vec<&Self::Child>;
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&self, rect: Rect, hq: &mut Hq) -> ResultBox<Response> {
+    fn refresh_children(&mut self, rect: Rect, hq: &mut Hq) -> ResultBox<Response> {
         let mut refresh = Refresh {
             x: 0,
             y: 0,
             rect: rect,
         };
         let mut sequence = vec![];
-        for &ref child in self.children() {
+        for ref mut child in self.children_mut() {
             let resp = child.refresh(hq)?;
             if let Some(Refresh { x, y, rect }) = resp.refresh {
                 refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)

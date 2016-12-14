@@ -1,7 +1,5 @@
 use buf;
-use ui::res::color::Brush;
-use ui::res::line::Line;
-use ui::res::formatted::Formatted;
+use ui::res::{Formatted, Brush, Line, TextRect};
 
 #[derive(Debug)]
 pub struct Rect {
@@ -11,21 +9,9 @@ pub struct Rect {
 }
 
 impl Rect {
-    /// Initialize a new rectangular buffer with two color brushes.
-    /// The width of the left side is given by `splitter`.
-    pub fn new_splitted(width: usize, height: usize,
-                        brush_l: Brush, brush_r: Brush,
-                        splitter: usize) -> Rect {
+    pub fn new(width: usize, height: usize, brush: Brush) -> Rect {
         Rect {
-            lines: vec![Line::new_splitted(width, brush_l, brush_r, splitter); height],
-            width: width,
-            height: height,
-        }
-    }
-
-    pub fn blank(brush: &Brush, width: usize, height: usize) -> Rect {
-        Rect {
-            lines: vec![Line::blank(brush, width); height],
+            lines: vec![Line::new(width, brush); height],
             width: width,
             height: height,
         }
@@ -37,6 +23,18 @@ impl Rect {
                 self.lines[y + i].draw(line, x);
             }
         }
+    }
+
+    /// Append a TextRect object.
+    pub fn append(&mut self, src: &TextRect, limit: usize) -> Option<()> {
+        for line in src.lines().clone() {
+            if self.lines.len() < limit {
+                self.lines.push(line)
+            } else {
+                return None;
+            }
+        }
+        Some(())
     }
 
     /// Draw the formatted string here.
@@ -51,7 +49,7 @@ impl Rect {
         let mut cur = if let Some(line) = src.get(start_from) {
             line
         } else {
-            return
+            return;
         };
         let mut off = 0;
         let mut acc = 0;
@@ -64,7 +62,7 @@ impl Rect {
                 if let Some(line) = src.get(start_from + acc) {
                     cur = line;
                 } else {
-                    return
+                    return;
                 }
             }
         }
