@@ -46,17 +46,16 @@ impl TextRect {
 
     /// Draw the text buffer here.
     pub fn draw_line(&mut self, buf: &buf::Buffer, line_num: usize) {
-        if let Some(line) = buf.get(line_num) {
-            let mut off = 0;
-            let mut acc = 0;
-            let y = 0;
-            while let Some(o) = self.lines[y].draw_buffer(line, off, line_num, self.splitter) {
-                if self.lines.len() > y {
-                    let new_line = self.default_line();
-                    self.lines.push(new_line);
-                    off = o;
-                }
+        let line = if let Some(l) = buf.get(line_num) { l } else { return };
+        let mut off = 0;
+        let mut y = 0;
+        while let Some(o) = self.lines[y].draw_buffer(line, off, line_num, self.splitter) {
+            if self.lines.len() > y {
+                let new_line = self.default_line();
+                self.lines.push(new_line);
+                off += o;
             }
+            y += 1;
         }
     }
 }
