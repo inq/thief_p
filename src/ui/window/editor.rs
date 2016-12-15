@@ -63,9 +63,15 @@ impl Editor {
     }
 
     fn move_cursor(&self) -> Sequence {
+        let line_idx = self.cursor.y - self.line_offset;
+        let mut y = 0;
+        for i in 0..line_idx {
+            y += self.line_cache[i].height();
+        }
+        let Cursor { x: cx, y: cy } = self.line_cache[line_idx].cursor_position(self.cursor.x);
         Sequence::Move(Cursor {
-            x: self.cursor.x + self.line_num_width(),
-            y: self.cursor.y - self.line_offset,
+            x: cx,
+            y: y + cy,
         })
     }
 
@@ -92,9 +98,7 @@ impl Component for Editor {
         self.render_lines(hq);
         let mut rect = Rect::new(self.view.width, 0, self.brush_l);
         for line in self.line_cache.iter() {
-            if rect.append(&line, self.view.height).is_some() {
-;
-            } else {
+            if !rect.append(&line, self.view.height).is_some() {
                 break;
             }
         }

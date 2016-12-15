@@ -1,7 +1,5 @@
 use buf;
-use ui::res::color::Brush;
-use ui::res::line::Line;
-use ui::res::formatted::Formatted;
+use ui::res::{Brush, Cursor, Line, Formatted};
 
 #[derive(Debug)]
 pub struct TextRect {
@@ -39,9 +37,24 @@ impl TextRect {
         self.lines.len()
     }
 
+    /// Initialize a new empty line.
     #[inline]
     fn default_line(&self) -> Line {
         Line::new_splitted(self.width(), self.brush_l, self.brush_r, self.splitter)
+    }
+
+    /// Return the cursor position.
+    pub fn cursor_position(&self, x: usize) -> Cursor {
+        let mut acc = 0;
+        // Skip the last line
+        for (y, line) in self.lines.iter().take(self.height() - 1).enumerate() {
+            if x - acc < line.text_width() {
+                return Cursor { x: x - acc + self.splitter, y: y };
+            } else {
+                acc += line.text_width();
+            }
+        }
+        Cursor { x: x - acc + self.splitter, y: self.height() - 1 }
     }
 
     /// Draw the text buffer here.

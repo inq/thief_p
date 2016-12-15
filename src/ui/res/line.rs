@@ -5,6 +5,7 @@ use ui::res::{Brush, Char, Formatted};
 pub struct Line {
     pub chars: Vec<Char>,
     pub width: usize,
+    text_width: usize,
 }
 
 impl Line {
@@ -15,6 +16,7 @@ impl Line {
         Line {
             chars: res,
             width: w,
+            text_width: 0,
         }
     }
 
@@ -30,6 +32,7 @@ impl Line {
                 res
             },
             width: width,
+            text_width: 0,
         }
     }
 
@@ -39,6 +42,7 @@ impl Line {
         Line {
             chars: vec![Char::new(' ', brush); width],
             width: width,
+            text_width: 0,
         }
     }
 
@@ -66,6 +70,12 @@ impl Line {
         }
     }
 
+    /// Return the actual text width.
+    #[inline]
+    pub fn text_width(&self) -> usize {
+        self.text_width
+    }
+
     /// Draw the given line buffer into here. If there is no space, return the remaining.
     #[inline]
     pub fn draw_buffer(&mut self,
@@ -79,6 +89,7 @@ impl Line {
             self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
         }
         for (i, c) in src.iter().skip(offset).enumerate() {
+            self.text_width = i;
             if i + linenum_width < self.width {
                 self.chars[i + linenum_width].chr = c;
             } else {
