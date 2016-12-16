@@ -64,7 +64,11 @@ macro_rules! def_child {
             def_child!(@child_mut $target, [$($src),*], on_resize(hq: &mut Hq): ResultBox<()>);
             def_child!(@child_mut $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<Response>);
             def_child!(@child_mut $target, [$($src),*],
-                       handle(e: Event, hq: &mut Hq): ResultBox<Response>);
+                       unhandled(hq: &mut Hq, e: Event): ResultBox<Response>);
+            def_child!(@child_mut $target, [$($src),*],
+                       handle(hq: &mut Hq, e: Event): ResultBox<Response>);
+            def_child!(@child_mut $target, [$($src),*],
+                       on_key(hq: &mut Hq, k: Key): ResultBox<Response>);
         }
     };
 }

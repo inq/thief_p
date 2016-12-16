@@ -4,7 +4,7 @@ mod hsplit;
 mod window;
 mod command_bar;
 
-use io::Event;
+use common::{Event, Key};
 use hq::Hq;
 use util::ResultBox;
 use ui::comp::{Parent, View};
@@ -42,33 +42,43 @@ impl Component for Ui {
         self.refresh_children(rect, hq)
     }
 
+    /// Propagate to children.
+    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+        if self.command_bar().active {
+            self.command_bar.propagate(e, hq)
+        } else {
+            self.hsplit.propagate(e, hq)
+        }
+    }
+
+    /// Handle keyboard events.
+    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+        match k {
+            Key::Ctrl('c') => self.activate_command_bar(hq),
+            Key::Ctrl('q') => Ok(Response::quit()),
+            _ => Ok(Response::unhandled()),
+        }
+    }
+
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
         match e {
-            Event::Navigate { .. } => {
+            Event::Navigate(_) => {
                 self.command_bar.propagate(e, hq)?;
                 self.on_resize(hq)?;
                 self.refresh(hq)
             }
-            Event::Resize { w: width, h: height } => {
+            Event::Resize(width, height) => {
                 self.resize(hq, 0, 0, width, height)?;
                 self.refresh(hq)
             }
-            Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
-            Event::Ctrl { c: 'q' } => Ok(Response::quit()),
-            Event::OpenBuffer { s: _ } => {
+            Event::OpenBuffer(_) => {
                 self.command_bar_mut().active = false;
                 self.on_resize(hq)?;
                 self.hsplit.propagate(e, hq)?;
                 self.refresh(hq)
             }
-            _ => {
-                if self.command_bar().active {
-                    self.command_bar.propagate(e, hq)
-                } else {
-                    self.hsplit.propagate(e, hq)
-                }
-            }
+            _ => Ok(Response::unhandled()),
         }
     }
 }
