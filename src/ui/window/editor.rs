@@ -62,17 +62,21 @@ impl Editor {
         cur
     }
 
-    fn move_cursor(&self) -> Sequence {
+    /// Calculate the screen's coordinate of the cursor.
+    #[inline]
+    fn translate_cursor(&self) -> Cursor {
         let line_idx = self.cursor.y - self.line_offset;
         let mut y = 0;
         for i in 0..line_idx {
             y += self.line_cache[i].height();
         }
         let Cursor { x: cx, y: cy } = self.line_cache[line_idx].cursor_position(self.cursor.x);
-        Sequence::Move(Cursor {
-            x: cx,
-            y: y + cy,
-        })
+        Cursor { x: cx, y: y + cy }
+    }
+
+    /// Generate the move-cursor event.
+    fn move_cursor(&self) -> Sequence {
+        Sequence::Move(self.translate_cursor())
     }
 
     /// Basic initializer.
@@ -142,13 +146,19 @@ impl Component for Editor {
                     // Scroll upward
                     self.line_offset = self.cursor.y;
                     self.refresh(hq)
-                } else if self.cursor.y - self.line_offset >= self.view.height {
-                    // Scroll downward
-                    self.line_offset = self.cursor.y - self.view.height + 1;
-                    self.refresh(hq)
                 } else {
-                    // Do not scroll
-                    Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+                    let mut res = None;
+                    while self.translate_cursor().y >= self.view.height {
+                        // Scroll downward
+                        self.line_offset += 1;
+                        res = Some(self.refresh(hq)?);
+                    }
+                    if let Some(r) = res {
+                        Ok(r)
+                    } else {
+                        // Do not scroll
+                        Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+                    }
                 }
             }
             Event::Ctrl { c: 'm' } => {
