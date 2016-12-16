@@ -1,8 +1,9 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use ui::res::{Buffer, Brush, Color, Response};
-use ui::comp::{View, Parent, Component, Window};
+use ui::res::{Rect, Brush, Color, Response};
+use ui::comp::{View, Parent, Component};
+use ui::window::Window;
 
 #[derive(Default)]
 pub struct HSplit {
@@ -15,27 +16,29 @@ impl Component for HSplit {
     has_view!();
 
     /// Resize each child windows.
-    fn on_resize(&mut self) {
+    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         let windows = self.windows.len();
         let borders = windows + 1;
         let mut offset = 1;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
             let w = (self.view.width - borders + i) / windows;
-            child.resize(offset, 1, w, self.view.height - 2);
+            child.resize(hq, offset, 1, w, self.view.height - 2)?;
             offset += w + 1;
         }
+        Ok(())
     }
 
-    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250));
-        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer, hq)
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+        let rect = Rect::new(self.view.width,
+                             self.view.height,
+                             Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250)));
+        self.refresh_children(rect, hq)
     }
 
     fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
             Event::Ctrl { c: 'd' } => {
-                self.toggle_split();
+                self.toggle_split(hq)?;
                 self.refresh(hq)
             }
             _ => self.windows[self.focused].propagate(e, hq),
@@ -44,14 +47,14 @@ impl Component for HSplit {
 }
 
 impl HSplit {
-    fn toggle_split(&mut self) {
+    fn toggle_split(&mut self, hq: &mut Hq) -> ResultBox<()> {
         let ws = self.windows.len() % 3 + 1;
         self.set_children(ws);
         let x = self.view.x;
         let y = self.view.y;
         let w = self.view.width;
         let h = self.view.height;
-        self.resize(x, y, w, h);
+        self.resize(hq, x, y, w, h)
     }
 
     pub fn set_children(&mut self, children: usize) {

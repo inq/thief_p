@@ -1,13 +1,18 @@
 mod comp;
 mod res;
+mod hsplit;
+mod window;
+mod command_bar;
 
 use io::Event;
 use hq::Hq;
 use util::ResultBox;
-use ui::comp::{CommandBar, HSplit, Parent, View};
+use ui::comp::{Parent, View};
 
 pub use ui::comp::Component;
 pub use ui::res::*;
+use ui::hsplit::HSplit;
+use ui::command_bar::CommandBar;
 
 def_error! {
     Initialized: "already initialized",
@@ -25,16 +30,16 @@ def_child!(UiChild <- HSplit, CommandBar);
 impl Component for Ui {
     has_view!();
 
-    fn on_resize(&mut self) {
-        self.resize_command_bar();
+    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
+        self.resize_command_bar(hq)?;
         let height = self.view.height - self.command_bar().height() - 1;
-        self.hsplit.resize(1, 1, self.view.width - 2, height);
+        self.hsplit.resize(hq, 1, 1, self.view.width - 2, height)
     }
 
-    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
-        let buffer = Buffer::blank(&b, self.view.width, self.view.height);
-        self.refresh_children(buffer, hq)
+        let rect = Rect::new(self.view.width, self.view.height, b);
+        self.refresh_children(rect, hq)
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
@@ -42,18 +47,18 @@ impl Component for Ui {
         match e {
             Event::Navigate { .. } => {
                 self.command_bar.propagate(e, hq)?;
-                self.on_resize();
+                self.on_resize(hq)?;
                 self.refresh(hq)
             }
             Event::Resize { w: width, h: height } => {
-                self.resize(0, 0, width, height);
+                self.resize(hq, 0, 0, width, height)?;
                 self.refresh(hq)
             }
             Event::Ctrl { c: 'c' } => self.activate_command_bar(hq),
             Event::Ctrl { c: 'q' } => Ok(Response::quit()),
             Event::OpenBuffer { s: _ } => {
                 self.command_bar_mut().active = false;
-                self.on_resize();
+                self.on_resize(hq)?;
                 self.hsplit.propagate(e, hq)?;
                 self.refresh(hq)
             }
@@ -88,15 +93,15 @@ impl Ui {
 
     /// Resize the command bar; the bottom-side of the ui.
     #[inline]
-    fn resize_command_bar(&mut self) {
-        self.command_bar.resize(0, 0, self.view.width, self.view.height);
+    fn resize_command_bar(&mut self, hq: &mut Hq) -> ResultBox<()> {
+        self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height)
     }
 
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.command_bar_mut().active = true;
-        self.resize_command_bar();
+        self.resize_command_bar(hq)?;
         // TODO: Make concise.
         Ok(self.command_bar
             .refresh(hq)?

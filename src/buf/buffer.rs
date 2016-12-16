@@ -44,7 +44,11 @@ impl Buffer {
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else {
-            self.nexts.get(self.nexts.len() + self.prevs.len() - i)
+            if self.nexts.len() + self.prevs.len() > i {
+                self.nexts.get(self.nexts.len() + self.prevs.len() - i)
+            } else {
+                None
+            }
         }
     }
 
@@ -250,7 +254,7 @@ mod tests {
     #[test]
     fn test_insert() {
         let mut buf: Buffer = Default::default();
-        buf.insert('h');
+        buf.insert('h', 10);
         assert_eq!(buf.to_string(), "h\n");
     }
 

@@ -93,8 +93,5 @@ fn process_csi(s: &mut Chars) -> Option<Event> {
 #[test]
 fn test_read_num() {
     let correct = String::from("1234;");
-    let wrong = String::from("a");
-    assert_eq!(read_num(&mut correct.chars(), 0, ';'), Some(1234));
-    assert_eq!(read_num(&mut correct.chars(), 0, '-'), None);
-    assert_eq!(read_num(&mut wrong.chars(), 0, ';'), None);
+    assert_eq!(read_num(&mut correct.chars(), 0), Some((1234, ';')));
 }

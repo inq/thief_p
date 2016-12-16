@@ -5,42 +5,44 @@ use ui::res::{Brush, Char, Formatted};
 pub struct Line {
     pub chars: Vec<Char>,
     pub width: usize,
+    text_width: usize,
 }
 
 impl Line {
     /// Construct a new line from str.
-    pub fn new_from_str(src: &str, br: &Brush) -> Line {
-        let res: Vec<Char> = src.chars().map(|c| Char::new(c, br.clone())).collect();
+    pub fn new_from_str(src: &str, brush: Brush) -> Line {
+        let res: Vec<Char> = src.chars().map(|c| Char::new(c, brush)).collect();
         let w = res.iter().map(|c| c.width()).sum();
         Line {
             chars: res,
             width: w,
+            text_width: 0,
         }
     }
 
-    #[allow(dead_code)]
-    pub fn bordered(line: &Brush, fill: &Brush, width: usize) -> Line {
-        let mut chars = vec![Char::new(' ', line.clone()); 1];
-        chars.resize(width - 1,
-                     Char {
-                         chr: ' ',
-                         brush: fill.clone(),
-                     });
-        chars.resize(width,
-                     Char {
-                         chr: ' ',
-                         brush: line.clone(),
-                     });
+    /// Initialize a new line with two color brushes.
+    /// The width of the left side is given by `splitter`.
+    #[inline]
+    pub fn new_splitted(width: usize, brush_l: Brush, brush_r: Brush, splitter: usize) -> Line {
         Line {
-            chars: chars,
+            chars: {
+                let mut res = vec![Char::new(' ', brush_l); splitter];
+                let mut tmp = vec![Char::new(' ', brush_r); width - splitter];
+                res.append(&mut tmp);
+                res
+            },
             width: width,
+            text_width: 0,
         }
     }
 
-    pub fn blank(brush: &Brush, width: usize) -> Line {
+    /// Initialize a new empty line.
+    #[inline]
+    pub fn new(width: usize, brush: Brush) -> Line {
         Line {
-            chars: vec![Char::new(' ', brush.clone()); width],
+            chars: vec![Char::new(' ', brush); width],
             width: width,
+            text_width: 0,
         }
     }
 
@@ -68,10 +70,32 @@ impl Line {
         }
     }
 
-    /// Draw the given line buffer into here.
-    pub fn draw_buffer(&mut self, src: &buf::Line, x: usize) {
-        for (i, c) in src.iter().enumerate() {
-            self.chars[x + i].chr = c;
+    /// Return the actual text width.
+    #[inline]
+    pub fn text_width(&self) -> usize {
+        self.text_width
+    }
+
+    /// Draw the given line buffer into here. If there is no space, return the remaining.
+    #[inline]
+    pub fn draw_buffer(&mut self,
+                       src: &buf::Line,
+                       offset: usize,
+                       linenum: usize,
+                       linenum_width: usize)
+                       -> Option<usize> {
+        if offset == 0 {
+            // Draw the line number only if the offset is zero.
+            self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
         }
+        for (i, c) in src.iter().skip(offset).enumerate() {
+            self.text_width = i;
+            if i + linenum_width < self.width {
+                self.chars[i + linenum_width].chr = c;
+            } else {
+                return Some(i);
+            }
+        }
+        None
     }
 }

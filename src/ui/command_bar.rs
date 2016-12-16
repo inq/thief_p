@@ -1,7 +1,7 @@
 use hq::Hq;
 use io::Event;
 use util::ResultBox;
-use ui::res::{Buffer, Brush, Color, Cursor, Char, Line, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
 
 #[derive(PartialEq)]
@@ -41,10 +41,10 @@ impl CommandBar {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: Buffer::blank(&self.background, self.view.width, self.view.height),
+                rect: Rect::new(self.view.width, self.view.height, self.background),
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
-                           Sequence::Line(Line::new_from_str(msg, &self.background))],
+                           Sequence::Line(Line::new_from_str(msg, self.background))],
         }
     }
 
@@ -58,7 +58,7 @@ impl Component for CommandBar {
     has_view!();
 
     /// Force the height.
-    fn on_resize(&mut self) {
+    fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
         let height_parent = self.view.height;
         self.view.height = if self.status == Status::Navigate {
             height_parent / 3
@@ -66,6 +66,7 @@ impl Component for CommandBar {
             1
         };
         self.view.y = height_parent - self.view.height;
+        Ok(())
     }
 
     /// Handle the keyboard input.
@@ -117,24 +118,24 @@ impl Component for CommandBar {
         }
     }
 
-    fn refresh(&self, hq: &mut Hq) -> ResultBox<Response> {
-        let buf = if self.status == Status::Navigate {
-            let mut res = Buffer::blank(&self.background, self.view.width, self.view.height);
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+        let rect = if self.status == Status::Navigate {
+            let mut res = Rect::new(self.view.width, self.view.height, self.background);
             for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
             }
             res
         } else {
-            Buffer::blank(&self.background, self.view.width, self.view.height)
+            Rect::new(self.view.width, self.view.height, self.background)
         };
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                buf: buf,
+                rect: rect,
             }),
             sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
-                           Sequence::Line(Line::new_from_str(&self.data, &self.background))],
+                           Sequence::Line(Line::new_from_str(&self.data, self.background))],
         })
     }
 }

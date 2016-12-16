@@ -61,8 +61,8 @@ impl Handler {
     // Handle event from the Ui.
     fn handle_event(&mut self, e: Event) -> ResultBox<()> {
         let resp = self.ui.handle(e, &mut self.hq)?;
-        if let Some(Refresh { x, y, buf }) = resp.refresh {
-            self.term.write_ui_buffer(x, y, &buf);
+        if let Some(Refresh { x, y, rect }) = resp.refresh {
+            self.term.write_ui_buffer(x, y, &rect);
         }
         let mut next: Option<Event> = None;
         for resp in resp.sequence {

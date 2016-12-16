@@ -1,14 +1,16 @@
-mod buffer;
+mod rect;
 mod formatted;
 mod color;
 mod char;
 mod line;
+mod text_rect;
 
-pub use self::buffer::Buffer;
+pub use self::rect::Rect;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
 pub use self::formatted::{Style, Formatted};
+pub use self::text_rect::TextRect;
 use common::Pair;
 
 pub type Cursor = Pair;
@@ -22,7 +24,7 @@ pub struct Response {
 pub struct Refresh {
     pub x: usize,
     pub y: usize,
-    pub buf: Buffer,
+    pub rect: Rect,
 }
 
 #[derive(Debug)]
@@ -39,18 +41,6 @@ impl Response {
     /// Shorthand for quit event.
     pub fn quit() -> Response {
         Response { sequence: vec![Sequence::Quit], ..Default::default() }
-    }
-
-    /// Shorthand for refresh.
-    pub fn refresh(x: usize, y: usize, buf: Buffer) -> Response {
-        Response {
-            refresh: Some(Refresh {
-                x: x,
-                y: y,
-                buf: buf,
-            }),
-            ..Default::default()
-        }
     }
 
     pub fn translate(mut self, tx: usize, ty: usize) -> Response {
