@@ -1,5 +1,5 @@
+use common::{Event, Key};
 use hq::Hq;
-use io::Event;
 use util::ResultBox;
 use ui::res::{Rect, Brush, Color, Response};
 use ui::comp::{View, Parent, Component};
@@ -37,7 +37,7 @@ impl Component for HSplit {
 
     fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
-            Event::Ctrl { c: 'd' } => {
+            Event::Keyboard(Key::Ctrl('d')) => {
                 self.toggle_split(hq)?;
                 self.refresh(hq)
             }

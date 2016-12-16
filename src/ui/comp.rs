@@ -1,6 +1,6 @@
 use hq::Hq;
+use common::Event;
 use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
-use io::Event;
 use util::ResultBox;
 
 #[derive(Default)]

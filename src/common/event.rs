@@ -1,28 +1,35 @@
 use std::char;
 use std::str::Chars;
+use common::Key;
 
 #[derive(Debug)]
 pub enum Event {
-    Char { c: char },
-    Ctrl { c: char },
-    Move { x: i8, y: i8 },
-    Meta { c: char },
-    Single { n: usize },
-    Pair { x: usize, y: usize },
-    Resize { w: usize, h: usize },
-    Navigate { msg: String },
-    Notify { s: String },
-    OpenBuffer { s: String },
-    Escape,
+    Keyboard(Key),
+    Single(usize),
+    Pair(usize, usize),
+    Resize(usize, usize),
+    Navigate(String),
+    Notify(String),
+    OpenBuffer(String),
 }
 
 impl Event {
-    pub fn from_char(c: char) -> Event {
-        if c as u32 <= 26 {
-            Event::Ctrl { c: (c as u8 + 'a' as u8 - 1) as char }
-        } else {
-            Event::Char { c: c }
+    /// Convert some events into readable format.
+    pub fn normalize(self) -> Event {
+        match self {
+            Event::Single(1) => Event::Keyboard(Key::Home),
+            Event::Single(4) => Event::Keyboard(Key::End),
+            Event::Keyboard(k) => Event::Keyboard(Key::normalize(k)),
+            etc => etc
         }
+    }
+
+    pub fn from_char(c: char) -> Event {
+        Event::Keyboard(if c as u32 <= 26 {
+            Key::Ctrl((c as u8 + 'a' as u8 - 1) as char)
+        } else {
+            Key::Char(c)
+        })
     }
 
     pub fn from_string(s: &String) -> (Option<Event>, String) {
@@ -39,7 +46,7 @@ impl Event {
             Some(c) => Some(Event::from_char(c)),
             _ => None,
         };
-        (res, it.collect())
+        (res.map(Event::normalize), it.collect())
     }
 }
 
@@ -63,12 +70,12 @@ fn check_num(it: &mut Chars, seed: usize) -> Option<Event> {
     match read_num(it, seed) {
         Some((y, ';')) => {
             if let Some((x, 'R')) = read_num(it, seed) {
-                Some(Event::Pair { x: x, y: y })
+                Some(Event::Pair(x, y))
             } else {
                 None
             }
         }
-        Some((n, '~')) => Some(Event::Single { n: n }),
+        Some((n, '~')) => Some(Event::Single(n)),
         _ => None,
     }
 }
@@ -79,14 +86,14 @@ fn process_csi(s: &mut Chars) -> Option<Event> {
     if let Some(c) = s.next() {
         match c {
             '0'...'9' => check_num(s, c.to_digit(10).unwrap() as usize),
-            'A' => Some(Event::Move { x: 0, y: -1 }),
-            'B' => Some(Event::Move { x: 0, y: 1 }),
-            'C' => Some(Event::Move { x: 1, y: 0 }),
-            'D' => Some(Event::Move { x: -1, y: 0 }),
-            _ => Some(Event::Meta { c: c as char }),
+            'A' => Some(Event::Keyboard(Key::Up)),
+            'B' => Some(Event::Keyboard(Key::Down)),
+            'C' => Some(Event::Keyboard(Key::Right)),
+            'D' => Some(Event::Keyboard(Key::Left)),
+            _ => Some(Event::Keyboard(Key::Meta(c as char))),
         }
     } else {
-        Some(Event::Escape)
+        Some(Event::Keyboard(Key::Esc))
     }
 }
 

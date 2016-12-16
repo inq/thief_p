@@ -4,8 +4,8 @@ mod edit;
 pub use self::editor::Editor;
 pub use self::edit::Edit;
 
+use common::Event;
 use hq::Hq;
-use io::Event;
 use util::ResultBox;
 use ui::res::Response;
 use ui::comp::{Component, View};

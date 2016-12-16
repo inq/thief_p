@@ -1,9 +1,9 @@
 use std::convert::From;
 use libc;
 
+use common::Event;
 use hq::Hq;
 use io::kqueue::Kqueue;
-use io::event::Event;
 use io::term::Term;
 use ui::{Ui, Component, Cursor, Refresh, Sequence};
 use util::ResultBox;
@@ -44,11 +44,11 @@ impl Handler {
         self.ipt_buf.push_str(&ipt);
         let mut cur = self.ipt_buf.clone();
         while let (Some(e), next) = Event::from_string(&cur) {
-            if let Event::Pair { x, y } = e {
+            if let Event::Pair(x, y) = e {
                 // TODO: check it
                 self.term.initial_cursor(&Cursor { x: x, y: y });
                 let (w, h) = self.term.get_size()?;
-                self.handle_event(Event::Resize { w: w, h: h })?;
+                self.handle_event(Event::Resize(w, h))?;
             }
             let _ = self.handle_event(e)?;
             cur = next.clone();
@@ -90,7 +90,7 @@ impl Handler {
     // Handle resize event of terminal.
     fn handle_sigwinch(&mut self) -> ResultBox<()> {
         let (w, h) = self.term.get_size()?;
-        self.handle_event(Event::Resize { w: w, h: h })
+        self.handle_event(Event::Resize(w, h))
     }
 
     pub fn handle(&mut self, ident: usize) -> ResultBox<()> {

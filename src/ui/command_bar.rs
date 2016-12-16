@@ -1,5 +1,5 @@
+use common::{Event, Key};
 use hq::Hq;
-use io::Event;
 use util::ResultBox;
 use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
 use ui::comp::{Component, View};
@@ -72,25 +72,24 @@ impl Component for CommandBar {
     /// Handle the keyboard input.
     fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
         match e {
-            Event::Navigate { msg } => {
+            Event::Navigate(msg) => {
                 // Turn on the navigator
                 self.data.clear();
                 self.message = String::from(msg);
                 self.status = Status::Navigate;
                 self.refresh(hq)
             }
-            Event::Notify { s } => {
+            Event::Notify(s) => {
                 // Notify from Hq
                 Ok(self.notify(&s))
             }
-            Event::Ctrl { c: 'm' } => {
-                // Return
+            Event::Keyboard(Key::CR) => {
                 Ok(Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
                 })
             }
-            Event::Char { c } => {
+            Event::Keyboard(Key::Char(c)) => {
                 match self.status {
                     Status::Standby => {
                         self.data.push(c);

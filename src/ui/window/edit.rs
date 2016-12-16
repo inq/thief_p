@@ -1,5 +1,5 @@
+use common::Event;
 use hq::Hq;
-use io::Event;
 use util::ResultBox;
 use ui::res::{Response, Rect, Brush, Color};
 use ui::comp::{Component, Parent, View};

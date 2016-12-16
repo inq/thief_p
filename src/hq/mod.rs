@@ -2,8 +2,8 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use buf::Buffer;
+use common::Event;
 use util::ResultBox;
-use io::Event;
 
 mod command;
 mod fs;
@@ -57,22 +57,22 @@ impl Hq {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Navigate { msg: String::from("open-file: ") })
+                Some(Event::Navigate(String::from("open-file: ")))
             } else {
-                Some(Event::Notify { s: String::from("Not exists the corresponding command.") })
+                Some(Event::Notify(String::from("Not exists the corresponding command.")))
             }
         } else {
             // argument
             if let Some(_) = self.commands.get(&self.current[0]) {
                 let funcname = self.current[0].clone();
                 if let Ok(bufname) = self.run(&funcname, command) {
-                    Some(Event::OpenBuffer { s: String::from(bufname) })
+                    Some(Event::OpenBuffer(String::from(bufname)))
                 } else {
-                    Some(Event::Notify { s: String::from("Cannot open the file.") })
+                    Some(Event::Notify(String::from("Cannot open the file.")))
                 }
             } else {
                 self.current.clear();
-                Some(Event::Notify { s: String::from("Internal error.") })
+                Some(Event::Notify(String::from("Internal error.")))
             }
         }
     }
