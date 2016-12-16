@@ -31,7 +31,7 @@ impl Component for Ui {
     has_view!();
 
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
-        self.resize_command_bar(hq);
+        self.resize_command_bar(hq)?;
         let height = self.view.height - self.command_bar().height() - 1;
         self.hsplit.resize(hq, 1, 1, self.view.width - 2, height)
     }
@@ -93,15 +93,15 @@ impl Ui {
 
     /// Resize the command bar; the bottom-side of the ui.
     #[inline]
-    fn resize_command_bar(&mut self, hq: &mut Hq) {
-        self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height);
+    fn resize_command_bar(&mut self, hq: &mut Hq) -> ResultBox<()> {
+        self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height)
     }
 
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.command_bar_mut().active = true;
-        self.resize_command_bar(hq);
+        self.resize_command_bar(hq)?;
         // TODO: Make concise.
         Ok(self.command_bar
             .refresh(hq)?

@@ -1,5 +1,5 @@
 use buf;
-use ui::res::{Brush, Cursor, Line, Formatted};
+use ui::res::{Brush, Cursor, Line};
 
 #[derive(Debug)]
 pub struct TextRect {
@@ -49,17 +49,27 @@ impl TextRect {
         // Skip the last line
         for (y, line) in self.lines.iter().take(self.height() - 1).enumerate() {
             if x - acc < line.text_width() {
-                return Cursor { x: x - acc + self.splitter, y: y };
+                return Cursor {
+                    x: x - acc + self.splitter,
+                    y: y,
+                };
             } else {
                 acc += line.text_width();
             }
         }
-        Cursor { x: x - acc + self.splitter, y: self.height() - 1 }
+        Cursor {
+            x: x - acc + self.splitter,
+            y: self.height() - 1,
+        }
     }
 
     /// Draw the text buffer here.
     pub fn draw_line(&mut self, buf: &buf::Buffer, line_num: usize) {
-        let line = if let Some(l) = buf.get(line_num) { l } else { return };
+        let line = if let Some(l) = buf.get(line_num) {
+            l
+        } else {
+            return;
+        };
         let mut off = 0;
         let mut y = 0;
         while let Some(o) = self.lines[y].draw_buffer(line, off, line_num, self.splitter) {

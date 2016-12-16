@@ -23,7 +23,7 @@ impl Editor {
         let mut lc = self.line_offset;
         let mut h = 0;
         self.line_cache.clear();
-        while let Some(line) = buf.get(lc) {
+        while let Some(_) = buf.get(lc) {
             let mut cache = TextRect::new(self.view.width,
                                           self.brush_l,
                                           self.brush_r,
@@ -32,7 +32,9 @@ impl Editor {
             h += cache.height();
             lc += 1;
             self.line_cache.push(cache);
-            // if h > self.view.height { break; }
+            if h > self.view.height {
+                break;
+            }
         }
     }
 

@@ -22,7 +22,7 @@ impl Component for HSplit {
         let mut offset = 1;
         for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
             let w = (self.view.width - borders + i) / windows;
-            child.resize(hq, offset, 1, w, self.view.height - 2);
+            child.resize(hq, offset, 1, w, self.view.height - 2)?;
             offset += w + 1;
         }
         Ok(())

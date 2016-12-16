@@ -1,4 +1,3 @@
-use buf;
 use ui::res::{Formatted, Brush, Line, TextRect};
 
 #[derive(Debug)]
@@ -41,30 +40,6 @@ impl Rect {
     pub fn draw_formatted(&mut self, src: &Formatted, x: usize, y: usize) {
         if let Some(ref mut line) = self.lines.get_mut(y) {
             line.draw_formatted(src, x)
-        }
-    }
-
-    /// Draw the text buffer here.
-    pub fn draw_buffer(&mut self, src: &buf::Buffer, start_from: usize, linenum_width: usize) {
-        let mut cur = if let Some(line) = src.get(start_from) {
-            line
-        } else {
-            return;
-        };
-        let mut off = 0;
-        let mut acc = 0;
-        for y in 0..self.height {
-            if let Some(o) = self.lines[y].draw_buffer(cur, off, start_from + acc, linenum_width) {
-                off = o;
-            } else {
-                off = 0;
-                acc += 1;
-                if let Some(line) = src.get(start_from + acc) {
-                    cur = line;
-                } else {
-                    return;
-                }
-            }
         }
     }
 }
