@@ -100,8 +100,7 @@ impl Editor {
                     .collect::<String>();
                 Ok(Response {
                     sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&blanks,
-                                                                     self.brush_r)),
+                                   Sequence::Line(Line::new_from_str(&blanks, self.brush_r)),
                                    Sequence::Move(self.cursor_translated()),
                                    Sequence::Show(true)],
                     ..Default::default()
@@ -166,72 +165,74 @@ impl Component for Editor {
     }
 
     /// Move cursor left and right, or Type a character.
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+        match k {
+            Key::Ctrl('a') | Key::Home => {
+                self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line();
+                Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+            }
+            Key::Ctrl('e') | Key::End => {
+                self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
+                Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+            }
+            Key::CR => {
+                self.cursor = hq.buf(&self.buffer_name)?.break_line();
+                self.refresh(hq)
+            }
+            Key::Del => {
+                match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
+                    BackspaceRes::Normal(mut after_cursor) => {
+                        after_cursor.push(' ');
+                        self.cursor.x -= 1;
+                        Ok(Response {
+                            sequence: vec![Sequence::Show(false),
+                                           Sequence::Move(self.cursor_translated()),
+                                           Sequence::Line(Line::new_from_str(&after_cursor,
+                                                                             self.brush_r)),
+                                           Sequence::Move(self.cursor_translated()),
+                                           Sequence::Show(true)],
+                            ..Default::default()
+                        })
+                    }
+                    BackspaceRes::PrevLine(cursor) => {
+                        self.cursor = cursor;
+                        self.refresh(hq)
+                    }
+                    _ => Ok(Default::default()),
+                }
+            }
+            Key::Ctrl('k') => self.on_kill_line(hq),
+            Key::Ctrl('n') | Key::Down => self.on_move(hq, 0, 1),
+            Key::Ctrl('p') | Key::Up => self.on_move(hq, 0, -1),
+            Key::Ctrl('f') | Key::Right => self.on_move(hq, 1, 0),
+            Key::Ctrl('b') | Key::Left => self.on_move(hq, -1, 0),
+            Key::Char(c) => {
+                let mut after_cursor = String::with_capacity(self.view.width);
+                self.cursor.x += 1;
+                after_cursor.push(c);
+                after_cursor.push_str(&hq.buf(&self.buffer_name)?
+                    .insert(c, self.spaces_after_cursor()));
+                Ok(Response {
+                    sequence: vec![Sequence::Show(false),
+                                   Sequence::Line(Line::new_from_str(&after_cursor, self.brush_r)),
+                                   Sequence::Move(self.cursor_translated()),
+                                   Sequence::Show(true)],
+                    ..Default::default()
+                })
+            }
+            _ => Ok(Default::default()),
+        }
+    }
+
+    /// Handle events.
+    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
         match e {
             Event::OpenBuffer(s) => {
                 self.buffer_name = s;
                 self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
             }
-            Event::Keyboard(k) => {
-                match k {
-                    Key::Ctrl('a') | Key::Home => {
-                        self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line();
-                        Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
-                    }
-                    Key::Ctrl('e') | Key::End => {
-                        self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
-                        Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
-                    }
-                    Key::CR => {
-                        self.cursor = hq.buf(&self.buffer_name)?.break_line();
-                        self.refresh(hq)
-                    }
-                    Key::Del => {
-                        match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
-                            BackspaceRes::Normal(mut after_cursor) => {
-                                after_cursor.push(' ');
-                                self.cursor.x -= 1;
-                                Ok(Response {
-                                    sequence: vec![Sequence::Show(false),
-                                                   Sequence::Move(self.cursor_translated()),
-                                                   Sequence::Line(Line::new_from_str(&after_cursor,
-                                                                                     self.brush_r)),
-                                                   Sequence::Move(self.cursor_translated()),
-                                                   Sequence::Show(true)],
-                                    ..Default::default()
-                                })
-                            }
-                            BackspaceRes::PrevLine(cursor) => {
-                                self.cursor = cursor;
-                                self.refresh(hq)
-                            }
-                            _ => Ok(Default::default()),
-                        }
-                    }
-                    Key::Ctrl('k') => self.on_kill_line(hq),
-                    Key::Ctrl('n') | Key::Down => self.on_move(hq, 0, 1),
-                    Key::Ctrl('p') | Key::Up => self.on_move(hq, 0, -1),
-                    Key::Ctrl('f') | Key::Right => self.on_move(hq, 1, 0),
-                    Key::Ctrl('b') | Key::Left => self.on_move(hq, -1, 0),
-                    Key::Char(c) => {
-                        let mut after_cursor = String::with_capacity(self.view.width);
-                        self.cursor.x += 1;
-                        after_cursor.push(c);
-                        after_cursor.push_str(&hq.buf(&self.buffer_name)?
-                                              .insert(c, self.spaces_after_cursor()));
-                        Ok(Response {
-                            sequence: vec![Sequence::Show(false),
-                                           Sequence::Line(Line::new_from_str(&after_cursor, self.brush_r)),
-                                           Sequence::Move(self.cursor_translated()),
-                                           Sequence::Show(true)],
-                            ..Default::default()
-                        })
-                    }
-                    _ => Ok(Default::default()),
-                }
-            }
-            _ => Ok(Default::default()),
+            _ => Ok(Response::unhandled()),
         }
     }
 }

@@ -1,19 +1,17 @@
 mod editor;
-mod edit;
 
 pub use self::editor::Editor;
-pub use self::edit::Edit;
 
-use common::Event;
+use common::{Event, Key};
 use hq::Hq;
 use util::ResultBox;
 use ui::res::Response;
 use ui::comp::{Component, View};
 
-def_child!(Window <- Edit);
+def_child!(Window <- Editor);
 
 impl Window {
-    pub fn new_edit() -> Window {
-        Window::Edit(Edit::new())
+    pub fn new_editor() -> Window {
+        Window::Editor(Editor::new())
     }
 }

@@ -35,13 +35,19 @@ impl Component for HSplit {
         self.refresh_children(rect, hq)
     }
 
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
-        match e {
-            Event::Keyboard(Key::Ctrl('d')) => {
+    /// Propagate if the event is not handled.
+    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+        self.windows[self.focused].propagate(e, hq)
+    }
+
+    /// Handle the keyboard event.
+    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+        match k {
+            Key::Ctrl('d') => {
                 self.toggle_split(hq)?;
                 self.refresh(hq)
             }
-            _ => self.windows[self.focused].propagate(e, hq),
+            _ => Ok(Response::unhandled()),
         }
     }
 }
@@ -64,7 +70,7 @@ impl HSplit {
             self.windows.truncate(children)
         } else {
             for _ in 0..(children - self.windows.len()) {
-                self.windows.push(Window::new_edit())
+                self.windows.push(Window::new_editor())
             }
         }
     }

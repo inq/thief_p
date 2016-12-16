@@ -2,7 +2,7 @@ use std::char;
 use std::str::Chars;
 use common::Key;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     Keyboard(Key),
     Single(usize),
@@ -20,7 +20,7 @@ impl Event {
             Event::Single(1) => Event::Keyboard(Key::Home),
             Event::Single(4) => Event::Keyboard(Key::End),
             Event::Keyboard(k) => Event::Keyboard(Key::normalize(k)),
-            etc => etc
+            etc => etc,
         }
     }
 

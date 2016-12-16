@@ -29,6 +29,7 @@ pub struct Refresh {
 
 #[derive(Debug)]
 pub enum Sequence {
+    Unhandled,
     Move(Cursor),
     Line(Line),
     Char(Char),
@@ -38,6 +39,20 @@ pub enum Sequence {
 }
 
 impl Response {
+    /// Check if the event is not handled.
+    pub fn is_handled(&self) -> bool {
+        if let Some(&Sequence::Unhandled) = self.sequence.get(0) {
+            false
+        } else {
+            true
+        }
+    }
+
+    /// Shorthand for unhandled event.
+    pub fn unhandled() -> Response {
+        Response { sequence: vec![Sequence::Unhandled], ..Default::default() }
+    }
+
     /// Shorthand for quit event.
     pub fn quit() -> Response {
         Response { sequence: vec![Sequence::Quit], ..Default::default() }

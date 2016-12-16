@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Key {
     Char(char),
     Ctrl(char),
@@ -22,7 +22,7 @@ impl Key {
             Key::Ctrl('j') => Key::LF,
             Key::Ctrl('m') => Key::CR,
             Key::Char('\x7f') => Key::Del,
-            etc => etc
+            etc => etc,
         }
     }
 }

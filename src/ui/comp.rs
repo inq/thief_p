@@ -1,5 +1,5 @@
 use hq::Hq;
-use common::Event;
+use common::{Event, Key};
 use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
 use util::ResultBox;
 
@@ -38,13 +38,32 @@ pub trait Component {
         self.get_view_mut().update(x, y, width, height);
         self.on_resize(hq)
     }
-    /// Handle the given event.
-    fn handle(&mut self, _: Event, _: &mut Hq) -> ResultBox<Response> {
+
+    /// Propagate if the event is not handled.
+    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
         Ok(Default::default())
+    }
+
+    /// Handle the keyboard event.
+    fn on_key(&mut self, hq: &mut Hq, key: Key) -> ResultBox<Response> {
+        Ok(Response::unhandled())
+    }
+
+    /// Handle the given event.
+    fn handle(&mut self, _: &mut Hq, _: Event) -> ResultBox<Response> {
+        Ok(Response::unhandled())
     }
     /// Propage event to children. This calls handle, and then translate.
     fn propagate(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
-        Ok(self.handle(e, hq)?.translate(self.get_view().x, self.get_view().y))
+        let mut res = if let Event::Keyboard(k) = e {
+            self.on_key(hq, k)?
+        } else {
+            self.handle(hq, e.clone())?
+        };
+        if !res.is_handled() {
+            res = self.unhandled(hq, e)?;
+        }
+        Ok(res.translate(self.get_view().x, self.get_view().y))
     }
 }
 

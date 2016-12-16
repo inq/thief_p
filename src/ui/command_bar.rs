@@ -70,26 +70,15 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn handle(&mut self, e: Event, hq: &mut Hq) -> ResultBox<Response> {
-        match e {
-            Event::Navigate(msg) => {
-                // Turn on the navigator
-                self.data.clear();
-                self.message = String::from(msg);
-                self.status = Status::Navigate;
-                self.refresh(hq)
-            }
-            Event::Notify(s) => {
-                // Notify from Hq
-                Ok(self.notify(&s))
-            }
-            Event::Keyboard(Key::CR) => {
+    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+        match k {
+            Key::CR => {
                 Ok(Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
                 })
             }
-            Event::Keyboard(Key::Char(c)) => {
+            Key::Char(c) => {
                 match self.status {
                     Status::Standby => {
                         self.data.push(c);
@@ -112,6 +101,24 @@ impl Component for CommandBar {
                         })
                     }
                 }
+            }
+            _ => Ok(Default::default()),
+        }
+    }
+
+    /// Handle events.
+    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+        match e {
+            Event::Navigate(msg) => {
+                // Turn on the navigator
+                self.data.clear();
+                self.message = String::from(msg);
+                self.status = Status::Navigate;
+                self.refresh(hq)
+            }
+            Event::Notify(s) => {
+                // Notify from Hq
+                Ok(self.notify(&s))
             }
             _ => Ok(Default::default()),
         }
