@@ -22,10 +22,17 @@ impl Editor {
         let mut h = 0;
         self.line_cache.clear();
         while let Some(_) = buf.get(lc) {
-            let mut cache = TextRect::new(self.view.width,
-                                          self.view.theme.linenum,
-                                          self.view.theme.editor,
-                                          self.line_num_width());
+            let mut cache = if lc == self.cursor.y {
+                TextRect::new(self.view.width,
+                              self.view.theme.linenum_cur(),
+                              self.view.theme.editor_cur(),
+                              self.line_num_width())
+            } else {
+                TextRect::new(self.view.width,
+                              self.view.theme.linenum,
+                              self.view.theme.editor,
+                              self.line_num_width())
+            };
             cache.draw_line(&buf, lc);
             h += cache.height();
             lc += 1;
