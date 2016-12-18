@@ -134,18 +134,49 @@ impl Editor {
                 Ok(r)
             } else {
                 // Do not scroll
-                let seq = vec![];
                 let line_now = self.cursor.y - self.line_offset;
-                if line_prev < line_now {
-                    self.line_cache[line_prev].fill_brush(self.view.theme.linenum,
-                                                          self.view.theme.editor);
-                    self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
-                                                         self.view.theme.editor_cur());
+                match line_now {
+                    _ if line_now < line_prev => {
+                        // Upward
+                        let y_off = self.line_cache.iter().take(line_now).map(|l| l.height()).sum();
+                        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+                        self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
+                                                             self.view.theme.editor_cur());
+                        rect.append(&self.line_cache[line_now], self.view.height - y_off);
+                        self.line_cache[line_prev]
+                            .fill_brush(self.view.theme.linenum, self.view.theme.editor);
+                        rect.append(&self.line_cache[line_prev], self.view.height - y_off);
+                        Ok(Response {
+                            refresh: Some(Refresh {
+                                x: 0,
+                                y: y_off,
+                                rect: rect,
+                            }),
+                            sequence: vec![self.move_cursor()],
+                        })
+                    }
+                    _ if line_now > line_prev => {
+                        // Downward
+                        let y_off =
+                            self.line_cache.iter().take(line_prev).map(|l| l.height()).sum();
+                        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+                        self.line_cache[line_prev]
+                            .fill_brush(self.view.theme.linenum, self.view.theme.editor);
+                        rect.append(&self.line_cache[line_prev], self.view.height - y_off);
+                        self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
+                                                             self.view.theme.editor_cur());
+                        rect.append(&self.line_cache[line_now], self.view.height - y_off);
+                        Ok(Response {
+                            refresh: Some(Refresh {
+                                x: 0,
+                                y: y_off,
+                                rect: rect,
+                            }),
+                            sequence: vec![self.move_cursor()],
+                        })
+                    }
+                    _ => Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() }),
                 }
-                Ok(Response {
-                    sequence: vec![self.move_cursor()],
-                    ..Default::default()
-                })
             }
         }
     }
