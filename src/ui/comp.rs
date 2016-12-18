@@ -1,5 +1,6 @@
 use hq::Hq;
 use common::{Event, Key};
+use ui::Theme;
 use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
 use util::ResultBox;
 
@@ -9,16 +10,15 @@ pub struct View {
     pub y: usize,
     pub width: usize,
     pub height: usize,
+    pub theme: Theme,
 }
 
 impl View {
     fn update(&mut self, x: usize, y: usize, width: usize, height: usize) {
-        *self = View {
-            x: x,
-            y: y,
-            width: width,
-            height: height,
-        }
+        self.x = x;
+        self.y = y;
+        self.width = width;
+        self.height = height;
     }
 }
 

@@ -13,8 +13,6 @@ pub struct Editor {
     line_max: usize,
     line_offset: usize,
     line_cache: Vec<TextRect>,
-    brush_l: Brush,
-    brush_r: Brush,
 }
 
 impl Editor {
@@ -25,8 +23,8 @@ impl Editor {
         self.line_cache.clear();
         while let Some(_) = buf.get(lc) {
             let mut cache = TextRect::new(self.view.width,
-                                          self.brush_l,
-                                          self.brush_r,
+                                          self.view.theme.linenum,
+                                          self.view.theme.editor,
                                           self.line_num_width());
             cache.draw_line(&buf, lc);
             h += cache.height();
@@ -83,12 +81,7 @@ impl Editor {
 
     /// Basic initializer.
     pub fn new() -> Editor {
-        Editor {
-            buffer_name: String::from("<empty>"),
-            brush_l: Brush::new(Color::new(200, 200, 200), Color::new(100, 100, 100)),
-            brush_r: Brush::new(Color::new(200, 200, 200), Color::new(40, 40, 40)),
-            ..Default::default()
-        }
+        Editor { buffer_name: String::from("<empty>"), ..Default::default() }
     }
 
     /// Delete every characters after cursor.
@@ -100,7 +93,8 @@ impl Editor {
                     .collect::<String>();
                 Ok(Response {
                     sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&blanks, self.brush_r)),
+                                   Sequence::Line(Line::new_from_str(&blanks,
+                                                                     self.view.theme.editor)),
                                    Sequence::Move(self.cursor_translated()),
                                    Sequence::Show(true)],
                     ..Default::default()
@@ -148,7 +142,7 @@ impl Component for Editor {
 
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.render_lines(hq);
-        let mut rect = Rect::new(self.view.width, 0, self.brush_l);
+        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
         for line in self.line_cache.iter() {
             if !rect.append(&line, self.view.height).is_some() {
                 break;
@@ -188,7 +182,9 @@ impl Component for Editor {
                             sequence: vec![Sequence::Show(false),
                                            Sequence::Move(self.cursor_translated()),
                                            Sequence::Line(Line::new_from_str(&after_cursor,
-                                                                             self.brush_r)),
+                                                                             self.view
+                                                                                 .theme
+                                                                                 .editor)),
                                            Sequence::Move(self.cursor_translated()),
                                            Sequence::Show(true)],
                             ..Default::default()
@@ -214,7 +210,8 @@ impl Component for Editor {
                     .insert(c, self.spaces_after_cursor()));
                 Ok(Response {
                     sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&after_cursor, self.brush_r)),
+                                   Sequence::Line(Line::new_from_str(&after_cursor,
+                                                                     self.view.theme.editor)),
                                    Sequence::Move(self.cursor_translated()),
                                    Sequence::Show(true)],
                     ..Default::default()

@@ -1,6 +1,7 @@
 mod comp;
 mod res;
 mod hsplit;
+mod theme;
 mod window;
 mod command_bar;
 
@@ -11,6 +12,7 @@ use ui::comp::{Parent, View};
 
 pub use ui::comp::Component;
 pub use ui::res::*;
+use ui::theme::Theme;
 use ui::hsplit::HSplit;
 use ui::command_bar::CommandBar;
 
@@ -21,6 +23,7 @@ def_error! {
 #[derive(Default)]
 pub struct Ui {
     view: View,
+    theme: Theme,
     hsplit: UiChild,
     command_bar: UiChild,
 }
