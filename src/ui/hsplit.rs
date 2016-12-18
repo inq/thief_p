@@ -1,7 +1,6 @@
 use common::{Event, Key};
 use hq::Hq;
 use util::ResultBox;
-use ui::Theme;
 use ui::res::{Rect, Brush, Color, Response};
 use ui::comp::{View, Parent, Component};
 use ui::window::Window;

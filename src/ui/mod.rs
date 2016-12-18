@@ -23,7 +23,6 @@ def_error! {
 #[derive(Default)]
 pub struct Ui {
     view: View,
-    theme: Theme,
     hsplit: UiChild,
     command_bar: UiChild,
 }

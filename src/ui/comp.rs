@@ -40,12 +40,12 @@ pub trait Component {
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn unhandled(&mut self, _: &mut Hq, _: Event) -> ResultBox<Response> {
         Ok(Default::default())
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self, hq: &mut Hq, key: Key) -> ResultBox<Response> {
+    fn on_key(&mut self, _: &mut Hq, _: Key) -> ResultBox<Response> {
         Ok(Response::unhandled())
     }
 
