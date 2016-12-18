@@ -3,8 +3,20 @@ use ui::res::{Brush, Color};
 pub struct Theme {
     pub editor: Brush,
     pub linenum: Brush,
-    pub editor_cur_bg: Color,
-    pub linenum_cur_bg: Color,
+    editor_cur_bg: Color,
+    linenum_cur_bg: Color,
+}
+
+impl Theme {
+    #[inline]
+    pub fn editor_cur(&self) -> Brush {
+        Brush { bg: self.editor_cur_bg, ..self.editor }
+    }
+
+    #[inline]
+    pub fn linenum_cur(&self) -> Brush {
+        Brush { bg: self.linenum_cur_bg, ..self.linenum }
+    }
 }
 
 impl Default for Theme {
