@@ -1,10 +1,10 @@
 use ui::res::{Brush, Color};
 
 pub struct Theme {
-    editor: Brush,
-    linenum: Brush,
-    editor_cur_bg: Color,
-    linenum_cur_bg: Color,
+    pub editor: Brush,
+    pub linenum: Brush,
+    pub editor_cur_bg: Color,
+    pub linenum_cur_bg: Color,
 }
 
 impl Default for Theme {
