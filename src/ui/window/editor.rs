@@ -117,6 +117,7 @@ impl Editor {
 
     /// Handle move events.
     fn on_move(&mut self, hq: &mut Hq, dx: i8, dy: i8) -> ResultBox<Response> {
+        let line_prev = self.cursor.y - self.line_offset;
         self.cursor = hq.buf(&self.buffer_name)?.move_cursor(dx, dy);
         if self.cursor.y < self.line_offset {
             // Scroll upward
@@ -133,7 +134,18 @@ impl Editor {
                 Ok(r)
             } else {
                 // Do not scroll
-                Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+                let seq = vec![];
+                let line_now = self.cursor.y - self.line_offset;
+                if line_prev < line_now {
+                    self.line_cache[line_prev].fill_brush(self.view.theme.linenum,
+                                                          self.view.theme.editor);
+                    self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
+                                                         self.view.theme.editor_cur());
+                }
+                Ok(Response {
+                    sequence: vec![self.move_cursor()],
+                    ..Default::default()
+                })
             }
         }
     }

@@ -63,6 +63,14 @@ impl TextRect {
         }
     }
 
+    /// Fill with the given brushes.
+    #[inline]
+    pub fn fill_brush(&mut self, brush_l: Brush, brush_r: Brush) {
+        for mut line in self.lines.iter_mut() {
+            line.fill_splitted(brush_l, brush_r, self.splitter);
+        }
+    }
+
     /// Draw the text buffer here.
     pub fn draw_line(&mut self, buf: &buf::Buffer, line_num: usize) {
         let line = if let Some(l) = buf.get(line_num) {

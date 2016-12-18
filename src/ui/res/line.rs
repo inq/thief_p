@@ -36,6 +36,18 @@ impl Line {
         }
     }
 
+    /// Fill with the given brushes.
+    #[inline]
+    pub fn fill_splitted(&mut self, brush_l: Brush, brush_r: Brush, splitter: usize) {
+        for (i, c) in self.chars.iter_mut().enumerate() {
+            if i < splitter {
+                c.brush = brush_l;
+            } else {
+                c.brush = brush_r;
+            }
+        }
+    }
+
     /// Initialize a new empty line.
     #[inline]
     pub fn new(width: usize, brush: Brush) -> Line {
