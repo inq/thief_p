@@ -75,10 +75,17 @@ impl Component for Ui {
                 self.refresh(hq)
             }
             Event::OpenBuffer(_) => {
-                self.command_bar_mut().active = false;
-                self.on_resize(hq)?;
-                self.hsplit.propagate(e, hq)?;
-                self.refresh(hq)
+                if self.view.height > 0 {
+                    // After initialize
+                    self.command_bar_mut().active = false;
+                    self.on_resize(hq)?;
+                    self.hsplit.propagate(e, hq)?;
+                    self.refresh(hq)
+                } else {
+                    // Before initialize
+                    self.hsplit.propagate(e, hq)?;
+                    Ok(Default::default())
+                }
             }
             _ => Ok(Response::unhandled()),
         }
