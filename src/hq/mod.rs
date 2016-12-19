@@ -5,11 +5,13 @@ use buf::Buffer;
 use common::Event;
 use util::ResultBox;
 
+mod shortcut;
 mod command;
 mod fs;
 
 use hq::fs::Filesys;
 use hq::command::Command;
+use hq::shortcut::Shortcut;
 
 def_error! {
     NoFileName: "cannot infer filename.",
