@@ -53,6 +53,18 @@ impl Hq {
         Ok(hq)
     }
 
+    /// Consume event before UI.
+    pub fn preprocess(&mut self, e: Event) -> Event {
+        match e {
+            Event::Keyboard(k) => {
+                match k {
+                    _ => e
+                }
+            }
+            _ => e
+        }
+    }
+
     pub fn fs(&mut self) -> Result<&mut Filesys> {
         Ok(&mut self.fs)
     }
