@@ -9,41 +9,39 @@ pub enum Node {
 }
 
 impl Node {
+    /// Construct a new internal node.
+    fn new_inner() -> Node {
+        Node::Internal { children: BTreeMap::new() }
+    }
+
+    /// Construct a new leaf node.
+    fn new_leaf(value: &str) -> Node {
+        Node::Leaf(String::from(value))
+    }
+
     /// Insert a new node.
-    fn insert(&mut self, keys: Vec<Key>, idx: usize, value: String) {
-        if let &mut Node::Internal { ref mut children } = self {
-            if idx == keys.len() - 1 {
-                // Leaf node
-                let leaf = Node::Leaf(value.clone());
-                let prev = children.insert(keys[idx], Box::new(leaf));
-                assert!(prev.is_none());
-            } else {
-                // Inner node
-                if !children.contains_key(&keys[idx]) {
-                    let inner = Node::Internal { children: BTreeMap::new() };
-                    children.insert(keys[idx], Box::new(inner));
-                }
-                if let Some(inner) = children.get_mut(&keys[idx]) {
-                    inner.deref_mut().insert(keys, idx + 1, value);
+    fn insert(&mut self, value: &str, keys: Vec<Key>, idx: usize) -> bool {
+        match self {
+            &mut Node::Internal { ref mut children } => {
+                if idx == keys.len() - 1 {
+                    // Leaf node
+                    children.insert(keys[idx], Box::new(Node::new_leaf(value))).is_none()
                 } else {
-                    panic!("Internal Error.");
+                    // Inner node
+                    children.contains_key(&keys[idx])
+                        || children.insert(keys[idx], Box::new(Node::new_inner())).is_some();
+                    children.get_mut(&keys[idx]).map(|n| n.deref_mut().insert(value, keys, idx + 1)).unwrap_or(false)
                 }
             }
-        } else {
-            panic!("Internal error.");
+            _ => false,
         }
     }
 
     /// Find the next node.
     fn get(&self, key: Key) -> Option<&Node> {
-        if let &Node::Internal { ref children } = self {
-            if let Some(inner) = children.get(&key) {
-                Some(inner.deref())
-            } else {
-                None
-            }
-        } else {
-            None
+        match self {
+            &Node::Internal { ref children } => children.get(&key).map(|n| n.deref()),
+            _ => None,
         }
     }
 }
@@ -64,15 +62,11 @@ impl Shortcut {
 
     pub fn key(&mut self, key: Key) -> Option<&Node> {
         self.current.push(key);
-        let mut now = Some(&self.head);
-        for key in self.current.iter() {
-            now = now.and_then(|n| n.get(key.clone()));
-        }
-        now
+        self.current.iter().fold(Some(&self.head), |acc, key| acc.and_then(|n| n.get(key.clone())))
     }
 
     pub fn add(&mut self, value: &str, keys: Vec<Key>) {
-        self.head.insert(keys, 0, String::from(value));
+        assert!(self.head.insert(value, keys, 0));
     }
 }
 
