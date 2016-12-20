@@ -2,7 +2,7 @@ use common::Key;
 use std::ops::DerefMut;
 use std::collections::BTreeMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Node {
     Internal { children: BTreeMap<Key, Box<Node>> },
     Leaf(String)
@@ -15,7 +15,8 @@ impl Node {
             if idx == keys.len() - 1 {
                 // Leaf node
                 let leaf = Node::Leaf(value.clone());
-                children.insert(keys[idx], Box::new(leaf));
+                let prev = children.insert(keys[idx], Box::new(leaf));
+                assert!(prev.is_none());
             } else {
                 // Inner node
                 if !children.contains_key(&keys[idx]) {
@@ -34,6 +35,7 @@ impl Node {
     }
 }
 
+#[derive(Debug)]
 pub struct Shortcut {
     head: Node,
 }
@@ -45,8 +47,8 @@ impl Shortcut {
         }
     }
 
-    pub fn add(&mut self, keys: Vec<Key>, value: String) {
-        self.head.insert(keys, 0, value);
+    pub fn add(&mut self, value: &str, keys: Vec<Key>) {
+        self.head.insert(keys, 0, String::from(value));
     }
 }
 
@@ -57,6 +59,6 @@ mod tests {
     #[test]
     fn test_add_shortcut() {
         let mut sc = Shortcut::new();
-        sc.add(vec![Key::Ctrl('x'), Key::Ctrl('c')], String::from("exit"));
+        sc.add("exit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
     }
 }

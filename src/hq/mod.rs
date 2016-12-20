@@ -2,7 +2,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use buf::Buffer;
-use common::Event;
+use common::{Event, Key};
 use util::ResultBox;
 
 mod shortcut;
@@ -24,6 +24,7 @@ pub struct Hq {
     buffers: BTreeMap<String, Buffer>,
     commands: BTreeMap<String, Command>,
     current: Vec<String>,
+    shortcut: Shortcut,
     fs: Filesys,
 }
 
@@ -42,9 +43,12 @@ impl Hq {
             buffers: Default::default(),
             commands: Default::default(),
             current: Default::default(),
+            shortcut: Shortcut::new(),
             fs: Filesys::new()?,
         };
-        hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
+        hq.add_command("find-file", vec![String::from("filename")], Hq::open_file);
+        hq.shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
+        hq.shortcut.add("quit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
         hq.buffers.insert(String::from("<empty>"), Default::default());
         Ok(hq)
     }
@@ -59,7 +63,7 @@ impl Hq {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Navigate(String::from("open-file: ")))
+                Some(Event::Navigate(String::from("find-file: ")))
             } else {
                 Some(Event::Notify(String::from("Not exists the corresponding command.")))
             }
