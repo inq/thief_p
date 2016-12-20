@@ -1,5 +1,5 @@
 use common::Key;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
@@ -33,18 +33,42 @@ impl Node {
             panic!("Internal error.");
         }
     }
+
+    /// Find the next node.
+    fn get(&self, key: Key) -> Option<&Node> {
+        if let &Node::Internal { ref children } = self {
+            if let Some(inner) = children.get(&key) {
+                Some(inner.deref())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct Shortcut {
     head: Node,
+    current: Vec<Key>,
 }
 
 impl Shortcut {
     pub fn new() -> Shortcut {
         Shortcut {
-            head: Node::Internal { children: BTreeMap::new() }
+            head: Node::Internal { children: BTreeMap::new() },
+            current: Vec::with_capacity(16),
         }
+    }
+
+    pub fn key(&mut self, key: Key) -> Option<&Node> {
+        self.current.push(key);
+        let mut now = Some(&self.head);
+        for key in self.current.iter() {
+            now = now.and_then(|n| n.get(key.clone()));
+        }
+        now
     }
 
     pub fn add(&mut self, value: &str, keys: Vec<Key>) {
@@ -60,5 +84,7 @@ mod tests {
     fn test_add_shortcut() {
         let mut sc = Shortcut::new();
         sc.add("exit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
+        sc.key(Key::Ctrl('x'));
+        sc.key(Key::Ctrl('c'));
     }
 }
