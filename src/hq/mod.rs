@@ -2,7 +2,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use buf::Buffer;
-use common::{Event, Key};
+use common::event;
 use util::ResultBox;
 
 mod shortcut;
@@ -39,6 +39,7 @@ impl Hq {
 
     /// Initialize.
     pub fn new() -> ResultBox<Hq> {
+        use common::event::Key;
         let mut hq = Hq {
             buffers: Default::default(),
             commands: Default::default(),
@@ -54,14 +55,15 @@ impl Hq {
     }
 
     /// Consume event before UI.
-    pub fn preprocess(&mut self, e: Event) -> Event {
+    pub fn preprocess(&mut self, e: event::Event) -> event::Event {
+        use common::event::Event::*;
         match e {
-            Event::Keyboard(k) => {
+            Keyboard(k) => {
                 match k {
-                    _ => e
+                    _ => e,
                 }
             }
-            _ => e
+            _ => e,
         }
     }
 
@@ -70,29 +72,32 @@ impl Hq {
     }
 
     /// Receive a function name or argument.
-    pub fn call(&mut self, command: &str) -> Option<Event> {
-        if self.current.len() == 0 {
+    pub fn call(&mut self, command: &str) -> Option<event::Event> {
+        use common::event::Event::*;
+        use common::event::CommandBar::*;
+        let cmd = if self.current.len() == 0 {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Navigate(String::from("find-file: ")))
+                CommandBar(Navigate(String::from("find-file: ")))
             } else {
-                Some(Event::Notify(String::from("Not exists the corresponding command.")))
+                CommandBar(Notify(String::from("Not exists the corresponding command.")))
             }
         } else {
             // argument
             if let Some(_) = self.commands.get(&self.current[0]) {
                 let funcname = self.current[0].clone();
                 if let Ok(bufname) = self.run(&funcname, command) {
-                    Some(Event::OpenBuffer(String::from(bufname)))
+                    OpenBuffer(String::from(bufname))
                 } else {
-                    Some(Event::Notify(String::from("Cannot open the file.")))
+                    CommandBar(Notify(String::from("Cannot open the file.")))
                 }
             } else {
                 self.current.clear();
-                Some(Event::Notify(String::from("Internal error.")))
+                CommandBar(Notify(String::from("Internal error.")))
             }
-        }
+        };
+        Some(cmd)
     }
 
     pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {

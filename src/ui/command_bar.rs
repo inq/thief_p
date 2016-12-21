@@ -1,4 +1,4 @@
-use common::{Event, Key};
+use common::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
@@ -52,6 +52,20 @@ impl CommandBar {
     pub fn height(&self) -> usize {
         if self.active { self.view.height } else { 0 }
     }
+
+    fn handle_command_bar(&mut self, c: event::CommandBar, hq: &mut Hq) -> ResultBox<Response> {
+        use common::event::CommandBar::*;
+        match c {
+            Navigate(msg) => {
+                // Turn on the navigator
+                self.data.clear();
+                self.message = String::from(msg);
+                self.status = Status::Navigate;
+                self.refresh(hq)
+            }
+            Notify(s) => Ok(self.notify(&s)),
+        }
+    }
 }
 
 impl Component for CommandBar {
@@ -70,15 +84,15 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         match k {
-            Key::CR => {
+            event::Key::CR => {
                 Ok(Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
                 })
             }
-            Key::Char(c) => {
+            event::Key::Char(c) => {
                 match self.status {
                     Status::Standby => {
                         self.data.push(c);
@@ -107,19 +121,10 @@ impl Component for CommandBar {
     }
 
     /// Handle events.
-    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+        use common::event::Event::*;
         match e {
-            Event::Navigate(msg) => {
-                // Turn on the navigator
-                self.data.clear();
-                self.message = String::from(msg);
-                self.status = Status::Navigate;
-                self.refresh(hq)
-            }
-            Event::Notify(s) => {
-                // Notify from Hq
-                Ok(self.notify(&s))
-            }
+            CommandBar(c) => self.handle_command_bar(c, hq),
             _ => Ok(Default::default()),
         }
     }

@@ -1,6 +1,8 @@
+mod key;
+
 use std::char;
 use std::str::Chars;
-use common::Key;
+pub use self::key::Key;
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -8,9 +10,14 @@ pub enum Event {
     Single(usize),
     Pair(usize, usize),
     Resize(usize, usize),
-    Navigate(String),
-    Notify(String),
     OpenBuffer(String),
+    CommandBar(CommandBar),
+}
+
+#[derive(Clone, Debug)]
+pub enum CommandBar {
+    Notify(String),
+    Navigate(String),
 }
 
 impl Event {

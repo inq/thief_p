@@ -2,7 +2,7 @@ use std::env;
 use std::convert::From;
 use libc;
 
-use common::Event;
+use common::event;
 use hq::Hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
@@ -44,12 +44,12 @@ impl Handler {
         }
         self.ipt_buf.push_str(&ipt);
         let mut cur = self.ipt_buf.clone();
-        while let (Some(e), next) = Event::from_string(&cur) {
-            if let Event::Pair(x, y) = e {
+        while let (Some(e), next) = event::Event::from_string(&cur) {
+            if let event::Event::Pair(x, y) = e {
                 // TODO: check it
                 self.term.initial_cursor(&Cursor { x: x, y: y });
                 let (w, h) = self.term.get_size()?;
-                self.handle_event(Event::Resize(w, h))?;
+                self.handle_event(event::Event::Resize(w, h))?;
             }
             let _ = self.handle_event(e)?;
             cur = next.clone();
@@ -60,13 +60,13 @@ impl Handler {
     }
 
     // Handle event from the Ui.
-    fn handle_event(&mut self, e_raw: Event) -> ResultBox<()> {
+    fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
         let e = self.hq.preprocess(e_raw);
         let resp = self.ui.propagate(e, &mut self.hq)?;
         if let Some(Refresh { x, y, rect }) = resp.refresh {
             self.term.write_ui_buffer(x, y, &rect);
         }
-        let mut next: Option<Event> = None;
+        let mut next: Option<event::Event> = None;
         for resp in resp.sequence {
             match resp {
                 Sequence::Move(c) => self.term.move_cursor(c.x, c.y),
@@ -93,7 +93,7 @@ impl Handler {
     // Handle resize event of terminal.
     fn handle_sigwinch(&mut self) -> ResultBox<()> {
         let (w, h) = self.term.get_size()?;
-        self.handle_event(Event::Resize(w, h))
+        self.handle_event(event::Event::Resize(w, h))
     }
 
     pub fn handle(&mut self, ident: usize) -> ResultBox<()> {
@@ -106,15 +106,13 @@ impl Handler {
     }
 
     pub fn run(&mut self) -> ResultBox<()> {
-        let args : Vec<String> = env::args().collect();
+        let args: Vec<String> = env::args().collect();
         args.get(1)
             .and_then(|file| {
                 self.hq.call(&"open-file");
                 self.hq.call(file)
             })
-            .and_then(|e| {
-                self.handle_event(e).ok()
-            });
+            .and_then(|e| self.handle_event(e).ok());
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;
         kqueue.kevent(self)
