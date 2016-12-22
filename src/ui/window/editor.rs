@@ -1,4 +1,4 @@
-use common::{Event, Key};
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
@@ -209,21 +209,23 @@ impl Component for Editor {
     }
 
     /// Move cursor left and right, or Type a character.
-    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         match k {
-            Key::Ctrl('a') | Key::Home => {
+            event::Key::Ctrl('a') |
+            event::Key::Home => {
                 self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line();
                 Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
             }
-            Key::Ctrl('e') | Key::End => {
+            event::Key::Ctrl('e') |
+            event::Key::End => {
                 self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
                 Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
             }
-            Key::CR => {
+            event::Key::CR => {
                 self.cursor = hq.buf(&self.buffer_name)?.break_line();
                 self.refresh(hq)
             }
-            Key::Del => {
+            event::Key::Del => {
                 match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
                     BackspaceRes::Normal(mut after_cursor) => {
                         after_cursor.push(' ');
@@ -247,12 +249,16 @@ impl Component for Editor {
                     _ => Ok(Default::default()),
                 }
             }
-            Key::Ctrl('k') => self.on_kill_line(hq),
-            Key::Ctrl('n') | Key::Down => self.on_move(hq, 0, 1),
-            Key::Ctrl('p') | Key::Up => self.on_move(hq, 0, -1),
-            Key::Ctrl('f') | Key::Right => self.on_move(hq, 1, 0),
-            Key::Ctrl('b') | Key::Left => self.on_move(hq, -1, 0),
-            Key::Char(c) => {
+            event::Key::Ctrl('k') => self.on_kill_line(hq),
+            event::Key::Ctrl('n') |
+            event::Key::Down => self.on_move(hq, 0, 1),
+            event::Key::Ctrl('p') |
+            event::Key::Up => self.on_move(hq, 0, -1),
+            event::Key::Ctrl('f') |
+            event::Key::Right => self.on_move(hq, 1, 0),
+            event::Key::Ctrl('b') |
+            event::Key::Left => self.on_move(hq, -1, 0),
+            event::Key::Char(c) => {
                 let mut after_cursor = String::with_capacity(self.view.width);
                 self.cursor.x += 1;
                 after_cursor.push(c);
@@ -272,9 +278,9 @@ impl Component for Editor {
     }
 
     /// Handle events.
-    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
         match e {
-            Event::OpenBuffer(s) => {
+            event::Event::OpenBuffer(s) => {
                 self.buffer_name = s;
                 self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())

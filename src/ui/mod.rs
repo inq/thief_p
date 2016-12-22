@@ -5,7 +5,7 @@ mod theme;
 mod window;
 mod command_bar;
 
-use common::{Event, Key};
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::comp::{Parent, View};
@@ -34,7 +34,7 @@ impl Component for Ui {
 
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         self.resize_command_bar(hq)?;
-        let height = self.view.height - self.command_bar().height() - 1;
+        let height = self.view.height - self.command_bar().height() - 2;
         self.hsplit.resize(hq, 1, 1, self.view.width - 2, height)
     }
 
@@ -45,7 +45,7 @@ impl Component for Ui {
     }
 
     /// Propagate to children.
-    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
         if self.command_bar().active {
             self.command_bar.propagate(e, hq)
         } else {
@@ -54,27 +54,29 @@ impl Component for Ui {
     }
 
     /// Handle keyboard events.
-    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+        use msg::event::Key::*;
         match k {
-            Key::Ctrl('c') => self.activate_command_bar(hq),
-            Key::Ctrl('q') => Ok(Response::quit()),
+            Ctrl('c') => self.activate_command_bar(hq),
+            Ctrl('q') => Ok(Response::quit()),
             _ => Ok(Response::unhandled()),
         }
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+        use msg::event::Event::*;
         match e {
-            Event::Navigate(_) => {
+            e @ CommandBar(_) => {
                 self.command_bar.propagate(e, hq)?;
                 self.on_resize(hq)?;
                 self.refresh(hq)
             }
-            Event::Resize(width, height) => {
+            Resize(width, height) => {
                 self.resize(hq, 0, 0, width, height)?;
                 self.refresh(hq)
             }
-            Event::OpenBuffer(_) => {
+            OpenBuffer(_) => {
                 if self.view.height > 0 {
                     // After initialize
                     self.command_bar_mut().active = false;

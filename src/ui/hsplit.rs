@@ -1,4 +1,4 @@
-use common::{Event, Key};
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Rect, Brush, Color, Response};
@@ -36,14 +36,14 @@ impl Component for HSplit {
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self, hq: &mut Hq, e: Event) -> ResultBox<Response> {
+    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
         self.windows[self.focused].propagate(e, hq)
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self, hq: &mut Hq, k: Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         match k {
-            Key::Ctrl('d') => {
+            event::Key::Ctrl('d') => {
                 self.toggle_split(hq)?;
                 self.refresh(hq)
             }

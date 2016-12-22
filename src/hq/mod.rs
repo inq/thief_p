@@ -2,14 +2,16 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use buf::Buffer;
-use common::Event;
+use msg::event;
 use util::ResultBox;
 
+mod shortcut;
 mod command;
 mod fs;
 
 use hq::fs::Filesys;
 use hq::command::Command;
+use hq::shortcut::Shortcut;
 
 def_error! {
     NoFileName: "cannot infer filename.",
@@ -22,6 +24,7 @@ pub struct Hq {
     buffers: BTreeMap<String, Buffer>,
     commands: BTreeMap<String, Command>,
     current: Vec<String>,
+    shortcut: Shortcut,
     fs: Filesys,
 }
 
@@ -36,15 +39,39 @@ impl Hq {
 
     /// Initialize.
     pub fn new() -> ResultBox<Hq> {
+        use msg::event::Key;
         let mut hq = Hq {
             buffers: Default::default(),
             commands: Default::default(),
             current: Default::default(),
+            shortcut: Shortcut::new(),
             fs: Filesys::new()?,
         };
-        hq.add_command("open-file", vec![String::from("filename")], Hq::open_file);
+        hq.add_command("find-file", vec![String::from("filename")], Hq::open_file);
+        hq.shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
+        hq.shortcut.add("quit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
         hq.buffers.insert(String::from("<empty>"), Default::default());
         Ok(hq)
+    }
+
+    /// Consume event before UI.
+    pub fn preprocess(&mut self, e: event::Event) -> event::Event {
+        use msg::event::Event::{CommandBar, Keyboard};
+        use msg::event::CommandBar::{Shortcut};
+        use self::shortcut::Response;
+        match e {
+            Keyboard(k) => {
+                match self.shortcut.key(k) {
+                    Response::More(s) => CommandBar(Shortcut(s)),
+                    Response::Some(s) => {
+                        // Run the command
+                        self.call(&s).unwrap()
+                    },
+                    _ => e,
+                }
+            }
+            _ => e,
+        }
     }
 
     pub fn fs(&mut self) -> Result<&mut Filesys> {
@@ -52,29 +79,32 @@ impl Hq {
     }
 
     /// Receive a function name or argument.
-    pub fn call(&mut self, command: &str) -> Option<Event> {
-        if self.current.len() == 0 {
+    pub fn call(&mut self, command: &str) -> Option<event::Event> {
+        use msg::event::Event::*;
+        use msg::event::CommandBar::*;
+        let cmd = if self.current.len() == 0 {
             // function name
             if let Some(_) = self.commands.get(command) {
                 self.current.push(String::from(command));
-                Some(Event::Navigate(String::from("open-file: ")))
+                CommandBar(Navigate(String::from("find-file: ")))
             } else {
-                Some(Event::Notify(String::from("Not exists the corresponding command.")))
+                CommandBar(Notify(String::from("Not exists the corresponding command.")))
             }
         } else {
             // argument
             if let Some(_) = self.commands.get(&self.current[0]) {
                 let funcname = self.current[0].clone();
                 if let Ok(bufname) = self.run(&funcname, command) {
-                    Some(Event::OpenBuffer(String::from(bufname)))
+                    OpenBuffer(String::from(bufname))
                 } else {
-                    Some(Event::Notify(String::from("Cannot open the file.")))
+                    CommandBar(Notify(String::from("Cannot open the file.")))
                 }
             } else {
                 self.current.clear();
-                Some(Event::Notify(String::from("Internal error.")))
+                CommandBar(Notify(String::from("Internal error.")))
             }
-        }
+        };
+        Some(cmd)
     }
 
     pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
