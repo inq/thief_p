@@ -1,4 +1,4 @@
-use common::event;
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};

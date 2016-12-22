@@ -2,7 +2,7 @@ use std::env;
 use std::convert::From;
 use libc;
 
-use common::event;
+use msg::event;
 use hq::Hq;
 use io::kqueue::Kqueue;
 use io::term::Term;

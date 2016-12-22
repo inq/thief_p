@@ -11,7 +11,7 @@ pub use self::color::{Color, Brush};
 pub use self::line::Line;
 pub use self::formatted::{Style, Formatted};
 pub use self::text_rect::TextRect;
-use common::Pair;
+use msg::Pair;
 
 pub type Cursor = Pair;
 

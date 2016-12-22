@@ -1,4 +1,4 @@
-use common::event;
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Rect, Brush, Color, Response};

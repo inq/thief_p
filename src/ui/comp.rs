@@ -1,5 +1,5 @@
 use hq::Hq;
-use common::event;
+use msg::event;
 use ui::Theme;
 use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
 use util::ResultBox;

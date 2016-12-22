@@ -5,7 +5,7 @@ mod theme;
 mod window;
 mod command_bar;
 
-use common::event;
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::comp::{Parent, View};
@@ -34,7 +34,7 @@ impl Component for Ui {
 
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         self.resize_command_bar(hq)?;
-        let height = self.view.height - self.command_bar().height() - 1;
+        let height = self.view.height - self.command_bar().height() - 2;
         self.hsplit.resize(hq, 1, 1, self.view.width - 2, height)
     }
 
@@ -55,7 +55,7 @@ impl Component for Ui {
 
     /// Handle keyboard events.
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
-        use common::event::Key::*;
+        use msg::event::Key::*;
         match k {
             Ctrl('c') => self.activate_command_bar(hq),
             Ctrl('q') => Ok(Response::quit()),
@@ -65,7 +65,7 @@ impl Component for Ui {
 
     /// Send some functions into command bar. Otherwise, into hsplit.
     fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
-        use common::event::Event::*;
+        use msg::event::Event::*;
         match e {
             e @ CommandBar(_) => {
                 self.command_bar.propagate(e, hq)?;

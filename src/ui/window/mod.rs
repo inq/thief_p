@@ -2,7 +2,7 @@ mod editor;
 
 pub use self::editor::Editor;
 
-use common::event;
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::Response;

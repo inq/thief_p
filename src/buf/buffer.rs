@@ -2,7 +2,7 @@ use std::io::{BufReader, BufRead};
 use std::{fs, mem, path};
 use super::line::Line;
 use util::ResultBox;
-use common;
+use msg;
 
 pub struct Buffer {
     cur: Line,
@@ -26,13 +26,13 @@ impl Default for Buffer {
 
 pub enum BackspaceRes {
     Normal(String),
-    PrevLine(common::Pair),
+    PrevLine(msg::Pair),
     Unchanged,
 }
 
 pub enum KillLineRes {
     Normal,
-    Empty(common::Pair),
+    Empty(msg::Pair),
     Unchanged,
 }
 
@@ -71,8 +71,8 @@ impl Buffer {
 
     /// Get the position of the cursor.
     #[inline]
-    pub fn get_xy(&self) -> common::Pair {
-        common::Pair {
+    pub fn get_xy(&self) -> msg::Pair {
+        msg::Pair {
             x: self.get_x(),
             y: self.get_y(),
         }
@@ -116,21 +116,21 @@ impl Buffer {
 
     /// Move to the beginning of the line.
     #[inline]
-    pub fn move_begin_of_line(&mut self) -> common::Pair {
+    pub fn move_begin_of_line(&mut self) -> msg::Pair {
         self.cur.move_begin();
         self.get_xy()
     }
 
     /// Move to the end of the line
     #[inline]
-    pub fn move_end_of_line(&mut self) -> common::Pair {
+    pub fn move_end_of_line(&mut self) -> msg::Pair {
         self.cur.move_end();
         self.get_xy()
     }
 
     /// Break the line at the location of the cursor.
     #[inline]
-    pub fn break_line(&mut self) -> common::Pair {
+    pub fn break_line(&mut self) -> msg::Pair {
         self.prevs.push(self.cur.break_line());
         self.get_xy()
     }
@@ -177,7 +177,7 @@ impl Buffer {
     }
 
     /// Move cursor.
-    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> common::Pair {
+    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> msg::Pair {
         if dx != 0 {
             if dx > 0 {
                 if !self.cur.move_right() {
@@ -198,7 +198,7 @@ impl Buffer {
                 self.move_up(x);
             }
         }
-        common::Pair {
+        msg::Pair {
             x: self.get_x(),
             y: self.get_y(),
         }

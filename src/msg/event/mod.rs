@@ -18,6 +18,7 @@ pub enum Event {
 pub enum CommandBar {
     Notify(String),
     Navigate(String),
+    Shortcut(String),
 }
 
 impl Event {
@@ -43,11 +44,9 @@ impl Event {
         let mut it = s.chars();
         let res = match it.next() {
             Some('\x1b') => {
-                if it.next() == Some('[') {
-                    // CSI
-                    process_csi(&mut it)
-                } else {
-                    None
+                match it.next() {
+                    Some('[') => process_csi(&mut it),
+                    _ => None
                 }
             }
             Some(c) => Some(Event::from_char(c)),
@@ -90,17 +89,19 @@ fn check_num(it: &mut Chars, seed: usize) -> Option<Event> {
 /// After check
 #[inline]
 fn process_csi(s: &mut Chars) -> Option<Event> {
+    use msg::event::Event::*;
+    use msg::event::Key::*;
     if let Some(c) = s.next() {
         match c {
             '0'...'9' => check_num(s, c.to_digit(10).unwrap() as usize),
-            'A' => Some(Event::Keyboard(Key::Up)),
-            'B' => Some(Event::Keyboard(Key::Down)),
-            'C' => Some(Event::Keyboard(Key::Right)),
-            'D' => Some(Event::Keyboard(Key::Left)),
-            _ => Some(Event::Keyboard(Key::Meta(c as char))),
+            'A' => Some(Keyboard(Up)),
+            'B' => Some(Keyboard(Down)),
+            'C' => Some(Keyboard(Right)),
+            'D' => Some(Keyboard(Left)),
+            _ => Some(Keyboard(Meta(c as char))),
         }
     } else {
-        Some(Event::Keyboard(Key::Esc))
+        Some(Keyboard(Esc))
     }
 }
 

@@ -1,4 +1,4 @@
-use common::event;
+use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
@@ -54,7 +54,7 @@ impl CommandBar {
     }
 
     fn handle_command_bar(&mut self, c: event::CommandBar, hq: &mut Hq) -> ResultBox<Response> {
-        use common::event::CommandBar::*;
+        use msg::event::CommandBar::*;
         match c {
             Navigate(msg) => {
                 // Turn on the navigator
@@ -62,6 +62,10 @@ impl CommandBar {
                 self.message = String::from(msg);
                 self.status = Status::Navigate;
                 self.refresh(hq)
+            }
+            Shortcut(s) => {
+                self.message = String::from(s.clone());
+                Ok(self.notify(&s))
             }
             Notify(s) => Ok(self.notify(&s)),
         }
@@ -85,29 +89,31 @@ impl Component for CommandBar {
 
     /// Handle the keyboard input.
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+        use msg::event::Key;
         match k {
-            event::Key::CR => {
+            Key::CR => {
                 Ok(Response {
                     sequence: vec![Sequence::Command(self.data.clone())],
                     ..Default::default()
                 })
             }
-            event::Key::Char(c) => {
+            Key::Char(c) => {
+                use self::Status::*;
                 match self.status {
-                    Status::Standby => {
+                    Standby => {
                         self.data.push(c);
                         Ok(Response {
                             sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
                             ..Default::default()
                         })
                     }
-                    Status::Notify => {
+                    Notify => {
                         self.status = Status::Standby;
                         self.data.clear();
                         self.data.push(c);
                         self.refresh(hq)
                     }
-                    Status::Navigate => {
+                    Navigate => {
                         self.data.push(c);
                         Ok(Response {
                             sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
@@ -122,7 +128,7 @@ impl Component for CommandBar {
 
     /// Handle events.
     fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
-        use common::event::Event::*;
+        use msg::event::Event::*;
         match e {
             CommandBar(c) => self.handle_command_bar(c, hq),
             _ => Ok(Default::default()),

@@ -2,7 +2,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 use buf::Buffer;
-use common::event;
+use msg::event;
 use util::ResultBox;
 
 mod shortcut;
@@ -39,7 +39,7 @@ impl Hq {
 
     /// Initialize.
     pub fn new() -> ResultBox<Hq> {
-        use common::event::Key;
+        use msg::event::Key;
         let mut hq = Hq {
             buffers: Default::default(),
             commands: Default::default(),
@@ -56,10 +56,17 @@ impl Hq {
 
     /// Consume event before UI.
     pub fn preprocess(&mut self, e: event::Event) -> event::Event {
-        use common::event::Event::*;
+        use msg::event::Event::{CommandBar, Keyboard};
+        use msg::event::CommandBar::{Shortcut};
+        use self::shortcut::Response;
         match e {
             Keyboard(k) => {
-                match k {
+                match self.shortcut.key(k) {
+                    Response::More(s) => CommandBar(Shortcut(s)),
+                    Response::Some(s) => {
+                        // Run the command
+                        self.call(&s).unwrap()
+                    },
                     _ => e,
                 }
             }
@@ -73,8 +80,8 @@ impl Hq {
 
     /// Receive a function name or argument.
     pub fn call(&mut self, command: &str) -> Option<event::Event> {
-        use common::event::Event::*;
-        use common::event::CommandBar::*;
+        use msg::event::Event::*;
+        use msg::event::CommandBar::*;
         let cmd = if self.current.len() == 0 {
             // function name
             if let Some(_) = self.commands.get(command) {
