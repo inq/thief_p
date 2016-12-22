@@ -142,27 +142,15 @@ impl Ui {
 impl Parent for Ui {
     type Child = UiChild;
     fn children_mut(&mut self) -> Vec<&mut UiChild> {
-        if self.command_bar().active {
-            vec![&mut self.hsplit, &mut self.command_bar]
-                .into_iter()
-                .collect()
-        } else {
-            vec![&mut self.hsplit]
-                .into_iter()
-                .collect()
-        }
+        vec![&mut self.command_bar, &mut self.hsplit]
+            .into_iter()
+            .collect()
     }
 
     fn children(&self) -> Vec<&UiChild> {
-        if self.command_bar().active {
-            vec![&self.hsplit, &self.command_bar]
-                .into_iter()
-                .collect()
-        } else {
-            vec![&self.hsplit]
-                .into_iter()
-                .collect()
-        }
+        vec![&self.command_bar, &self.hsplit]
+            .into_iter()
+            .collect()
     }
 }
 
