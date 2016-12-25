@@ -5,6 +5,7 @@ use hq::workspace::Workspace;
 
 pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
 
+#[derive(Clone)]
 pub enum Arg {
     Path(String),
     String(String),
@@ -31,5 +32,9 @@ impl Command {
 
     pub fn args_len(&self) -> usize {
         self.args.len()
+    }
+
+    pub fn arg(&self, idx: usize) -> Arg {
+        self.args[idx].clone()
     }
 }

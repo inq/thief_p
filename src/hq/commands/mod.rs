@@ -7,6 +7,7 @@ use hq::Hq;
 
 pub enum Response {
     Func(Func, Vec<String>),
+    Require(Arg),
     Message(String)
 }
 
@@ -56,6 +57,8 @@ impl Commands {
                     let mut res = vec![];
                     res.append(&mut self.args);
                     return Response::Func(cmd.func, res);
+                } else {
+                    return Response::Require(cmd.arg(self.args.len()))
                 }
             }
         }

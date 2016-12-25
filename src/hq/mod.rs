@@ -59,8 +59,11 @@ impl Hq {
         use msg::event::Event::*;
         use msg::event::CommandBar::*;
         use self::commands::Response::*;
+        use self::commands::Arg;
         match self.commands.query(command) {
             Func(func, args) => func(&mut self.workspace, args).ok(),
+            Require(Arg::Path(s)) => Some(CommandBar(Navigate(String::from(".")))),
+            Require(Arg::String(s)) => unimplemented!(),
             Message(m) => Some(CommandBar(Notify(m)))
         }
     }
