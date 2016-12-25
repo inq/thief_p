@@ -5,16 +5,21 @@ use hq::workspace::Workspace;
 
 pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
 
+pub enum Arg {
+    Path(String),
+    String(String),
+}
+
 pub struct Command {
     name: String,
-    args: Vec<String>,
+    args: Vec<Arg>,
     pub func: Func,
 }
 
 impl Command {
     /// Create a new command. It must be done at the initialization phase.
     pub fn new(name: &str,
-               args: Vec<String>,
+               args: Vec<Arg>,
                func: Func)
                -> Command {
         Command {

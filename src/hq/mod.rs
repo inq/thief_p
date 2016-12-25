@@ -10,7 +10,7 @@ mod fs;
 
 use hq::fs::Filesys;
 use hq::workspace::Workspace;
-use hq::commands::Commands;
+use hq::commands::{Commands, Arg};
 use hq::shortcut::Shortcut;
 
 pub struct Hq {
@@ -26,7 +26,7 @@ impl Hq {
     pub fn new() -> ResultBox<Hq> {
         use msg::event::Key;
         let mut commands = Commands::new();
-        commands.add("find-file", vec![String::from("filename")], Workspace::find_file);
+        commands.add("find-file", vec![Arg::Path(String::from("filename"))], Workspace::find_file);
         commands.add("quit", vec![], Workspace::quit);
         let mut shortcut = Shortcut::new();
         shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
@@ -34,7 +34,7 @@ impl Hq {
         Ok(Hq {
             workspace: Workspace::new()?,
             commands: commands,
-            shortcut: Shortcut::new(),
+            shortcut: shortcut,
         })
     }
 
@@ -47,10 +47,7 @@ impl Hq {
             Keyboard(k) => {
                 match self.shortcut.key(k) {
                     Response::More(s) => CommandBar(Shortcut(s)),
-                    Response::Some(s) => {
-                        // Run the command
-                        self.call(&s).unwrap()
-                    },
+                    Response::Some(s) => self.call(&s).unwrap(),
                     _ => e,
                 }
             }

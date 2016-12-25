@@ -14,6 +14,7 @@ pub struct Shortcut {
     current: Vec<event::Key>,
 }
 
+#[derive(Debug)]
 pub enum Response {
     Some(String),
     More(String),

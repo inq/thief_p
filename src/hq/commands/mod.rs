@@ -1,6 +1,6 @@
 mod command;
 use std::collections::BTreeMap;
-use self::command::{Command, Func};
+pub use self::command::{Command, Func, Arg};
 use util::ResultBox;
 use msg::event;
 use hq::Hq;
@@ -31,7 +31,7 @@ impl Commands {
 
     pub fn add(&mut self,
                name: &str,
-               args: Vec<String>,
+               args: Vec<Arg>,
                func: Func) {
         let res = Command::new(name, args, func);
         self.commands.insert(String::from(name), res);
