@@ -88,9 +88,7 @@ impl Component for Ui {
                     Ok(Default::default())
                 }
             }
-            Quit => {
-                Ok(Response::quit())
-            }
+            Quit => Ok(Response::quit()),
             _ => Ok(Response::unhandled()),
         }
     }

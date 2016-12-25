@@ -63,13 +63,10 @@ impl Response {
             *x += tx;
             *y += ty;
         }
-        for r in self.sequence.iter_mut() {
-            match *r {
-                Sequence::Move(Cursor { ref mut x, ref mut y }) => {
-                    *x += tx;
-                    *y += ty;
-                }
-                _ => (),
+        for r in &mut self.sequence {
+            if let Sequence::Move(Cursor { ref mut x, ref mut y }) = *r {
+                *x += tx;
+                *y += ty;
             }
         }
         self

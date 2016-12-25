@@ -35,19 +35,19 @@ impl Event {
 
     pub fn from_char(c: char) -> Event {
         Event::Keyboard(if c as u32 <= 26 {
-            Key::Ctrl((c as u8 + 'a' as u8 - 1) as char)
+            Key::Ctrl((c as u8 + b'a' - 1) as char)
         } else {
             Key::Char(c)
         })
     }
 
-    pub fn from_string(s: &String) -> (Option<Event>, String) {
+    pub fn from_string(s: &str) -> (Option<Event>, String) {
         let mut it = s.chars();
         let res = match it.next() {
             Some('\x1b') => {
                 match it.next() {
                     Some('[') => process_csi(&mut it),
-                    _ => None
+                    _ => None,
                 }
             }
             Some(c) => Some(Event::from_char(c)),
@@ -61,7 +61,7 @@ impl Event {
 #[inline]
 fn read_num(s: &mut Chars, seed: usize) -> Option<(usize, char)> {
     let mut acc = seed;
-    while let Some(c) = s.next() {
+    for c in s {
         if c >= '0' && c <= '9' {
             acc = acc * 10 + c.to_digit(10).unwrap() as usize;
         } else {

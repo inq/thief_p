@@ -26,7 +26,9 @@ impl Hq {
     pub fn new() -> ResultBox<Hq> {
         use msg::event::Key;
         let mut commands = Commands::new();
-        commands.add("find-file", vec![Arg::Path(String::from("filename"))], Workspace::find_file);
+        commands.add("find-file",
+                     vec![Arg::Path(String::from("filename"))],
+                     Workspace::find_file);
         commands.add("quit", vec![], Workspace::quit);
         let mut shortcut = Shortcut::new();
         shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
@@ -41,7 +43,7 @@ impl Hq {
     /// Consume event before UI.
     pub fn preprocess(&mut self, e: event::Event) -> event::Event {
         use msg::event::Event::{CommandBar, Keyboard};
-        use msg::event::CommandBar::{Shortcut};
+        use msg::event::CommandBar::Shortcut;
         use self::shortcut::Response;
         match e {
             Keyboard(k) => {
@@ -62,9 +64,9 @@ impl Hq {
         use self::commands::Arg;
         match self.commands.query(command) {
             Func(func, args) => func(&mut self.workspace, args).ok(),
-            Require(Arg::Path(s)) => Some(CommandBar(Navigate(String::from(".")))),
-            Require(Arg::String(s)) => unimplemented!(),
-            Message(m) => Some(CommandBar(Notify(m)))
+            Require(Arg::Path(_)) => Some(CommandBar(Navigate(String::from(".")))),
+            Require(Arg::String(_)) => unimplemented!(),
+            Message(m) => Some(CommandBar(Notify(m))),
         }
     }
 
@@ -72,11 +74,10 @@ impl Hq {
         Ok(self.workspace.fs())
     }
 
-/*
-    pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
-        let func = self.commands.query(command)?;
-        func(self, &vec![String::from(arg)])
-    }*/
+    // pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
+    // let func = self.commands.query(command)?;
+    // func(self, &vec![String::from(arg)])
+    // }
 
     /// Temporary function.
     pub fn buf(&mut self, s: &str) -> ResultBox<&mut Buffer> {

@@ -43,12 +43,10 @@ impl Buffer {
             Some(&self.cur)
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
+        } else if self.nexts.len() + self.prevs.len() > i {
+            self.nexts.get(self.nexts.len() + self.prevs.len() - i)
         } else {
-            if self.nexts.len() + self.prevs.len() > i {
-                self.nexts.get(self.nexts.len() + self.prevs.len() - i)
-            } else {
-                None
-            }
+            None
         }
     }
 
@@ -140,7 +138,7 @@ impl Buffer {
         while self.prevs.len() > y {
             self.move_up(x);
         }
-        while self.prevs.len() < y && self.prevs.len() > 0 {
+        while self.prevs.len() < y && !self.prevs.is_empty() {
             self.move_down(x);
         }
         self.cur.set_cursor(x);
@@ -151,13 +149,11 @@ impl Buffer {
     pub fn kill_line(&mut self) -> KillLineRes {
         if self.cur.kill() {
             KillLineRes::Normal
+        } else if let Some(line) = self.nexts.pop() {
+            self.cur.append(line);
+            KillLineRes::Empty(self.get_xy())
         } else {
-            if let Some(line) = self.nexts.pop() {
-                self.cur.append(line);
-                KillLineRes::Empty(self.get_xy())
-            } else {
-                KillLineRes::Unchanged
-            }
+            KillLineRes::Unchanged
         }
     }
 
@@ -165,14 +161,12 @@ impl Buffer {
     pub fn backspace(&mut self, limit: usize) -> BackspaceRes {
         if self.cur.backspace() {
             BackspaceRes::Normal(self.after_cursor(limit))
+        } else if let Some(line) = self.prevs.pop() {
+            self.cur.prepend(line);
+            self.x = self.cur.get_x();
+            BackspaceRes::PrevLine(self.get_xy())
         } else {
-            if let Some(line) = self.prevs.pop() {
-                self.cur.prepend(line);
-                self.x = self.cur.get_x();
-                BackspaceRes::PrevLine(self.get_xy())
-            } else {
-                BackspaceRes::Unchanged
-            }
+            BackspaceRes::Unchanged
         }
     }
 
@@ -183,10 +177,8 @@ impl Buffer {
                 if !self.cur.move_right() {
                     self.move_down(0);
                 }
-            } else {
-                if !self.cur.move_left() {
-                    self.move_up(usize::max_value());
-                }
+            } else if !self.cur.move_left() {
+                self.move_up(usize::max_value());
             }
             self.x = self.cur.get_x();
         }

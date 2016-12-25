@@ -52,8 +52,8 @@ impl Brush {
     #[allow(dead_code)]
     pub fn invert(&self) -> Brush {
         Brush {
-            fg: self.bg.clone(),
-            bg: self.fg.clone(),
+            fg: self.bg,
+            bg: self.fg,
         }
     }
 }

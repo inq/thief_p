@@ -33,7 +33,7 @@ impl Editor {
                               self.view.theme.editor,
                               self.line_num_width())
             };
-            cache.draw_line(&buf, lc);
+            cache.draw_line(buf, lc);
             h += cache.height();
             lc += 1;
             self.line_cache.push(cache);
@@ -64,7 +64,7 @@ impl Editor {
     }
 
     fn cursor_translated(&self) -> Cursor {
-        let mut cur = self.cursor.clone();
+        let mut cur = self.cursor;
         cur.x += self.line_num_width();
         cur
     }
@@ -193,8 +193,8 @@ impl Component for Editor {
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.render_lines(hq);
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-        for line in self.line_cache.iter() {
-            if !rect.append(&line, self.view.height).is_some() {
+        for line in &self.line_cache {
+            if !rect.append(line, self.view.height).is_some() {
                 break;
             }
         }

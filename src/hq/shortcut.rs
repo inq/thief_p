@@ -35,23 +35,24 @@ impl Node {
 
     /// Find the next node.
     fn get(&self, key: event::Key) -> Option<&Node> {
-        match self {
-            &Node::Internal { ref children } => children.get(&key).map(|n| n.deref()),
+        match *self {
+            Node::Internal { ref children } => children.get(&key).map(|n| n.deref()),
             _ => None,
         }
     }
 
     /// Insert a new node.
     fn insert(&mut self, value: &str, keys: Vec<event::Key>, idx: usize) -> bool {
-        match self {
-            &mut Node::Internal { ref mut children } => {
+        match *self {
+            Node::Internal { ref mut children } => {
                 if idx == keys.len() - 1 {
                     // Leaf node
                     children.insert(keys[idx], Box::new(Node::new_leaf(value))).is_none()
                 } else {
                     // Inner node
-                    children.contains_key(&keys[idx]) ||
-                    children.insert(keys[idx], Box::new(Node::new_inner())).is_some();
+                    if !children.contains_key(&keys[idx]) {
+                        children.insert(keys[idx], Box::new(Node::new_inner())).is_some();
+                    }
                     children.get_mut(&keys[idx])
                         .map(|n| n.deref_mut().insert(value, keys, idx + 1))
                         .unwrap_or(false)
@@ -78,14 +79,15 @@ impl Shortcut {
     /// Handle key event.
     pub fn key(&mut self, key: event::Key) -> Response {
         self.current.push(key);
-        if let Some(n) = self.current.iter().fold(Some(&self.head),
-                                                  |acc, key| acc.and_then(|n| n.get(*key))) {
-            if let &Node::Leaf(ref s) = n {
+        if let Some(n) = self.current
+            .iter()
+            .fold(Some(&self.head), |acc, key| acc.and_then(|n| n.get(*key))) {
+            if let Node::Leaf(ref s) = *n {
                 self.current.clear();
                 Response::Some(s.clone())
             } else {
                 let mut res = String::new();
-                for seq in self.current.iter() {
+                for seq in &self.current {
                     res.push_str(&format!("{:?} ", seq));
                 }
                 Response::More(res)
@@ -110,8 +112,14 @@ mod tests {
     fn test_add_shortcut() {
         let mut sc = Shortcut::new();
         sc.add("exit", vec![event::Key::Ctrl('x'), event::Key::Ctrl('c')]);
-        if let Response::None = sc.key(event::Key::Ctrl('c')) {} else { panic!("failed") };
-        if let Response::Some(_) = sc.key(event::Key::Ctrl('x')) {} else { panic!("failed") };
-        if let Response::Undefined = sc.key(event::Key::Ctrl('x')) {} else { panic!("failed") };
+        if let Response::None = sc.key(event::Key::Ctrl('c')) {} else {
+            panic!("failed")
+        };
+        if let Response::More(_) = sc.key(event::Key::Ctrl('x')) {} else {
+            panic!("failed")
+        };
+        if let Response::Undefined = sc.key(event::Key::Ctrl('x')) {} else {
+            panic!("failed")
+        };
     }
 }

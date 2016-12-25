@@ -103,7 +103,7 @@ impl Component for CommandBar {
             Key::Char(c) => {
                 use self::Status::*;
                 match self.status {
-                    Standby => {
+                    Standby | Navigate => {
                         self.data.push(c);
                         Ok(Response {
                             sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
@@ -116,16 +116,7 @@ impl Component for CommandBar {
                         self.data.push(c);
                         self.refresh(hq)
                     }
-                    Shortcut => {
-                        unreachable!()
-                    }
-                    Navigate => {
-                        self.data.push(c);
-                        Ok(Response {
-                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
-                            ..Default::default()
-                        })
-                    }
+                    Shortcut => unreachable!(),
                 }
             }
             _ => Ok(Default::default()),
@@ -145,7 +136,7 @@ impl Component for CommandBar {
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         let rect = if self.status == Status::Navigate {
             let mut res = Rect::new(self.view.width, self.view.height, self.background);
-            for (i, ref formatted) in hq.fs().unwrap().render().iter().enumerate() {
+            for (i, formatted) in hq.fs().unwrap().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
             }
             res

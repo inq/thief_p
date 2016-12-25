@@ -1,16 +1,17 @@
 use msg::event::Event;
 use util::ResultBox;
-use hq::Hq;
 use hq::workspace::Workspace;
 
 pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum Arg {
     Path(String),
     String(String),
 }
 
+#[allow(dead_code)]
 pub struct Command {
     name: String,
     args: Vec<Arg>,
@@ -19,10 +20,7 @@ pub struct Command {
 
 impl Command {
     /// Create a new command. It must be done at the initialization phase.
-    pub fn new(name: &str,
-               args: Vec<Arg>,
-               func: Func)
-               -> Command {
+    pub fn new(name: &str, args: Vec<Arg>, func: Func) -> Command {
         Command {
             name: String::from(name),
             args: args,

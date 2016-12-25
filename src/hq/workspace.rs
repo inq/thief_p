@@ -33,13 +33,14 @@ impl Workspace {
     }
 
     pub fn get_mut(&mut self, s: &str) -> ResultBox<&mut Buffer> {
-        self.buffers.get_mut(s).ok_or(From::from(Error::NoElement))
+        self.buffers.get_mut(s).ok_or_else(|| From::from(Error::NoElement))
     }
 
     pub fn find_file(&mut self, args: Vec<String>) -> ResultBox<Event> {
-        let ref s = args[0];
-        let file_name = Path::new(&s).file_name()
-            .ok_or(Error::NoFileName)?.to_str()
+        let s = &args[0];
+        let file_name = Path::new(s).file_name()
+            .ok_or(Error::NoFileName)?
+            .to_str()
             .ok_or(Error::InvalidFileName)?;
         let buf = Buffer::from_file(&s)?;
         self.buffers.insert(String::from(file_name), buf);
@@ -47,7 +48,7 @@ impl Workspace {
         Ok(Event::OpenBuffer(String::from(file_name)))
     }
 
-    pub fn quit(&mut self, args: Vec<String>) -> ResultBox<Event> {
+    pub fn quit(&mut self, _: Vec<String>) -> ResultBox<Event> {
         Ok(Event::Quit)
     }
 }

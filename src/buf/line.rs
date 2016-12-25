@@ -45,7 +45,7 @@ impl Line {
         while self.prevs.len() > x {
             self.move_left();
         }
-        while self.prevs.len() < x && self.nexts.len() > 0 {
+        while self.prevs.len() < x && !self.nexts.is_empty() {
             self.move_right();
         }
     }
@@ -67,14 +67,14 @@ impl Line {
     }
 
     /// Construct from a string.
-    pub fn from_string(str: &String) -> Line {
+    pub fn from_string(str: &str) -> Line {
         let mut res: Line = Default::default();
         res.push_before(str);
         res
     }
 
     /// Append string before cursor.
-    pub fn push_before(&mut self, str: &String) {
+    pub fn push_before(&mut self, str: &str) {
         self.x += str.chars()
             .map({
                 |c| util::term_width(c)
@@ -85,7 +85,7 @@ impl Line {
 
     /// Append string after cursor.
     #[allow(dead_code)]
-    pub fn push_after(&mut self, str: &String) {
+    pub fn push_after(&mut self, str: &str) {
         let reversed = str.chars().rev().collect::<String>();
         self.nexts.push_str(&reversed);
     }
@@ -157,7 +157,7 @@ impl Line {
     /// Delete every characters after cursor. Return true iff there is any deleted character.
     #[inline]
     pub fn kill(&mut self) -> bool {
-        let res = self.nexts.len() > 0;
+        let res = !self.nexts.is_empty();
         self.nexts.clear();
         res
     }
@@ -179,17 +179,17 @@ mod tests {
     #[test]
     fn test_basic_operations() {
         let mut t: Line = Default::default();
-        t.push_before(&String::from("hello"));
+        t.push_before("hello");
         assert_eq!(t.to_string(), "hello");
-        t.push_after(&String::from("world"));
+        t.push_after("world");
         assert_eq!(t.to_string(), "helloworld");
     }
 
     #[test]
     fn test_move_cursor() {
         let mut t: Line = Default::default();
-        t.push_before(&String::from("hello"));
-        t.push_after(&String::from("world"));
+        t.push_before("hello");
+        t.push_after("world");
         for _ in 0..5 {
             assert_eq!(t.move_right(), true);
         }
@@ -207,8 +207,8 @@ mod tests {
         let mut t: Line = Default::default();
         t.insert('h');
         assert_eq!(t.to_string(), "h");
-        t.push_before(&String::from("ell"));
-        t.push_after(&String::from("world"));
+        t.push_before("ell");
+        t.push_after("world");
         t.insert('o');
         assert_eq!(t.to_string(), "helloworld");
     }
@@ -216,8 +216,8 @@ mod tests {
     #[test]
     fn test_break_line() {
         let mut t: Line = Default::default();
-        t.push_before(&String::from("hello"));
-        t.push_after(&String::from("world"));
+        t.push_before("hello");
+        t.push_after("world");
         let u = t.break_line();
         assert_eq!(t.to_string(), "world");
         assert_eq!(u.to_string(), "hello");
