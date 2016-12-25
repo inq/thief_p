@@ -72,7 +72,7 @@ impl Filesys {
 
     pub fn render(&self) -> Vec<Formatted> {
         let mut res = vec![];
-        for entry in self.files.iter() {
+        for entry in &self.files {
             let style = if entry.is_dir() {
                 Style::Directory
             } else {
@@ -81,15 +81,5 @@ impl Filesys {
             res.push(Formatted::new().push(style, &entry.name));
         }
         res
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_basic() {
-        let fs = Filesys::new();
     }
 }

@@ -80,6 +80,7 @@ macro_rules! def_error {
             $($x,)*
         }
 
+        #[allow(dead_code)]
         pub type Result<T> = ::std::result::Result<T, Error>;
 
         impl ::std::fmt::Display for Error {

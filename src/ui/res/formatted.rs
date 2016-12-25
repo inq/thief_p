@@ -28,7 +28,7 @@ impl Formatted {
 
     pub fn get(&self, index: usize) -> Option<(Style, char)> {
         let mut acc = 0;
-        for entry in self.entries.iter() {
+        for entry in &self.entries {
             let next = acc + entry.token.chars().count();
             if acc <= index && next > index {
                 return Some((entry.style, entry.token.chars().nth(index - acc).unwrap()));

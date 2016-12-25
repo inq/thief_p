@@ -51,7 +51,7 @@ impl Handler {
                 let (w, h) = self.term.get_size()?;
                 self.handle_event(event::Event::Resize(w, h))?;
             }
-            let _ = self.handle_event(e)?;
+            self.handle_event(e)?;
             cur = next.clone();
         }
         self.ipt_buf.clear();
@@ -109,7 +109,7 @@ impl Handler {
         let args: Vec<String> = env::args().collect();
         args.get(1)
             .and_then(|file| {
-                self.hq.call(&"open-file");
+                self.hq.call("open-file");
                 self.hq.call(file)
             })
             .and_then(|e| self.handle_event(e).ok());

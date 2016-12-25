@@ -39,7 +39,7 @@ impl Term {
     pub fn release(&mut self) -> ResultBox<()> {
         self.buffering(true)?;
         self.echo(true)?;
-        if let Some(ref cursor) = self.initial_cursor.clone() {
+        if let Some(cursor) = self.initial_cursor {
             self.move_cursor(cursor.x + 1, cursor.y + 1);
         }
         self.rmcup();
@@ -49,7 +49,7 @@ impl Term {
 
     pub fn initial_cursor(&mut self, cursor: &Cursor) {
         if self.initial_cursor.is_none() {
-            self.initial_cursor = Some((*cursor).clone());
+            self.initial_cursor = Some((*cursor));
             self.smcup();
         }
     }
@@ -58,8 +58,8 @@ impl Term {
         self.output.consume()
     }
 
-    pub fn color(&mut self, b: &Option<Brush>) {
-        self.output.write(&Brush::change(&self.brush, b));
+    pub fn color(&mut self, b: Option<Brush>) {
+        self.output.write(&Brush::change(&self.brush, &b));
     }
 
     /// Move cursor to the coordinate.
@@ -76,7 +76,7 @@ impl Term {
         }
     }
 
-    pub fn write(&mut self, s: &String) {
+    pub fn write(&mut self, s: &str) {
         if self.buffering {
             io::stdout().write(s.as_bytes()).unwrap();
         } else {
@@ -87,9 +87,9 @@ impl Term {
     /// Draw ui::Line after the cursor.
     pub fn write_ui_line(&mut self, l: &Line) {
         for c in &l.chars {
-            let prev = Some(c.brush.clone());
+            let prev = Some(c.brush);
             if self.brush != prev {
-                self.color(&prev);
+                self.color(prev);
                 self.brush = prev;
             }
             // TODO: Optimize
@@ -99,10 +99,10 @@ impl Term {
 
     /// Draw ui::Char after the cursor.
     pub fn write_ui_char(&mut self, c: &Char) {
-        if self.brush != Some(c.brush.clone()) {
-            let br = self.brush.clone();
-            self.color(&br);
-            self.brush = Some(c.brush.clone());
+        if self.brush != Some(c.brush) {
+            let br = self.brush;
+            self.color(br);
+            self.brush = Some(c.brush);
         }
         // TODO: Optimize
         self.write(&c.chr.to_string());
@@ -113,7 +113,7 @@ impl Term {
         self.move_cursor(x, y);
         for (i, l) in rect.lines.iter().enumerate() {
             self.move_cursor(x, y + i);
-            self.write_ui_line(&l);
+            self.write_ui_line(l);
         }
     }
 
@@ -159,7 +159,7 @@ impl Term {
                 return Err(Error::FGetfl);
             }
             let res = if on {
-                libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev | libc::O_NONBLOCK)
+                libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev & !libc::O_NONBLOCK)
             } else {
                 libc::fcntl(libc::STDIN_FILENO, libc::F_SETFL, prev | libc::O_NONBLOCK)
             };

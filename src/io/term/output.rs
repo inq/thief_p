@@ -33,7 +33,7 @@ impl Output {
         Ok(())
     }
 
-    pub fn write(&mut self, s: &String) {
+    pub fn write(&mut self, s: &str) {
         self.buffer.push_str(s);
     }
 }
