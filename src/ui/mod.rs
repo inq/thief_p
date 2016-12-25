@@ -58,7 +58,6 @@ impl Component for Ui {
         use msg::event::Key::*;
         match k {
             Ctrl('c') => self.activate_command_bar(hq),
-            Ctrl('q') => Ok(Response::quit()),
             _ => Ok(Response::unhandled()),
         }
     }
@@ -88,6 +87,9 @@ impl Component for Ui {
                     self.hsplit.propagate(e, hq)?;
                     Ok(Default::default())
                 }
+            }
+            Quit => {
+                Ok(Response::quit())
             }
             _ => Ok(Response::unhandled()),
         }

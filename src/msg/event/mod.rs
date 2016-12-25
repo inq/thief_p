@@ -12,6 +12,7 @@ pub enum Event {
     Resize(usize, usize),
     OpenBuffer(String),
     CommandBar(CommandBar),
+    Quit,
 }
 
 #[derive(Clone, Debug)]

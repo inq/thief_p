@@ -1,22 +1,30 @@
+use msg::event::Event;
 use util::ResultBox;
 use hq::Hq;
+use hq::workspace::Workspace;
+
+pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
 
 pub struct Command {
     name: String,
     args: Vec<String>,
-    pub func: fn(&mut Hq, &str) -> ResultBox<String>,
+    pub func: Func,
 }
 
 impl Command {
     /// Create a new command. It must be done at the initialization phase.
     pub fn new(name: &str,
                args: Vec<String>,
-               func: fn(&mut Hq, &str) -> ResultBox<String>)
+               func: Func)
                -> Command {
         Command {
             name: String::from(name),
             args: args,
             func: func,
         }
+    }
+
+    pub fn args_len(&self) -> usize {
+        self.args.len()
     }
 }
