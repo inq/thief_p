@@ -119,7 +119,7 @@ impl Ui {
         self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height)
     }
 
-    /// Activate command bar, and redrew the corresponding area.
+    /// Activate command bar, and redraw the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.command_bar_mut().set_focus(true);
