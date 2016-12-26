@@ -39,7 +39,8 @@ impl Component for Ui {
     }
 
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let rect = Rect::new(self.view.width, self.view.height,
+        let rect = Rect::new(self.view.width,
+                             self.view.height,
                              Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0)));
         self.refresh_children(rect, hq)
     }
@@ -58,7 +59,7 @@ impl Component for Ui {
         use msg::event::Key::*;
         match k {
             Ctrl('c') => self.activate_command_bar(hq),
-            _ => Ok(Response::unhandled()),
+            _ => Ok(Response::Unhandled),
         }
     }
 
@@ -90,8 +91,8 @@ impl Component for Ui {
                     Ok(Default::default())
                 }
             }
-            Quit => Ok(Response::quit()),
-            _ => Ok(Response::unhandled()),
+            Quit => Ok(Response::Quit),
+            _ => Ok(Response::Unhandled),
         }
     }
 }

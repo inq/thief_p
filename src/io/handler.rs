@@ -61,30 +61,27 @@ impl Handler {
 
     // Handle event from the Ui.
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
+        use ui::Response::*;
         let e = self.hq.preprocess(e_raw);
-        let resp = self.ui.propagate(e, &mut self.hq)?;
-        self.term.show_cursor(false);
-        if let Some(Refresh { x, y, rect }) = resp.refresh {
-            self.term.write_ui_buffer(x, y, &rect);
-        }
-        let mut next: Option<event::Event> = None;
-        for resp in resp.sequence {
-            match resp {
-                Sequence::Command(c) => {
-                    next = self.hq.call(&c);
+        let next = match self.ui.propagate(e, &mut self.hq)? {
+            Term { refresh, cursor } => {
+                self.term.show_cursor(false);
+                if let Some(Refresh { x, y, rect }) = refresh {
+                    self.term.write_ui_buffer(x, y, &rect);
                 }
-                Sequence::Quit => {
-                    self.term.release()?;
-                    return Err(From::from(Error::Exit));
+                if let Some(Cursor { x, y }) = cursor {
+                    self.term.move_cursor(x, y);
                 }
-                Sequence::Unhandled => (),
+                self.term.show_cursor(true);
+                None
             }
-        }
-        // Move the cursor
-        if let Some(Cursor { x, y }) = resp.cursor {
-            self.term.move_cursor(x, y);
-        }
-        self.term.show_cursor(true);
+            Command(c) => self.hq.call(&c),
+            Quit => {
+                self.term.release()?;
+                return Err(From::from(Error::Exit));
+            }
+            Unhandled => None,
+        };
         if let Some(e) = next {
             self.handle_event(e)
         } else {

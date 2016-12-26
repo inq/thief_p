@@ -15,11 +15,23 @@ use msg::Pair;
 
 pub type Cursor = Pair;
 
-#[derive(Default)]
-pub struct Response {
-    pub refresh: Option<Refresh>,
-    pub cursor: Option<Cursor>,
-    pub sequence: Vec<Sequence>,
+pub enum Response {
+    Unhandled,
+    Command(String),
+    Quit,
+    Term {
+        refresh: Option<Refresh>,
+        cursor: Option<Cursor>,
+    },
+}
+
+impl Default for Response {
+    fn default() -> Response {
+        Response::Term {
+            refresh: None,
+            cursor: None,
+        }
+    }
 }
 
 pub struct Refresh {
@@ -36,33 +48,25 @@ pub enum Sequence {
 }
 
 impl Response {
-    /// Check if the event is not handled.
+    #[inline]
     pub fn is_handled(&self) -> bool {
-        if let Some(&Sequence::Unhandled) = self.sequence.get(0) {
+        if let Response::Unhandled = *self {
             false
         } else {
             true
         }
     }
 
-    /// Shorthand for unhandled event.
-    pub fn unhandled() -> Response {
-        Response { sequence: vec![Sequence::Unhandled], ..Default::default() }
-    }
-
-    /// Shorthand for quit event.
-    pub fn quit() -> Response {
-        Response { sequence: vec![Sequence::Quit], ..Default::default() }
-    }
-
     pub fn translate(mut self, tx: usize, ty: usize) -> Response {
-        if let Some(Refresh { ref mut x, ref mut y, .. }) = self.refresh {
-            *x += tx;
-            *y += ty;
-        }
-        if let Some(Cursor { ref mut x, ref mut y}) = self.cursor {
-            *x += tx;
-            *y += ty;
+        if let Response::Term { ref mut refresh, ref mut cursor } = self {
+            if let Some(Refresh { ref mut x, ref mut y, .. }) = *refresh {
+                *x += tx;
+                *y += ty;
+            }
+            if let Some(Cursor { ref mut x, ref mut y }) = *cursor {
+                *x += tx;
+                *y += ty;
+            }
         }
         self
     }

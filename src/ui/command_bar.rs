@@ -1,7 +1,7 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh};
 use ui::comp::{Component, View};
 
 #[derive(PartialEq)]
@@ -38,14 +38,13 @@ impl CommandBar {
         self.status = Status::Notify;
         let mut rect = Rect::new(self.view.width, self.view.height, self.background);
         rect.draw_str(msg, 0, 0);
-        Response {
+        Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
             cursor: None,
-            sequence: vec![],
         }
     }
 
@@ -93,12 +92,7 @@ impl Component for CommandBar {
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         use msg::event::Key;
         match k {
-            Key::CR => {
-                Ok(Response {
-                    sequence: vec![Sequence::Command(self.data.clone())],
-                    ..Default::default()
-                })
-            }
+            Key::CR => Ok(Response::Command(self.data.clone())),
             Key::Char(c) => {
                 use self::Status::*;
                 match self.status {
@@ -106,14 +100,16 @@ impl Component for CommandBar {
                         // TODO: Must consider unicode.
                         let prev = self.data.len();
                         self.data.push(c);
-                        Ok(Response {
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: prev,
                                 y: 0,
                                 rect: Rect::new_from_char(Char::new(c, self.background)),
                             }),
-                            cursor: Some(Cursor { x: self.data.len(), y: 0 }),
-                            ..Default::default()
+                            cursor: Some(Cursor {
+                                x: self.data.len(),
+                                y: 0,
+                            }),
                         })
                     }
                     Notify => {
@@ -150,14 +146,13 @@ impl Component for CommandBar {
             Rect::new(self.view.width, self.view.height, self.background)
         };
         rect.draw_str(&self.message, 0, 0);
-        Ok(Response {
+        Ok(Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
-            sequence: vec![],
-            cursor: Some(Cursor{ x: 0, y: 0 }),
+            cursor: Some(Cursor { x: 0, y: 0 }),
         })
     }
 }

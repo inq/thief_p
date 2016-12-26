@@ -16,7 +16,12 @@ pub struct View {
 impl Default for View {
     fn default() -> View {
         View {
-            x: 0, y: 0, width: 0, height: 0, theme: Default::default(), focus: true,
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            theme: Default::default(),
+            focus: true,
         }
     }
 }
@@ -67,12 +72,12 @@ pub trait Component {
 
     /// Handle the keyboard event.
     fn on_key(&mut self, _: &mut Hq, _: event::Key) -> ResultBox<Response> {
-        Ok(Response::unhandled())
+        Ok(Response::Unhandled)
     }
 
     /// Handle the given event.
     fn handle(&mut self, _: &mut Hq, _: event::Event) -> ResultBox<Response> {
-        Ok(Response::unhandled())
+        Ok(Response::Unhandled)
     }
 
     /// Propage event to children. This calls handle, and then translate.
@@ -96,34 +101,30 @@ pub trait Parent {
 
     /// Draw the children and transform each sequenced results.
     fn refresh_children(&mut self, rect: Rect, hq: &mut Hq) -> ResultBox<Response> {
-        let mut refresh = Refresh {
+        let mut res_refresh = Refresh {
             x: 0,
             y: 0,
             rect: rect,
         };
-        let mut sequence = vec![];
-        let mut cursor = None;
+        let mut res_cursor = None;
         for ref mut child in self.children_mut() {
-            let resp = child.refresh(hq)?;
-            if child.focus() {
-                if let Some(cur) = resp.cursor {
-                    cursor = Some(Cursor {
-                        x: child.get_view().x + cur.x,
-                        y: child.get_view().y + cur.y,
-                    })
+            if let Response::Term { refresh, cursor } = child.refresh(hq)? {
+                if child.focus() {
+                    if let Some(cur) = cursor {
+                        res_cursor = Some(Cursor {
+                            x: child.get_view().x + cur.x,
+                            y: child.get_view().y + cur.y,
+                        });
+                    }
+                }
+                if let Some(Refresh { x, y, rect }) = refresh {
+                    res_refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y);
                 }
             }
-            if let Some(Refresh { x, y, rect }) = resp.refresh {
-                refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)
-            }
-            for r in resp.sequence {
-                sequence.push(r);
-            }
         }
-        Ok(Response {
-            refresh: Some(refresh),
-            cursor: cursor,
-            sequence: sequence,
+        Ok(Response::Term {
+            refresh: Some(res_refresh),
+            cursor: res_cursor,
         })
     }
 }

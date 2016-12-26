@@ -91,18 +91,17 @@ impl Editor {
         match hq.buf(&self.buffer_name)?.kill_line() {
             KillLineRes::Normal => {
                 let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor()]
-                                              .into_iter()
-                                              .collect::<String>(),
+                                                  .into_iter()
+                                                  .collect::<String>(),
                                               self.view.theme.editor);
                 let cur = self.translate_cursor();
-                Ok(Response {
+                Ok(Response::Term {
                     refresh: Some(Refresh {
                         x: cur.x,
                         y: cur.y,
                         rect: Rect::new_from_line(line),
                     }),
                     cursor: Some(self.cursor_translated()),
-                    ..Default::default()
                 })
             }
             KillLineRes::Empty(cursor) => {
@@ -115,7 +114,10 @@ impl Editor {
 
     #[inline]
     fn resp_cursor(&self) -> ResultBox<Response> {
-        Ok(Response { cursor: Some(self.translate_cursor()), ..Default::default() })
+        Ok(Response::Term {
+            cursor: Some(self.translate_cursor()),
+            refresh: None,
+        })
     }
 
     /// Handle move events.
@@ -149,14 +151,13 @@ impl Editor {
                         self.line_cache[line_prev]
                             .fill_brush(self.view.theme.linenum, self.view.theme.editor);
                         rect.append(&self.line_cache[line_prev], self.view.height - y_off);
-                        Ok(Response {
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
                                 y: y_off,
                                 rect: rect,
                             }),
                             cursor: Some(self.translate_cursor()),
-                            ..Default::default()
                         })
                     }
                     _ if line_now > line_prev => {
@@ -170,14 +171,13 @@ impl Editor {
                         self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
                                                              self.view.theme.editor_cur());
                         rect.append(&self.line_cache[line_now], self.view.height - y_off);
-                        Ok(Response {
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
                                 y: y_off,
                                 rect: rect,
                             }),
                             cursor: Some(self.translate_cursor()),
-                            ..Default::default()
                         })
                     }
                     _ => self.resp_cursor(),
@@ -203,14 +203,13 @@ impl Component for Editor {
                 break;
             }
         }
-        Ok(Response {
+        Ok(Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
             cursor: Some(self.translate_cursor()),
-            ..Default::default()
         })
     }
 
@@ -239,16 +238,15 @@ impl Component for Editor {
                         let cur = self.cursor_translated();
                         let line = Line::new_from_str(&after_cursor,
                                                       self.view
-                                                      .theme
-                                                      .editor);
-                        Ok(Response {
+                                                          .theme
+                                                          .editor);
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: cur.x,
                                 y: cur.y,
                                 rect: Rect::new_from_line(line),
                             }),
                             cursor: Some(self.translate_cursor()),
-                            ..Default::default()
                         })
                     }
                     BackspaceRes::PrevLine(cursor) => {
@@ -273,17 +271,15 @@ impl Component for Editor {
                 after_cursor.push_str(&hq.buf(&self.buffer_name)?
                     .insert(c, self.spaces_after_cursor()));
                 let cur = self.cursor_translated();
-                let line = Line::new_from_str(&after_cursor,
-                                              self.view.theme.editor);
+                let line = Line::new_from_str(&after_cursor, self.view.theme.editor);
                 self.cursor.x += 1;
-                Ok(Response {
+                Ok(Response::Term {
                     refresh: Some(Refresh {
                         x: cur.x,
                         y: cur.y,
                         rect: Rect::new_from_line(line),
                     }),
                     cursor: Some(self.translate_cursor()),
-                    ..Default::default()
                 })
             }
             _ => Ok(Default::default()),
@@ -298,7 +294,7 @@ impl Component for Editor {
                 self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
             }
-            _ => Ok(Response::unhandled()),
+            _ => Ok(Response::Unhandled),
         }
     }
 }
