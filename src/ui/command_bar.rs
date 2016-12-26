@@ -1,7 +1,7 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh};
+use ui::res::{Brush, Color, Cursor, Char, Rect, Response, Refresh};
 use ui::comp::{Component, View};
 
 #[derive(PartialEq)]

@@ -68,7 +68,7 @@ impl Component for Ui {
         use msg::event::Event::*;
         match e {
             e @ CommandBar(_) => {
-                self.activate_command_bar(hq);
+                self.activate_command_bar(hq)?;
                 self.command_bar.propagate(e, hq)?;
                 self.on_resize(hq)?;
                 self.refresh(hq)

@@ -40,13 +40,6 @@ pub struct Refresh {
     pub rect: Rect,
 }
 
-#[derive(Debug)]
-pub enum Sequence {
-    Unhandled,
-    Command(String),
-    Quit,
-}
-
 impl Response {
     #[inline]
     pub fn is_handled(&self) -> bool {

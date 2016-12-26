@@ -6,7 +6,7 @@ use msg::event;
 use hq::Hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
-use ui::{Ui, Component, Cursor, Refresh, Sequence};
+use ui::{Ui, Component, Cursor, Refresh};
 use util::ResultBox;
 
 def_error! {

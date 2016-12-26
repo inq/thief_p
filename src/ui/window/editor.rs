@@ -2,7 +2,7 @@ use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
-use ui::res::{Cursor, Line, TextRect, Rect, Response, Refresh, Sequence};
+use ui::res::{Cursor, Line, TextRect, Rect, Response, Refresh};
 use ui::comp::{Component, View};
 
 #[derive(Default)]

@@ -1,7 +1,7 @@
 use hq::Hq;
 use msg::event;
 use ui::Theme;
-use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
+use ui::res::{Cursor, Rect, Response, Refresh};
 use util::ResultBox;
 
 pub struct View {
