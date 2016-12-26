@@ -38,14 +38,16 @@ impl CommandBar {
     /// Notify a given message.
     fn notify(&mut self, msg: &str) -> Response {
         self.status = Status::Notify;
+        let mut rect = Rect::new(self.view.width, self.view.height, self.background);
+        rect.draw_str(msg, 0, 0);
         Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                rect: Rect::new(self.view.width, self.view.height, self.background),
+                rect: rect,
             }),
-            sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
-                           Sequence::Line(Line::new_from_str(msg, self.background))],
+            cursor: None,
+            sequence: vec![],
         }
     }
 
@@ -106,7 +108,6 @@ impl Component for CommandBar {
                     Standby | Navigate => {
                         self.data.push(c);
                         Ok(Response {
-                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
                             ..Default::default()
                         })
                     }
@@ -134,7 +135,7 @@ impl Component for CommandBar {
 
     /// Refresh the command bar.
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let rect = if self.status == Status::Navigate {
+        let mut rect = if self.status == Status::Navigate {
             let mut res = Rect::new(self.view.width, self.view.height, self.background);
             for (i, formatted) in hq.fs().unwrap().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
@@ -143,19 +144,15 @@ impl Component for CommandBar {
         } else {
             Rect::new(self.view.width, self.view.height, self.background)
         };
-        let seq = {
-            let mut res = vec![];
-            res.push(Sequence::Move(Cursor { x: 0, y: 0 }));
-            res.push(Sequence::Line(Line::new_from_str(&self.message, self.background)));
-            res
-        };
+        rect.draw_str(&self.message, 0, 0);
         Ok(Response {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
-            sequence: seq,
+            sequence: vec![],
+            cursor: None,
         })
     }
 }

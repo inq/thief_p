@@ -27,6 +27,12 @@ pub trait Component {
     fn get_view_mut(&mut self) -> &mut View;
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
+
+    /// True iff the component has the focus.
+    fn focused(&self) -> bool {
+        false
+    }
+
     /// Resize the component; Call the on_resize function.
     fn resize(&mut self,
               hq: &mut Hq,
@@ -53,6 +59,7 @@ pub trait Component {
     fn handle(&mut self, _: &mut Hq, _: event::Event) -> ResultBox<Response> {
         Ok(Response::unhandled())
     }
+
     /// Propage event to children. This calls handle, and then translate.
     fn propagate(&mut self, e: event::Event, hq: &mut Hq) -> ResultBox<Response> {
         let mut res = if let event::Event::Keyboard(k) = e {
@@ -80,19 +87,17 @@ pub trait Parent {
             rect: rect,
         };
         let mut sequence = vec![];
+        let mut cursor = None;
         for ref mut child in self.children_mut() {
             let resp = child.refresh(hq)?;
+            if child.focused() {
+                cursor = resp.cursor;
+            }
             if let Some(Refresh { x, y, rect }) = resp.refresh {
                 refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)
             }
             for r in resp.sequence {
                 match r {
-                    Sequence::Move(cur) => {
-                        sequence.push(Sequence::Move(Cursor {
-                            x: cur.x + child.get_view().x,
-                            y: cur.y + child.get_view().y,
-                        }));
-                    }
                     x => {
                         sequence.push(x);
                     }
@@ -101,6 +106,7 @@ pub trait Parent {
         }
         Ok(Response {
             refresh: Some(refresh),
+            cursor: cursor,
             sequence: sequence,
         })
     }

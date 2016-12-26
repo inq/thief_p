@@ -18,6 +18,7 @@ pub type Cursor = Pair;
 #[derive(Default)]
 pub struct Response {
     pub refresh: Option<Refresh>,
+    pub cursor: Option<Cursor>,
     pub sequence: Vec<Sequence>,
 }
 
@@ -30,10 +31,6 @@ pub struct Refresh {
 #[derive(Debug)]
 pub enum Sequence {
     Unhandled,
-    Move(Cursor),
-    Line(Line),
-    Char(Char),
-    Show(bool),
     Command(String),
     Quit,
 }
@@ -62,12 +59,6 @@ impl Response {
         if let Some(Refresh { ref mut x, ref mut y, .. }) = self.refresh {
             *x += tx;
             *y += ty;
-        }
-        for r in &mut self.sequence {
-            if let Sequence::Move(Cursor { ref mut x, ref mut y }) = *r {
-                *x += tx;
-                *y += ty;
-            }
         }
         self
     }

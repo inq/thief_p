@@ -69,10 +69,6 @@ impl Handler {
         let mut next: Option<event::Event> = None;
         for resp in resp.sequence {
             match resp {
-                Sequence::Move(c) => self.term.move_cursor(c.x, c.y),
-                Sequence::Line(l) => self.term.write_ui_line(&l),
-                Sequence::Char(c) => self.term.write_ui_char(&c),
-                Sequence::Show(b) => self.term.show_cursor(b),
                 Sequence::Command(c) => {
                     next = self.hq.call(&c);
                 }

@@ -16,6 +16,20 @@ impl Rect {
         }
     }
 
+    /// Create a new Rect from Line.
+    pub fn new_from_line(line: Line) -> Rect {
+        let w = line.width;
+        Rect {
+            lines: vec![line],
+            width: w,
+            height: 1,
+        }
+    }
+
+    pub fn draw_str(&mut self, src: &str, x: usize, y: usize) {
+        self.lines[y].draw_str(src, x);
+    }
+
     pub fn draw(&mut self, src: &Rect, x: usize, y: usize) {
         for (i, line) in src.lines.iter().enumerate() {
             if y + i < self.height {
