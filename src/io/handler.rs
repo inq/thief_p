@@ -63,6 +63,7 @@ impl Handler {
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
         let e = self.hq.preprocess(e_raw);
         let resp = self.ui.propagate(e, &mut self.hq)?;
+        self.term.show_cursor(false);
         if let Some(Refresh { x, y, rect }) = resp.refresh {
             self.term.write_ui_buffer(x, y, &rect);
         }
@@ -83,6 +84,7 @@ impl Handler {
         if let Some(Cursor { x, y }) = resp.cursor {
             self.term.move_cursor(x, y);
         }
+        self.term.show_cursor(true);
         if let Some(e) = next {
             self.handle_event(e)
         } else {
