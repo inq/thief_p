@@ -39,14 +39,15 @@ impl Component for Ui {
     }
 
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
-        let rect = Rect::new(self.view.width, self.view.height, b);
+        let rect = Rect::new(self.view.width,
+                             self.view.height,
+                             Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0)));
         self.refresh_children(rect, hq)
     }
 
     /// Propagate to children.
     fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
-        if self.command_bar().active {
+        if self.command_bar().focus() {
             self.command_bar.propagate(e, hq)
         } else {
             self.hsplit.propagate(e, hq)
@@ -58,7 +59,7 @@ impl Component for Ui {
         use msg::event::Key::*;
         match k {
             Ctrl('c') => self.activate_command_bar(hq),
-            _ => Ok(Response::unhandled()),
+            _ => Ok(Response::Unhandled),
         }
     }
 
@@ -67,6 +68,7 @@ impl Component for Ui {
         use msg::event::Event::*;
         match e {
             e @ CommandBar(_) => {
+                self.activate_command_bar(hq)?;
                 self.command_bar.propagate(e, hq)?;
                 self.on_resize(hq)?;
                 self.refresh(hq)
@@ -78,7 +80,8 @@ impl Component for Ui {
             OpenBuffer(_) => {
                 if self.view.height > 0 {
                     // After initialize
-                    self.command_bar_mut().active = false;
+                    self.command_bar_mut().set_focus(false);
+                    self.hsplit.set_focus(true);
                     self.on_resize(hq)?;
                     self.hsplit.propagate(e, hq)?;
                     self.refresh(hq)
@@ -88,8 +91,8 @@ impl Component for Ui {
                     Ok(Default::default())
                 }
             }
-            Quit => Ok(Response::quit()),
-            _ => Ok(Response::unhandled()),
+            Quit => Ok(Response::Quit),
+            _ => Ok(Response::Unhandled),
         }
     }
 }
@@ -103,6 +106,7 @@ impl Ui {
             unreachable!()
         }
     }
+
     #[inline]
     fn command_bar(&self) -> &CommandBar {
         if let UiChild::CommandBar(ref c) = self.command_bar {
@@ -118,10 +122,11 @@ impl Ui {
         self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height)
     }
 
-    /// Activate command bar, and redrew the corresponding area.
+    /// Activate command bar, and redraw the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        self.command_bar_mut().active = true;
+        self.command_bar_mut().set_focus(true);
+        self.hsplit.set_focus(false);
         self.resize_command_bar(hq)?;
         // TODO: Make concise.
         Ok(self.command_bar
@@ -133,7 +138,11 @@ impl Ui {
         allow_once!();
         Ok(Ui {
             hsplit: UiChild::HSplit(HSplit::new(1)),
-            command_bar: UiChild::CommandBar(Default::default()),
+            command_bar: {
+                let mut res: CommandBar = Default::default();
+                res.set_focus(false);
+                UiChild::CommandBar(res)
+            },
             ..Default::default()
         })
     }

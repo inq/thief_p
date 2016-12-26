@@ -2,7 +2,7 @@ use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
-use ui::res::{Cursor, Line, TextRect, Rect, Response, Refresh, Sequence};
+use ui::res::{Cursor, Line, TextRect, Rect, Response, Refresh};
 use ui::comp::{Component, View};
 
 #[derive(Default)]
@@ -81,11 +81,6 @@ impl Editor {
         Cursor { x: cx, y: y + cy }
     }
 
-    /// Generate the move-cursor event.
-    fn move_cursor(&self) -> Sequence {
-        Sequence::Move(self.translate_cursor())
-    }
-
     /// Basic initializer.
     pub fn new() -> Editor {
         Editor { buffer_name: String::from("<empty>"), ..Default::default() }
@@ -95,16 +90,18 @@ impl Editor {
     fn on_kill_line(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         match hq.buf(&self.buffer_name)?.kill_line() {
             KillLineRes::Normal => {
-                let blanks = vec![' '; self.spaces_after_cursor()]
-                    .into_iter()
-                    .collect::<String>();
-                Ok(Response {
-                    sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&blanks,
-                                                                     self.view.theme.editor)),
-                                   Sequence::Move(self.cursor_translated()),
-                                   Sequence::Show(true)],
-                    ..Default::default()
+                let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor()]
+                                                  .into_iter()
+                                                  .collect::<String>(),
+                                              self.view.theme.editor);
+                let cur = self.translate_cursor();
+                Ok(Response::Term {
+                    refresh: Some(Refresh {
+                        x: cur.x,
+                        y: cur.y,
+                        rect: Rect::new_from_line(line),
+                    }),
+                    cursor: Some(self.cursor_translated()),
                 })
             }
             KillLineRes::Empty(cursor) => {
@@ -113,6 +110,14 @@ impl Editor {
             }
             _ => Ok(Default::default()),
         }
+    }
+
+    #[inline]
+    fn resp_cursor(&self) -> ResultBox<Response> {
+        Ok(Response::Term {
+            cursor: Some(self.translate_cursor()),
+            refresh: None,
+        })
     }
 
     /// Handle move events.
@@ -146,13 +151,13 @@ impl Editor {
                         self.line_cache[line_prev]
                             .fill_brush(self.view.theme.linenum, self.view.theme.editor);
                         rect.append(&self.line_cache[line_prev], self.view.height - y_off);
-                        Ok(Response {
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
                                 y: y_off,
                                 rect: rect,
                             }),
-                            sequence: vec![self.move_cursor()],
+                            cursor: Some(self.translate_cursor()),
                         })
                     }
                     _ if line_now > line_prev => {
@@ -166,16 +171,16 @@ impl Editor {
                         self.line_cache[line_now].fill_brush(self.view.theme.linenum_cur(),
                                                              self.view.theme.editor_cur());
                         rect.append(&self.line_cache[line_now], self.view.height - y_off);
-                        Ok(Response {
+                        Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
                                 y: y_off,
                                 rect: rect,
                             }),
-                            sequence: vec![self.move_cursor()],
+                            cursor: Some(self.translate_cursor()),
                         })
                     }
-                    _ => Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() }),
+                    _ => self.resp_cursor(),
                 }
             }
         }
@@ -198,13 +203,13 @@ impl Component for Editor {
                 break;
             }
         }
-        Ok(Response {
+        Ok(Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
-            sequence: vec![Sequence::Show(true), self.move_cursor()],
+            cursor: Some(self.translate_cursor()),
         })
     }
 
@@ -214,12 +219,12 @@ impl Component for Editor {
             event::Key::Ctrl('a') |
             event::Key::Home => {
                 self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line();
-                Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+                self.resp_cursor()
             }
             event::Key::Ctrl('e') |
             event::Key::End => {
                 self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
-                Ok(Response { sequence: vec![self.move_cursor()], ..Default::default() })
+                self.resp_cursor()
             }
             event::Key::CR => {
                 self.cursor = hq.buf(&self.buffer_name)?.break_line();
@@ -230,16 +235,18 @@ impl Component for Editor {
                     BackspaceRes::Normal(mut after_cursor) => {
                         after_cursor.push(' ');
                         self.cursor.x -= 1;
-                        Ok(Response {
-                            sequence: vec![Sequence::Show(false),
-                                           Sequence::Move(self.cursor_translated()),
-                                           Sequence::Line(Line::new_from_str(&after_cursor,
-                                                                             self.view
-                                                                                 .theme
-                                                                                 .editor)),
-                                           Sequence::Move(self.cursor_translated()),
-                                           Sequence::Show(true)],
-                            ..Default::default()
+                        let cur = self.cursor_translated();
+                        let line = Line::new_from_str(&after_cursor,
+                                                      self.view
+                                                          .theme
+                                                          .editor);
+                        Ok(Response::Term {
+                            refresh: Some(Refresh {
+                                x: cur.x,
+                                y: cur.y,
+                                rect: Rect::new_from_line(line),
+                            }),
+                            cursor: Some(self.translate_cursor()),
                         })
                     }
                     BackspaceRes::PrevLine(cursor) => {
@@ -260,17 +267,19 @@ impl Component for Editor {
             event::Key::Left => self.on_move(hq, -1, 0),
             event::Key::Char(c) => {
                 let mut after_cursor = String::with_capacity(self.view.width);
-                self.cursor.x += 1;
                 after_cursor.push(c);
                 after_cursor.push_str(&hq.buf(&self.buffer_name)?
                     .insert(c, self.spaces_after_cursor()));
-                Ok(Response {
-                    sequence: vec![Sequence::Show(false),
-                                   Sequence::Line(Line::new_from_str(&after_cursor,
-                                                                     self.view.theme.editor)),
-                                   Sequence::Move(self.cursor_translated()),
-                                   Sequence::Show(true)],
-                    ..Default::default()
+                let cur = self.cursor_translated();
+                let line = Line::new_from_str(&after_cursor, self.view.theme.editor);
+                self.cursor.x += 1;
+                Ok(Response::Term {
+                    refresh: Some(Refresh {
+                        x: cur.x,
+                        y: cur.y,
+                        rect: Rect::new_from_line(line),
+                    }),
+                    cursor: Some(self.translate_cursor()),
                 })
             }
             _ => Ok(Default::default()),
@@ -285,7 +294,7 @@ impl Component for Editor {
                 self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
             }
-            _ => Ok(Response::unhandled()),
+            _ => Ok(Response::Unhandled),
         }
     }
 }

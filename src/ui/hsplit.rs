@@ -47,7 +47,7 @@ impl Component for HSplit {
                 self.toggle_split(hq)?;
                 self.refresh(hq)
             }
-            _ => Ok(Response::unhandled()),
+            _ => Ok(Response::Unhandled),
         }
     }
 }

@@ -1,16 +1,29 @@
 use hq::Hq;
 use msg::event;
 use ui::Theme;
-use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
+use ui::res::{Cursor, Rect, Response, Refresh};
 use util::ResultBox;
 
-#[derive(Default)]
 pub struct View {
     pub x: usize,
     pub y: usize,
     pub width: usize,
     pub height: usize,
     pub theme: Theme,
+    pub focus: bool,
+}
+
+impl Default for View {
+    fn default() -> View {
+        View {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+            theme: Default::default(),
+            focus: true,
+        }
+    }
 }
 
 impl View {
@@ -27,6 +40,19 @@ pub trait Component {
     fn get_view_mut(&mut self) -> &mut View;
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
+
+    /// True iff the component has the focus.
+    #[inline]
+    fn focus(&self) -> bool {
+        self.get_view().focus
+    }
+
+    /// Set the focus.
+    #[inline]
+    fn set_focus(&mut self, value: bool) {
+        self.get_view_mut().focus = value;
+    }
+
     /// Resize the component; Call the on_resize function.
     fn resize(&mut self,
               hq: &mut Hq,
@@ -46,13 +72,14 @@ pub trait Component {
 
     /// Handle the keyboard event.
     fn on_key(&mut self, _: &mut Hq, _: event::Key) -> ResultBox<Response> {
-        Ok(Response::unhandled())
+        Ok(Response::Unhandled)
     }
 
     /// Handle the given event.
     fn handle(&mut self, _: &mut Hq, _: event::Event) -> ResultBox<Response> {
-        Ok(Response::unhandled())
+        Ok(Response::Unhandled)
     }
+
     /// Propage event to children. This calls handle, and then translate.
     fn propagate(&mut self, e: event::Event, hq: &mut Hq) -> ResultBox<Response> {
         let mut res = if let event::Event::Keyboard(k) = e {
@@ -74,34 +101,30 @@ pub trait Parent {
 
     /// Draw the children and transform each sequenced results.
     fn refresh_children(&mut self, rect: Rect, hq: &mut Hq) -> ResultBox<Response> {
-        let mut refresh = Refresh {
+        let mut res_refresh = Refresh {
             x: 0,
             y: 0,
             rect: rect,
         };
-        let mut sequence = vec![];
+        let mut res_cursor = None;
         for ref mut child in self.children_mut() {
-            let resp = child.refresh(hq)?;
-            if let Some(Refresh { x, y, rect }) = resp.refresh {
-                refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)
-            }
-            for r in resp.sequence {
-                match r {
-                    Sequence::Move(cur) => {
-                        sequence.push(Sequence::Move(Cursor {
-                            x: cur.x + child.get_view().x,
-                            y: cur.y + child.get_view().y,
-                        }));
+            if let Response::Term { refresh, cursor } = child.refresh(hq)? {
+                if child.focus() {
+                    if let Some(cur) = cursor {
+                        res_cursor = Some(Cursor {
+                            x: child.get_view().x + cur.x,
+                            y: child.get_view().y + cur.y,
+                        });
                     }
-                    x => {
-                        sequence.push(x);
-                    }
+                }
+                if let Some(Refresh { x, y, rect }) = refresh {
+                    res_refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y);
                 }
             }
         }
-        Ok(Response {
-            refresh: Some(refresh),
-            sequence: sequence,
+        Ok(Response::Term {
+            refresh: Some(res_refresh),
+            cursor: res_cursor,
         })
     }
 }

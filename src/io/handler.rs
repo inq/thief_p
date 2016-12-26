@@ -6,7 +6,7 @@ use msg::event;
 use hq::Hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
-use ui::{Ui, Component, Cursor, Refresh, Sequence};
+use ui::{Ui, Component, Cursor, Refresh};
 use util::ResultBox;
 
 def_error! {
@@ -61,28 +61,27 @@ impl Handler {
 
     // Handle event from the Ui.
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
+        use ui::Response::*;
         let e = self.hq.preprocess(e_raw);
-        let resp = self.ui.propagate(e, &mut self.hq)?;
-        if let Some(Refresh { x, y, rect }) = resp.refresh {
-            self.term.write_ui_buffer(x, y, &rect);
-        }
-        let mut next: Option<event::Event> = None;
-        for resp in resp.sequence {
-            match resp {
-                Sequence::Move(c) => self.term.move_cursor(c.x, c.y),
-                Sequence::Line(l) => self.term.write_ui_line(&l),
-                Sequence::Char(c) => self.term.write_ui_char(&c),
-                Sequence::Show(b) => self.term.show_cursor(b),
-                Sequence::Command(c) => {
-                    next = self.hq.call(&c);
+        let next = match self.ui.propagate(e, &mut self.hq)? {
+            Term { refresh, cursor } => {
+                self.term.show_cursor(false);
+                if let Some(Refresh { x, y, rect }) = refresh {
+                    self.term.write_ui_buffer(x, y, &rect);
                 }
-                Sequence::Quit => {
-                    self.term.release()?;
-                    return Err(From::from(Error::Exit));
+                if let Some(Cursor { x, y }) = cursor {
+                    self.term.move_cursor(x, y);
                 }
-                Sequence::Unhandled => (),
+                self.term.show_cursor(true);
+                None
             }
-        }
+            Command(c) => self.hq.call(&c),
+            Quit => {
+                self.term.release()?;
+                return Err(From::from(Error::Exit));
+            }
+            Unhandled => None,
+        };
         if let Some(e) = next {
             self.handle_event(e)
         } else {

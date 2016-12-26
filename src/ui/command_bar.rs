@@ -1,7 +1,7 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::{Brush, Color, Cursor, Char, Line, Rect, Response, Refresh, Sequence};
+use ui::res::{Brush, Color, Cursor, Char, Rect, Response, Refresh};
 use ui::comp::{Component, View};
 
 #[derive(PartialEq)]
@@ -13,7 +13,6 @@ pub enum Status {
 }
 
 pub struct CommandBar {
-    pub active: bool,
     status: Status,
     data: String,
     message: String,
@@ -25,7 +24,6 @@ impl Default for CommandBar {
     fn default() -> CommandBar {
         CommandBar {
             status: Status::Standby,
-            active: false,
             data: String::with_capacity(80),
             message: String::with_capacity(80),
             view: Default::default(),
@@ -38,20 +36,21 @@ impl CommandBar {
     /// Notify a given message.
     fn notify(&mut self, msg: &str) -> Response {
         self.status = Status::Notify;
-        Response {
+        let mut rect = Rect::new(self.view.width, self.view.height, self.background);
+        rect.draw_str(msg, 0, 0);
+        Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
-                rect: Rect::new(self.view.width, self.view.height, self.background),
+                rect: rect,
             }),
-            sequence: vec![Sequence::Move(Cursor { x: 0, y: 0 }),
-                           Sequence::Line(Line::new_from_str(msg, self.background))],
+            cursor: None,
         }
     }
 
     /// Return the height.
     pub fn height(&self) -> usize {
-        if self.active { self.view.height } else { 1 }
+        if self.focus() { self.view.height } else { 1 }
     }
 
     fn handle_command_bar(&mut self, c: event::CommandBar, hq: &mut Hq) -> ResultBox<Response> {
@@ -59,7 +58,6 @@ impl CommandBar {
         match c {
             Navigate(msg) => {
                 // Turn on the navigator
-                self.active = true;
                 self.data.clear();
                 self.message = String::from(msg);
                 self.status = Status::Navigate;
@@ -94,20 +92,24 @@ impl Component for CommandBar {
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         use msg::event::Key;
         match k {
-            Key::CR => {
-                Ok(Response {
-                    sequence: vec![Sequence::Command(self.data.clone())],
-                    ..Default::default()
-                })
-            }
+            Key::CR => Ok(Response::Command(self.data.clone())),
             Key::Char(c) => {
                 use self::Status::*;
                 match self.status {
                     Standby | Navigate => {
+                        // TODO: Must consider unicode.
+                        let prev = self.data.len();
                         self.data.push(c);
-                        Ok(Response {
-                            sequence: vec![Sequence::Char(Char::new(c, self.background.clone()))],
-                            ..Default::default()
+                        Ok(Response::Term {
+                            refresh: Some(Refresh {
+                                x: prev,
+                                y: 0,
+                                rect: Rect::new_from_char(Char::new(c, self.background)),
+                            }),
+                            cursor: Some(Cursor {
+                                x: self.data.len(),
+                                y: 0,
+                            }),
                         })
                     }
                     Notify => {
@@ -134,7 +136,7 @@ impl Component for CommandBar {
 
     /// Refresh the command bar.
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let rect = if self.status == Status::Navigate {
+        let mut rect = if self.status == Status::Navigate {
             let mut res = Rect::new(self.view.width, self.view.height, self.background);
             for (i, formatted) in hq.fs().unwrap().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
@@ -143,19 +145,14 @@ impl Component for CommandBar {
         } else {
             Rect::new(self.view.width, self.view.height, self.background)
         };
-        let seq = {
-            let mut res = vec![];
-            res.push(Sequence::Move(Cursor { x: 0, y: 0 }));
-            res.push(Sequence::Line(Line::new_from_str(&self.message, self.background)));
-            res
-        };
-        Ok(Response {
+        rect.draw_str(&self.message, 0, 0);
+        Ok(Response::Term {
             refresh: Some(Refresh {
                 x: 0,
                 y: 0,
                 rect: rect,
             }),
-            sequence: seq,
+            cursor: Some(Cursor { x: 0, y: 0 }),
         })
     }
 }
