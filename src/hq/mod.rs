@@ -1,13 +1,11 @@
-/// HQ: Headquarters.
-use buf::Buffer;
-use msg::event;
-use util::ResultBox;
-
 mod shortcut;
 mod workspace;
 mod commands;
 mod fs;
 
+use buf::Buffer;
+use msg::event;
+use util::ResultBox;
 use hq::fs::Filesys;
 use hq::workspace::Workspace;
 use hq::commands::{Commands, Arg};
@@ -18,8 +16,6 @@ pub struct Hq {
     commands: Commands,
     shortcut: Shortcut,
 }
-
-// TODO: Move these into somewhere.
 
 impl Hq {
     /// Initialize.
@@ -57,6 +53,7 @@ impl Hq {
         }
     }
 
+    /// Run a given command.
     pub fn call(&mut self, command: &str) -> Option<event::Event> {
         use msg::event::Event::*;
         use msg::event::CommandBar::*;
@@ -70,14 +67,11 @@ impl Hq {
         }
     }
 
+    /// Get the filesys instance.
+    /// TODO: remove this.
     pub fn fs(&mut self) -> ResultBox<&mut Filesys> {
         Ok(self.workspace.fs())
     }
-
-    // pub fn run(&mut self, command: &str, arg: &str) -> ResultBox<String> {
-    // let func = self.commands.query(command)?;
-    // func(self, &vec![String::from(arg)])
-    // }
 
     /// Temporary function.
     pub fn buf(&mut self, s: &str) -> ResultBox<&mut Buffer> {
