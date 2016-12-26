@@ -46,7 +46,7 @@ impl Component for Ui {
 
     /// Propagate to children.
     fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
-        if self.command_bar().active {
+        if self.command_bar().focus() {
             self.command_bar.propagate(e, hq)
         } else {
             self.hsplit.propagate(e, hq)
@@ -78,7 +78,8 @@ impl Component for Ui {
             OpenBuffer(_) => {
                 if self.view.height > 0 {
                     // After initialize
-                    self.command_bar_mut().active = false;
+                    self.command_bar_mut().set_focus(false);
+                    self.hsplit.set_focus(true);
                     self.on_resize(hq)?;
                     self.hsplit.propagate(e, hq)?;
                     self.refresh(hq)
@@ -121,7 +122,8 @@ impl Ui {
     /// Activate command bar, and redrew the corresponding area.
     #[inline]
     pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        self.command_bar_mut().active = true;
+        self.command_bar_mut().set_focus(true);
+        self.hsplit.set_focus(false);
         self.resize_command_bar(hq)?;
         // TODO: Make concise.
         Ok(self.command_bar
@@ -133,7 +135,11 @@ impl Ui {
         allow_once!();
         Ok(Ui {
             hsplit: UiChild::HSplit(HSplit::new(1)),
-            command_bar: UiChild::CommandBar(Default::default()),
+            command_bar: {
+                let mut res: CommandBar = Default::default();
+                res.set_focus(false);
+                UiChild::CommandBar(res)
+            },
             ..Default::default()
         })
     }

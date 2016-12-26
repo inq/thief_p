@@ -13,7 +13,6 @@ pub enum Status {
 }
 
 pub struct CommandBar {
-    pub active: bool,
     status: Status,
     data: String,
     message: String,
@@ -25,7 +24,6 @@ impl Default for CommandBar {
     fn default() -> CommandBar {
         CommandBar {
             status: Status::Standby,
-            active: false,
             data: String::with_capacity(80),
             message: String::with_capacity(80),
             view: Default::default(),
@@ -53,7 +51,7 @@ impl CommandBar {
 
     /// Return the height.
     pub fn height(&self) -> usize {
-        if self.active { self.view.height } else { 1 }
+        if self.focus() { self.view.height } else { 1 }
     }
 
     fn handle_command_bar(&mut self, c: event::CommandBar, hq: &mut Hq) -> ResultBox<Response> {
@@ -61,7 +59,6 @@ impl CommandBar {
         match c {
             Navigate(msg) => {
                 // Turn on the navigator
-                self.active = true;
                 self.data.clear();
                 self.message = String::from(msg);
                 self.status = Status::Navigate;

@@ -4,13 +4,21 @@ use ui::Theme;
 use ui::res::{Cursor, Rect, Response, Refresh, Sequence};
 use util::ResultBox;
 
-#[derive(Default)]
 pub struct View {
     pub x: usize,
     pub y: usize,
     pub width: usize,
     pub height: usize,
     pub theme: Theme,
+    pub focus: bool,
+}
+
+impl Default for View {
+    fn default() -> View {
+        View {
+            x: 0, y: 0, width: 0, height: 0, theme: Default::default(), focus: true,
+        }
+    }
 }
 
 impl View {
@@ -29,8 +37,15 @@ pub trait Component {
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
 
     /// True iff the component has the focus.
-    fn focused(&self) -> bool {
-        false
+    #[inline]
+    fn focus(&self) -> bool {
+        self.get_view().focus
+    }
+
+    /// Set the focus.
+    #[inline]
+    fn set_focus(&mut self, value: bool) {
+        self.get_view_mut().focus = value;
     }
 
     /// Resize the component; Call the on_resize function.
@@ -90,7 +105,7 @@ pub trait Parent {
         let mut cursor = None;
         for ref mut child in self.children_mut() {
             let resp = child.refresh(hq)?;
-            if child.focused() {
+            if child.focus() {
                 cursor = resp.cursor;
             }
             if let Some(Refresh { x, y, rect }) = resp.refresh {
