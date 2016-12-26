@@ -39,8 +39,8 @@ impl Component for Ui {
     }
 
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let b = Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0));
-        let rect = Rect::new(self.view.width, self.view.height, b);
+        let rect = Rect::new(self.view.width, self.view.height,
+                             Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0)));
         self.refresh_children(rect, hq)
     }
 
@@ -67,6 +67,7 @@ impl Component for Ui {
         use msg::event::Event::*;
         match e {
             e @ CommandBar(_) => {
+                self.activate_command_bar(hq);
                 self.command_bar.propagate(e, hq)?;
                 self.on_resize(hq)?;
                 self.refresh(hq)
@@ -104,6 +105,7 @@ impl Ui {
             unreachable!()
         }
     }
+
     #[inline]
     fn command_bar(&self) -> &CommandBar {
         if let UiChild::CommandBar(ref c) = self.command_bar {

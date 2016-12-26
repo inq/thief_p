@@ -20,6 +20,16 @@ impl Line {
         }
     }
 
+    /// Construct a new line from Char.
+    pub fn new_from_char(char: Char) -> Line {
+        let w = char.width();
+        Line {
+            chars: vec![char],
+            width: w,
+            text_width: 1,
+        }
+    }
+
     /// Initialize a new line with two color brushes.
     /// The width of the left side is given by `splitter`.
     #[inline]

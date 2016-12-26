@@ -269,13 +269,13 @@ impl Component for Editor {
             event::Key::Left => self.on_move(hq, -1, 0),
             event::Key::Char(c) => {
                 let mut after_cursor = String::with_capacity(self.view.width);
-                self.cursor.x += 1;
                 after_cursor.push(c);
                 after_cursor.push_str(&hq.buf(&self.buffer_name)?
                     .insert(c, self.spaces_after_cursor()));
                 let cur = self.cursor_translated();
                 let line = Line::new_from_str(&after_cursor,
                                               self.view.theme.editor);
+                self.cursor.x += 1;
                 Ok(Response {
                     refresh: Some(Refresh {
                         x: cur.x,

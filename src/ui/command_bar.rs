@@ -103,8 +103,16 @@ impl Component for CommandBar {
                 use self::Status::*;
                 match self.status {
                     Standby | Navigate => {
+                        // TODO: Must consider unicode.
+                        let prev = self.data.len();
                         self.data.push(c);
                         Ok(Response {
+                            refresh: Some(Refresh {
+                                x: prev,
+                                y: 0,
+                                rect: Rect::new_from_char(Char::new(c, self.background)),
+                            }),
+                            cursor: Some(Cursor { x: self.data.len(), y: 0 }),
                             ..Default::default()
                         })
                     }
@@ -149,7 +157,7 @@ impl Component for CommandBar {
                 rect: rect,
             }),
             sequence: vec![],
-            cursor: None,
+            cursor: Some(Cursor{ x: 0, y: 0 }),
         })
     }
 }

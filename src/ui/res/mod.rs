@@ -60,6 +60,10 @@ impl Response {
             *x += tx;
             *y += ty;
         }
+        if let Some(Cursor { ref mut x, ref mut y}) = self.cursor {
+            *x += tx;
+            *y += ty;
+        }
         self
     }
 }

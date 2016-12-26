@@ -1,4 +1,4 @@
-use ui::res::{Formatted, Brush, Line, TextRect};
+use ui::res::{Formatted, Brush, Char, Line, TextRect};
 
 #[derive(Debug)]
 pub struct Rect {
@@ -18,6 +18,17 @@ impl Rect {
 
     /// Create a new Rect from Line.
     pub fn new_from_line(line: Line) -> Rect {
+        let w = line.width;
+        Rect {
+            lines: vec![line],
+            width: w,
+            height: 1,
+        }
+    }
+
+    /// Create a new Rect from Char.
+    pub fn new_from_char(char: Char) -> Rect {
+        let line = Line::new_from_char(char);
         let w = line.width;
         Rect {
             lines: vec![line],

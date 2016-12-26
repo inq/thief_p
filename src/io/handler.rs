@@ -79,6 +79,10 @@ impl Handler {
                 Sequence::Unhandled => (),
             }
         }
+        // Move the cursor
+        if let Some(Cursor { x, y }) = resp.cursor {
+            self.term.move_cursor(x, y);
+        }
         if let Some(e) = next {
             self.handle_event(e)
         } else {

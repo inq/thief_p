@@ -106,17 +106,18 @@ pub trait Parent {
         for ref mut child in self.children_mut() {
             let resp = child.refresh(hq)?;
             if child.focus() {
-                cursor = resp.cursor;
+                if let Some(cur) = resp.cursor {
+                    cursor = Some(Cursor {
+                        x: child.get_view().x + cur.x,
+                        y: child.get_view().y + cur.y,
+                    })
+                }
             }
             if let Some(Refresh { x, y, rect }) = resp.refresh {
                 refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y)
             }
             for r in resp.sequence {
-                match r {
-                    x => {
-                        sequence.push(x);
-                    }
-                }
+                sequence.push(r);
             }
         }
         Ok(Response {
