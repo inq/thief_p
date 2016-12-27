@@ -1,11 +1,13 @@
 use std::io::{BufReader, BufRead};
 use std::{fs, mem, path};
-use super::line::Line;
 use util::ResultBox;
+use buf::{Line, MutLine};
 use msg;
 
 pub struct Buffer {
     cur: Line,
+    cur_mut: MutLine,
+    modified: bool,
     x: usize,
     prevs: Vec<Line>,
     nexts: Vec<Line>,
@@ -17,6 +19,8 @@ impl Default for Buffer {
     fn default() -> Buffer {
         Buffer {
             cur: Default::default(),
+            cur_mut: Default::default(),
+            modified: false,
             x: Default::default(),
             prevs: Vec::with_capacity(BUFSIZE),
             nexts: Vec::with_capacity(BUFSIZE),
@@ -89,6 +93,7 @@ impl Buffer {
         let cur = prevs.pop().unwrap_or_default();
         Ok(Buffer {
             prevs: prevs,
+            cur_mut: cur.clone().to_mut_line(),
             cur: cur,
             ..Default::default()
         })

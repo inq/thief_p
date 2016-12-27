@@ -1,11 +1,13 @@
 use std::iter::{Chain, Rev};
 use std::str::Chars;
 use std::mem;
-use buf::MutLine;
+use buf::Line;
 use util;
 
-#[derive(Debug, Clone)]
-pub struct Line {
+#[derive(Debug)]
+pub struct MutLine {
+    cache: Line,
+    dirty: bool,
     prevs: String,
     nexts: String,
     x: usize,
@@ -13,9 +15,11 @@ pub struct Line {
 
 const BUFSIZE: usize = 80;
 
-impl Default for Line {
-    fn default() -> Line {
-        Line {
+impl Default for MutLine {
+    fn default() -> MutLine {
+        MutLine {
+            cache: Default::default(),
+            dirty: false,
             prevs: String::with_capacity(BUFSIZE),
             nexts: String::with_capacity(BUFSIZE),
             x: Default::default(),
@@ -23,9 +27,11 @@ impl Default for Line {
     }
 }
 
-impl Line {
-    pub fn new(prevs: String, nexts: String, x: usize) -> Line {
-        Line {
+impl MutLine {
+    pub fn new(prevs: String, nexts: String, x: usize) -> MutLine {
+        MutLine {
+            cache: Line::new(prevs.clone(), nexts.clone(), x),
+            dirty: false,
             prevs: prevs,
             nexts: nexts,
             x: x,
@@ -37,20 +43,24 @@ impl Line {
         self.x
     }
 
-    pub fn to_mut_line(self) -> MutLine {
-        MutLine::new(self.prevs, self.nexts, self.x)
+    pub fn get_line(&mut self) -> &Line {
+        if self.dirty {
+            self.cache = Line::new(self.prevs.clone(), self.nexts.clone(), self.x);
+            self.dirty = false;
+        }
+        &self.cache
+    }
+
+    pub fn to_line(self) -> Line {
+        Line::new(self.prevs, self.nexts, self.x)
     }
 
     /// Break the line.
-    pub fn break_line(&mut self) -> Line {
+    pub fn break_line(&mut self) -> MutLine {
         let res = mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE));
         let x = res.len();
         self.x = 0;
-        Line {
-            prevs: res,
-            nexts: String::with_capacity(BUFSIZE),
-            x: x,
-        }
+        MutLine::new(res, String::with_capacity(BUFSIZE), x)
     }
 
     /// Set the cursor position by the given x coordinate.
@@ -126,7 +136,7 @@ impl Line {
     }
 
     /// Prepend a line to this.
-    pub fn prepend(&mut self, mut target: Line) {
+    pub fn prepend(&mut self, mut target: MutLine) {
         mem::swap(&mut self.prevs, &mut target.prevs);
         self.prevs.push_str(&target.nexts.chars().rev().collect::<String>());
         self.x = self.prevs
@@ -138,7 +148,7 @@ impl Line {
     }
 
     /// Append a line to this.
-    pub fn append(&mut self, mut target: Line) {
+    pub fn append(&mut self, mut target: MutLine) {
         mem::swap(&mut self.nexts, &mut target.nexts);
         self.nexts.push_str(&target.prevs.chars().rev().collect::<String>());
     }
