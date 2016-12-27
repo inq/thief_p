@@ -1,5 +1,5 @@
 use std::io::{BufReader, BufRead};
-use std::{fs, mem, path};
+use std::{fs, path};
 use util::ResultBox;
 use buf::Line;
 use msg;
@@ -40,7 +40,7 @@ impl Buffer {
     /// Return the ith element.
     pub fn get(&mut self, i: usize) -> Option<&String> {
         if i == self.prevs.len() {
-            Some(&self.cur.get_str())
+            Some(self.cur.get_str())
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else if self.nexts.len() + self.prevs.len() > i {
@@ -253,14 +253,12 @@ mod tests {
         let mut buf: Buffer = Default::default();
         buf.break_line();
         assert_eq!(buf.to_string(), "\n\n");
-        let mut buf =
-            Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
+        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
         assert_eq!(buf.to_string(), "Hello, world!\n");
         buf.cur.set_cursor(usize::max_value());
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf =
-            Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
+        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
         buf.cur.set_cursor(5);
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello\n, world!\n");

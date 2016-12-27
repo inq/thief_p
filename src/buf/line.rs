@@ -1,5 +1,3 @@
-use std::iter::{Chain, Rev};
-use std::str::Chars;
 use std::mem;
 use util;
 
@@ -27,16 +25,6 @@ impl Default for Line {
 }
 
 impl Line {
-    pub fn new(prevs: String, nexts: String, x: usize) -> Line {
-        Line {
-            cache: String::new(),
-            dirty: true,
-            prevs: prevs,
-            nexts: nexts,
-            x: x,
-        }
-    }
-
     /// Construct from a string.
     pub fn new_from_str(str: &str) -> Line {
         let mut res: Line = Default::default();
@@ -45,10 +33,12 @@ impl Line {
     }
 
     /// Return the terminal x of the cursor.
+    #[inline]
     pub fn get_x(&self) -> usize {
         self.x
     }
 
+    /// Refresh the cache and get it.
     pub fn get_str(&mut self) -> &String {
         if self.dirty {
             self.cache.clear();
@@ -80,10 +70,9 @@ impl Line {
 
     /// Break the line, and return the first line as string.
     pub fn break_line(&mut self) -> String {
-        let res = mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE));
-        let x = res.len();
+        self.dirty = true;
         self.x = 0;
-        res
+        mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE))
     }
 
     /// Set the cursor position by the given x coordinate.
@@ -107,11 +96,6 @@ impl Line {
         self.prevs.push(c);
     }
 
-    /// Iterate chars.
-    pub fn iter(&self) -> Chain<Chars, Rev<Chars>> {
-        self.prevs.chars().chain(self.nexts.chars().rev())
-    }
-
     /// Append string before cursor.
     pub fn push_before(&mut self, str: &str) {
         self.x += str.chars()
@@ -120,13 +104,6 @@ impl Line {
             })
             .sum();
         self.prevs.push_str(str);
-    }
-
-    /// Append string after cursor.
-    #[allow(dead_code)]
-    pub fn push_after(&mut self, str: &str) {
-        let reversed = str.chars().rev().collect::<String>();
-        self.nexts.push_str(&reversed);
     }
 
     /// Move cursor left by 1 character.
@@ -200,6 +177,13 @@ impl Line {
         let res = !self.nexts.is_empty();
         self.nexts.clear();
         res
+    }
+
+    /// Append string after cursor.
+    #[cfg(test)]
+    pub fn push_after(&mut self, str: &str) {
+        let reversed = str.chars().rev().collect::<String>();
+        self.nexts.push_str(&reversed);
     }
 
     /// Convert to a string.

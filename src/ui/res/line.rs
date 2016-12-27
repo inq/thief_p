@@ -1,4 +1,3 @@
-use buf;
 use ui::res::{Brush, Char, Formatted};
 
 #[derive(Debug, Clone)]
