@@ -1,14 +1,14 @@
 use std::io::{BufReader, BufRead};
-use std::{fs, mem, path};
-use super::line::Line;
+use std::{fs, path};
 use util::ResultBox;
+use buf::Line;
 use msg;
 
 pub struct Buffer {
     cur: Line,
     x: usize,
-    prevs: Vec<Line>,
-    nexts: Vec<Line>,
+    prevs: Vec<String>,
+    nexts: Vec<String>,
 }
 
 const BUFSIZE: usize = 80;
@@ -38,9 +38,9 @@ pub enum KillLineRes {
 
 impl Buffer {
     /// Return the ith element.
-    pub fn get(&self, i: usize) -> Option<&Line> {
+    pub fn get(&mut self, i: usize) -> Option<&String> {
         if i == self.prevs.len() {
-            Some(&self.cur)
+            Some(self.cur.get_str())
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else if self.nexts.len() + self.prevs.len() > i {
@@ -83,10 +83,10 @@ impl Buffer {
         let mut prevs = vec![];
         for line in br.lines() {
             if let Ok(s) = line {
-                prevs.push(Line::from_string(&s));
+                prevs.push(s);
             }
         }
-        let cur = prevs.pop().unwrap_or_default();
+        let cur = Line::new_from_str(&prevs.pop().unwrap_or_default());
         Ok(Buffer {
             prevs: prevs,
             cur: cur,
@@ -97,18 +97,16 @@ impl Buffer {
     /// Move up the cursor.
     #[inline]
     fn move_up(&mut self, offset: usize) {
-        if let Some(l) = self.prevs.pop() {
-            self.nexts.push(mem::replace(&mut self.cur, l));
-            self.cur.set_cursor(offset);
+        if let Some(s) = self.prevs.pop() {
+            self.nexts.push(self.cur.replace(s, offset));
         }
     }
 
     /// Move down the cursor.
     #[inline]
     fn move_down(&mut self, offset: usize) {
-        if let Some(l) = self.nexts.pop() {
-            self.prevs.push(mem::replace(&mut self.cur, l));
-            self.cur.set_cursor(offset);
+        if let Some(s) = self.nexts.pop() {
+            self.prevs.push(self.cur.replace(s, offset));
         }
     }
 
@@ -255,14 +253,12 @@ mod tests {
         let mut buf: Buffer = Default::default();
         buf.break_line();
         assert_eq!(buf.to_string(), "\n\n");
-        let mut buf =
-            Buffer { cur: Line::from_string(&String::from("Hello, world!")), ..Default::default() };
+        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
         assert_eq!(buf.to_string(), "Hello, world!\n");
         buf.cur.set_cursor(usize::max_value());
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf =
-            Buffer { cur: Line::from_string(&String::from("Hello, world!")), ..Default::default() };
+        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
         buf.cur.set_cursor(5);
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello\n, world!\n");

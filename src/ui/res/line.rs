@@ -1,4 +1,3 @@
-use buf;
 use ui::res::{Brush, Char, Formatted};
 
 #[derive(Debug, Clone)]
@@ -101,7 +100,7 @@ impl Line {
     /// Draw the given line buffer into here. If there is no space, return the remaining.
     #[inline]
     pub fn draw_buffer(&mut self,
-                       src: &buf::Line,
+                       src: &str,
                        offset: usize,
                        linenum: usize,
                        linenum_width: usize)
@@ -110,7 +109,7 @@ impl Line {
             // Draw the line number only if the offset is zero.
             self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
         }
-        for (i, c) in src.iter().skip(offset).enumerate() {
+        for (i, c) in src.chars().skip(offset).enumerate() {
             self.text_width = i;
             if i + linenum_width < self.width {
                 self.chars[i + linenum_width].chr = c;
