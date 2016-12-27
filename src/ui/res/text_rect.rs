@@ -72,7 +72,7 @@ impl TextRect {
     }
 
     /// Draw the text buffer here.
-    pub fn draw_line(&mut self, buf: &buf::Buffer, line_num: usize) {
+    pub fn draw_line(&mut self, buf: &mut buf::Buffer, line_num: usize) {
         let line = if let Some(l) = buf.get(line_num) {
             l
         } else {

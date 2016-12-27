@@ -1,11 +1,12 @@
 use std::iter::{Chain, Rev};
 use std::str::Chars;
 use std::mem;
-use buf::MutLine;
 use util;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Line {
+    cache: String,
+    dirty: bool,
     prevs: String,
     nexts: String,
     x: usize,
@@ -16,6 +17,8 @@ const BUFSIZE: usize = 80;
 impl Default for Line {
     fn default() -> Line {
         Line {
+            cache: String::new(),
+            dirty: false,
             prevs: String::with_capacity(BUFSIZE),
             nexts: String::with_capacity(BUFSIZE),
             x: Default::default(),
@@ -26,10 +29,19 @@ impl Default for Line {
 impl Line {
     pub fn new(prevs: String, nexts: String, x: usize) -> Line {
         Line {
+            cache: String::new(),
+            dirty: true,
             prevs: prevs,
             nexts: nexts,
             x: x,
         }
+    }
+
+    /// Construct from a string.
+    pub fn new_from_str(str: &str) -> Line {
+        let mut res: Line = Default::default();
+        res.push_before(str);
+        res
     }
 
     /// Return the terminal x of the cursor.
@@ -37,20 +49,41 @@ impl Line {
         self.x
     }
 
-    pub fn to_mut_line(self) -> MutLine {
-        MutLine::new(self.prevs, self.nexts, self.x)
+    pub fn get_str(&mut self) -> &String {
+        if self.dirty {
+            self.cache.clear();
+            self.cache.push_str(&self.prevs);
+            self.cache.push_str(&self.nexts.chars().rev().collect::<String>());
+            self.dirty = false;
+        }
+        &self.cache
     }
 
-    /// Break the line.
-    pub fn break_line(&mut self) -> Line {
+    /// Fill data from string.
+    #[inline]
+    pub fn replace(&mut self, src: String, x: usize) -> String {
+        let res = mem::replace(&mut self.cache, src);
+        self.dirty = false;
+        self.prevs.clear();
+        self.nexts.clear();
+        self.x = 0;
+        let mut iter = self.cache.chars();
+        while self.x < x {
+            let c = iter.next().unwrap();
+            self.x += util::term_width(c);
+        }
+        for c in iter.rev() {
+            self.nexts.push(c);
+        }
+        res
+    }
+
+    /// Break the line, and return the first line as string.
+    pub fn break_line(&mut self) -> String {
         let res = mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE));
         let x = res.len();
         self.x = 0;
-        Line {
-            prevs: res,
-            nexts: String::with_capacity(BUFSIZE),
-            x: x,
-        }
+        res
     }
 
     /// Set the cursor position by the given x coordinate.
@@ -77,13 +110,6 @@ impl Line {
     /// Iterate chars.
     pub fn iter(&self) -> Chain<Chars, Rev<Chars>> {
         self.prevs.chars().chain(self.nexts.chars().rev())
-    }
-
-    /// Construct from a string.
-    pub fn from_string(str: &str) -> Line {
-        let mut res: Line = Default::default();
-        res.push_before(str);
-        res
     }
 
     /// Append string before cursor.
@@ -126,9 +152,10 @@ impl Line {
     }
 
     /// Prepend a line to this.
-    pub fn prepend(&mut self, mut target: Line) {
-        mem::swap(&mut self.prevs, &mut target.prevs);
-        self.prevs.push_str(&target.nexts.chars().rev().collect::<String>());
+    pub fn prepend(&mut self, target: String) {
+        let target = mem::replace(&mut self.prevs, target);
+        self.prevs.push_str(&target);
+        self.dirty = true;
         self.x = self.prevs
             .chars()
             .map({
@@ -138,9 +165,9 @@ impl Line {
     }
 
     /// Append a line to this.
-    pub fn append(&mut self, mut target: Line) {
-        mem::swap(&mut self.nexts, &mut target.nexts);
-        self.nexts.push_str(&target.prevs.chars().rev().collect::<String>());
+    pub fn append(&mut self, target: String) {
+        let target = mem::replace(&mut self.nexts, target);
+        self.nexts.push_str(&target.chars().rev().collect::<String>());
     }
 
     /// Move to the begining of the line.
