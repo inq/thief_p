@@ -2,20 +2,18 @@ use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Rect, Brush, Color, Response};
-use ui::comp::{View, Parent, Component};
+use ui::comp::{ViewT, Parent, Component};
 use ui::window::Window;
 
-#[derive(Default)]
+#[derive(Default, UiView)]
 pub struct HSplit {
-    view: View,
+    view: ViewT,
     windows: Vec<Window>,
     focused: usize,
 }
 
 impl Component for HSplit {
-    has_view!();
-
-    /// Resize each child windows.
+     /// Resize each child windows.
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         let windows = self.windows.len();
         let borders = windows + 1;

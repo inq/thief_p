@@ -1,11 +1,3 @@
-/// Boilerplate for ui elements which have a view.
-macro_rules! has_view {
-    () => {
-        fn get_view_mut(&mut self) -> &mut View { &mut self.view }
-        fn get_view(&self) -> &View { &self.view }
-    }
-}
-
 /// Merge elements into a enum. Default value is the first element.
 macro_rules! def_child {
     ( @default $target:ident, $first:ident) => {
@@ -57,10 +49,15 @@ macro_rules! def_child {
         pub enum $target {
             $($src($src)),*
         }
+
         def_child!(@default $target, $($src),*);
-        impl Component for $target {
-            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut View);
-            def_child!(@child_imm $target, [$($src),*], get_view(): &View);
+
+        impl ::ui::comp::View for $target {
+            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut ::ui::comp::ViewT);
+            def_child!(@child_imm $target, [$($src),*], get_view(): &::ui::comp::ViewT);
+        }
+
+        impl ::ui::comp::Component for $target {
             def_child!(@child_mut $target, [$($src),*], on_resize(hq: &mut Hq): ResultBox<()>);
             def_child!(@child_mut $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<Response>);
             def_child!(@child_mut $target, [$($src),*],

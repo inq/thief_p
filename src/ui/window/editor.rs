@@ -3,11 +3,11 @@ use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Cursor, Line, TextRect, Rect, Response, Refresh};
-use ui::comp::{Component, View};
+use ui::comp::{Component, ViewT};
 
-#[derive(Default)]
+#[derive(Default, UiView)]
 pub struct Editor {
-    view: View,
+    view: ViewT,
     buffer_name: String,
     cursor: Cursor,
     line_max: usize,
@@ -188,8 +188,6 @@ impl Editor {
 }
 
 impl Component for Editor {
-    has_view!();
-
     /// Update each of `line_cache`.
     fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
         Ok(())
