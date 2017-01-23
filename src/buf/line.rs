@@ -59,8 +59,11 @@ impl Line {
         self.x = 0;
         let mut iter = self.cache.chars();
         while self.x < x {
-            let c = iter.next().unwrap();
-            self.x += util::term_width(c);
+            if let Some(c) = iter.next() {
+                self.x += util::term_width(c);
+            } else {
+                break;
+            }
         }
         for c in iter.rev() {
             self.nexts.push(c);

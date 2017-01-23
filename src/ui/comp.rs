@@ -4,7 +4,7 @@ use ui::Theme;
 use ui::res::{Cursor, Rect, Response, Refresh};
 use util::ResultBox;
 
-pub struct View {
+pub struct ViewT {
     pub x: usize,
     pub y: usize,
     pub width: usize,
@@ -13,9 +13,9 @@ pub struct View {
     pub focus: bool,
 }
 
-impl Default for View {
-    fn default() -> View {
-        View {
+impl Default for ViewT {
+    fn default() -> ViewT {
+        ViewT {
             x: 0,
             y: 0,
             width: 0,
@@ -26,7 +26,7 @@ impl Default for View {
     }
 }
 
-impl View {
+impl ViewT {
     fn update(&mut self, x: usize, y: usize, width: usize, height: usize) {
         self.x = x;
         self.y = y;
@@ -35,9 +35,12 @@ impl View {
     }
 }
 
-pub trait Component {
-    fn get_view(&self) -> &View;
-    fn get_view_mut(&mut self) -> &mut View;
+pub trait View {
+    fn get_view(&self) -> &ViewT;
+    fn get_view_mut(&mut self) -> &mut ViewT;
+}
+
+pub trait Component : View {
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
 

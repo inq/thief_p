@@ -2,7 +2,7 @@ use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Brush, Color, Cursor, Char, Rect, Response, Refresh};
-use ui::comp::{Component, View};
+use ui::comp::{Component, ViewT};
 
 #[derive(PartialEq)]
 pub enum Status {
@@ -12,11 +12,12 @@ pub enum Status {
     Shortcut,
 }
 
+#[derive(UiView)]
 pub struct CommandBar {
+    view: ViewT,
     status: Status,
     data: String,
     message: String,
-    view: View,
     background: Brush,
 }
 
@@ -74,8 +75,6 @@ impl CommandBar {
 }
 
 impl Component for CommandBar {
-    has_view!();
-
     /// Force the height.
     fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
         let height_parent = self.view.height;

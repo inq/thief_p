@@ -1,5 +1,8 @@
-#[macro_use]
+#![feature(proc_macro)]
+
 extern crate libc;
+#[macro_use]
+extern crate proc_macros;
 
 #[macro_use]
 mod util;

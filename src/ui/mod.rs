@@ -8,7 +8,7 @@ mod command_bar;
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::comp::{Parent, View};
+use ui::comp::{Parent, View, ViewT};
 
 pub use ui::comp::Component;
 pub use ui::res::*;
@@ -20,9 +20,9 @@ def_error! {
     Initialized: "already initialized",
 }
 
-#[derive(Default)]
+#[derive(Default, UiView)]
 pub struct Ui {
-    view: View,
+    view: ViewT,
     hsplit: UiChild,
     command_bar: UiChild,
 }
@@ -30,8 +30,6 @@ pub struct Ui {
 def_child!(UiChild <- HSplit, CommandBar);
 
 impl Component for Ui {
-    has_view!();
-
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         self.resize_command_bar(hq)?;
         let height = self.view.height - self.command_bar().height() - 2;
