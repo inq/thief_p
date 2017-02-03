@@ -40,7 +40,7 @@ pub trait View {
     fn get_view_mut(&mut self) -> &mut ViewT;
 }
 
-pub trait Component : View {
+pub trait Component: View {
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response>;
 

@@ -3,14 +3,12 @@ mod formatted;
 mod color;
 mod char;
 mod line;
-mod text_rect;
 
 pub use self::rect::Rect;
 pub use self::char::Char;
 pub use self::color::{Color, Brush};
 pub use self::line::Line;
 pub use self::formatted::{Style, Formatted};
-pub use self::text_rect::TextRect;
 use msg::Pair;
 
 pub type Cursor = Pair;

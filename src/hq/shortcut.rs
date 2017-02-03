@@ -112,13 +112,16 @@ mod tests {
     fn test_add_shortcut() {
         let mut sc = Shortcut::new();
         sc.add("exit", vec![event::Key::Ctrl('x'), event::Key::Ctrl('c')]);
-        if let Response::None = sc.key(event::Key::Ctrl('c')) {} else {
+        if let Response::None = sc.key(event::Key::Ctrl('c')) {
+        } else {
             panic!("failed")
         };
-        if let Response::More(_) = sc.key(event::Key::Ctrl('x')) {} else {
+        if let Response::More(_) = sc.key(event::Key::Ctrl('x')) {
+        } else {
             panic!("failed")
         };
-        if let Response::Undefined = sc.key(event::Key::Ctrl('x')) {} else {
+        if let Response::Undefined = sc.key(event::Key::Ctrl('x')) {
+        } else {
             panic!("failed")
         };
     }

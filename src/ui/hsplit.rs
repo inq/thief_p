@@ -13,7 +13,7 @@ pub struct HSplit {
 }
 
 impl Component for HSplit {
-     /// Resize each child windows.
+    /// Resize each child windows.
     fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
         let windows = self.windows.len();
         let borders = windows + 1;

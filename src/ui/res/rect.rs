@@ -1,4 +1,4 @@
-use ui::res::{Formatted, Brush, Char, Line, TextRect};
+use ui::res::{Formatted, Brush, Char, Line};
 
 #[derive(Debug)]
 pub struct Rect {
@@ -49,16 +49,10 @@ impl Rect {
         }
     }
 
-    /// Append a TextRect object.
-    pub fn append(&mut self, src: &TextRect, limit: usize) -> Option<()> {
-        for line in src.lines().clone() {
-            if self.lines.len() < limit {
-                self.lines.push(line)
-            } else {
-                return None;
-            }
-        }
-        Some(())
+    /// Append a Line object.
+    pub fn append(&mut self, src: &Line) {
+        self.lines.push(src.clone());
+        self.height += 1;
     }
 
     /// Draw the formatted string here.
