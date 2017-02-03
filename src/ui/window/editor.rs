@@ -77,7 +77,10 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self) -> Cursor {
         let line_idx = self.cursor.y - self.line_offset;
-        Cursor { x: self.cursor.x + self.line_num_width(), y: line_idx }
+        Cursor {
+            x: self.cursor.x + self.line_num_width(),
+            y: line_idx,
+        }
     }
 
     /// Basic initializennr.
