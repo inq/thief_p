@@ -59,18 +59,6 @@ impl Line {
         }
     }
 
-    /// Fill with the given brushes.
-    #[inline]
-    pub fn fill_splitted(&mut self, brush_l: Brush, brush_r: Brush, splitter: usize) {
-        for (i, c) in self.chars.iter_mut().enumerate() {
-            if i < splitter {
-                c.brush = brush_l;
-            } else {
-                c.brush = brush_r;
-            }
-        }
-    }
-
     /// Initialize a new empty line.
     #[inline]
     pub fn new(width: usize, brush: Brush) -> Line {
@@ -104,34 +92,5 @@ impl Line {
         for (i, c) in src.chars().enumerate() {
             self.chars[x + i].chr = c
         }
-    }
-
-    /// Return the actual text width.
-    #[inline]
-    pub fn text_width(&self) -> usize {
-        self.text_width
-    }
-
-    /// Draw the given line buffer into here. If there is no space, return the remaining.
-    #[inline]
-    pub fn draw_buffer(&mut self,
-                       src: &str,
-                       offset: usize,
-                       linenum: usize,
-                       linenum_width: usize)
-                       -> Option<usize> {
-        if offset == 0 {
-            // Draw the line number only if the offset is zero.
-            self.draw_str(&format!("{:width$}", linenum, width = linenum_width), 0);
-        }
-        for (i, c) in src.chars().skip(offset).enumerate() {
-            self.text_width = i;
-            if i + linenum_width < self.width {
-                self.chars[i + linenum_width].chr = c;
-            } else {
-                return Some(i);
-            }
-        }
-        None
     }
 }

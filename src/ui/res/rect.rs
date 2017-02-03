@@ -50,8 +50,9 @@ impl Rect {
     }
 
     /// Append a Line object.
-    pub fn append(&mut self, src: &Line, limit: usize) {
+    pub fn append(&mut self, src: &Line) {
         self.lines.push(src.clone());
+        self.height += 1;
     }
 
     /// Draw the formatted string here.

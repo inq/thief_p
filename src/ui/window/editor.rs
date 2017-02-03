@@ -56,6 +56,17 @@ impl Editor {
         }
     }
 
+    #[inline]
+    fn gen_cur_line(&self, hq: &mut Hq) -> Line {
+        let buf = hq.buf(&self.buffer_name).unwrap();
+        let mut cache = Line::new_splitted(self.view.width,
+                                           self.view.theme.linenum_cur(),
+                                           self.view.theme.editor_cur(),
+                                           self.line_num_width());
+        cache.render_buf(buf, self.cursor.y);
+        cache
+    }
+
     fn cursor_translated(&self) -> Cursor {
         let mut cur = self.cursor;
         cur.x += self.line_num_width();
@@ -66,8 +77,7 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self) -> Cursor {
         let line_idx = self.cursor.y - self.line_offset;
-        let Cursor { x: cx, y: cy } = self.cursor;
-        Cursor { x: cx, y: line_idx + cy }
+        Cursor { x: self.cursor.x + self.line_num_width(), y: line_idx }
     }
 
     /// Basic initializennr.
@@ -134,8 +144,8 @@ impl Editor {
                         // Upward
                         let y_off = line_now;
                         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-                        rect.append(&self.line_cache[line_now], self.view.height - y_off);
-                        rect.append(&self.line_cache[line_prev], self.view.height - y_off);
+                        rect.append(&self.gen_cur_line(hq));
+                        rect.append(&self.line_cache[line_prev]);
                         Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
@@ -149,8 +159,8 @@ impl Editor {
                         // Downward
                         let y_off = line_prev;
                         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-                        rect.append(&self.line_cache[line_prev], self.view.height - y_off);
-                        rect.append(&self.line_cache[line_now], self.view.height - y_off);
+                        rect.append(&self.line_cache[line_prev]);
+                        rect.append(&self.gen_cur_line(hq));
                         Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
@@ -176,8 +186,12 @@ impl Component for Editor {
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         self.render_lines(hq);
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-        for line in &self.line_cache {
-            rect.append(line, self.view.height);
+        for (i, line) in self.line_cache.iter().enumerate() {
+            if i == self.cursor.y {
+                rect.append(&self.gen_cur_line(hq));
+            } else {
+                rect.append(line);
+            }
         }
         Ok(Response::Term {
             refresh: Some(Refresh {
