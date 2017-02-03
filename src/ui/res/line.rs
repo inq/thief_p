@@ -1,10 +1,12 @@
 use ui::res::{Brush, Char, Formatted};
+use buf::Buffer;
 
 #[derive(Debug, Clone)]
 pub struct Line {
     pub chars: Vec<Char>,
     pub width: usize,
     text_width: usize,
+    splitter: usize,
 }
 
 impl Line {
@@ -16,6 +18,7 @@ impl Line {
             chars: res,
             width: w,
             text_width: 0,
+            splitter: 0,
         }
     }
 
@@ -26,6 +29,7 @@ impl Line {
             chars: vec![char],
             width: w,
             text_width: 1,
+            splitter: 0,
         }
     }
 
@@ -42,6 +46,16 @@ impl Line {
             },
             width: width,
             text_width: 0,
+            splitter: splitter,
+        }
+    }
+
+    #[inline]
+    pub fn render_buf(&mut self, buf: &mut Buffer, linenum: usize) {
+        let splitter = self.splitter;
+        self.draw_str(&format!("{:width$}", linenum, width = splitter), 0);
+        if let Some(ref s) = buf.get(linenum) {
+            self.draw_str(&s, splitter);
         }
     }
 
@@ -64,6 +78,7 @@ impl Line {
             chars: vec![Char::new(' ', brush); width],
             width: width,
             text_width: 0,
+            splitter: 0,
         }
     }
 

@@ -6,7 +6,6 @@ use msg::event;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::Response;
-use ui::comp::{Component, ViewT};
 
 def_child!(Window <- Editor);
 
