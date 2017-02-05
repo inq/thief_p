@@ -69,7 +69,7 @@ impl Buffer {
 
     /// Get the position of the cursor.
     #[inline]
-    pub fn get_xy(&self) -> msg::Pair {
+    pub fn get_cursor(&self) -> msg::Pair {
         msg::Pair {
             x: self.get_x(),
             y: self.get_y(),
@@ -114,21 +114,21 @@ impl Buffer {
     #[inline]
     pub fn move_begin_of_line(&mut self) -> msg::Pair {
         self.cur.move_begin();
-        self.get_xy()
+        self.get_cursor()
     }
 
     /// Move to the end of the line
     #[inline]
     pub fn move_end_of_line(&mut self) -> msg::Pair {
         self.cur.move_end();
-        self.get_xy()
+        self.get_cursor()
     }
 
     /// Break the line at the location of the cursor.
     #[inline]
     pub fn break_line(&mut self) -> msg::Pair {
         self.prevs.push(self.cur.break_line());
-        self.get_xy()
+        self.get_cursor()
     }
 
     /// Set the cursor by the given coordinate.
@@ -149,7 +149,7 @@ impl Buffer {
             KillLineRes::Normal
         } else if let Some(line) = self.nexts.pop() {
             self.cur.append(line);
-            KillLineRes::Empty(self.get_xy())
+            KillLineRes::Empty(self.get_cursor())
         } else {
             KillLineRes::Unchanged
         }
@@ -162,7 +162,7 @@ impl Buffer {
         } else if let Some(line) = self.prevs.pop() {
             self.cur.prepend(line);
             self.x = self.cur.get_x();
-            BackspaceRes::PrevLine(self.get_xy())
+            BackspaceRes::PrevLine(self.get_cursor())
         } else {
             BackspaceRes::Unchanged
         }

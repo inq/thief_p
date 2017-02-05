@@ -4,10 +4,12 @@ use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Cursor, Line, Rect, Response, Refresh};
 use ui::comp::{Component, ViewT};
+use ui::window::LineEditor;
 
 #[derive(Default, UiView)]
 pub struct Editor {
     view: ViewT,
+    line_editor: LineEditor,
     buffer_name: String,
     cursor: Cursor,
     line_max: usize,
@@ -16,21 +18,21 @@ pub struct Editor {
 }
 
 impl Editor {
-    fn render_lines(&mut self, hq: &mut Hq) {
+    /// Update the line_caches.
+    /// TODO: Reuse line_cache (expand, shrink).
+    fn refresh_line_cache(&mut self, hq: &mut Hq) {
         let buf = hq.buf(&self.buffer_name).unwrap();
         let mut lc = self.line_offset;
-        let mut h = 0;
         self.line_cache.clear();
         while let Some(_) = buf.get(lc) {
             let mut cache = Line::new_splitted(self.view.width,
                                                self.view.theme.linenum,
                                                self.view.theme.editor,
-                                               self.line_num_width());
+                                               self.linenum_width());
             cache.render_buf(buf, lc);
-            h += 1;
             lc += 1;
             self.line_cache.push(cache);
-            if h > self.view.height {
+            if lc > self.view.height + self.line_offset {
                 break;
             }
         }
@@ -38,11 +40,12 @@ impl Editor {
 
     #[inline]
     fn spaces_after_cursor(&self) -> usize {
-        self.view.width - self.line_num_width() - self.cursor.x
+        self.view.width - self.linenum_width() - self.cursor.x
     }
 
     #[inline]
-    fn line_num_width(&self) -> usize {
+    /// TODO: Cache this.
+    fn linenum_width(&self) -> usize {
         let mut t = self.line_max;
         if t == 0 {
             2
@@ -56,20 +59,9 @@ impl Editor {
         }
     }
 
-    #[inline]
-    fn gen_cur_line(&self, hq: &mut Hq) -> Line {
-        let buf = hq.buf(&self.buffer_name).unwrap();
-        let mut cache = Line::new_splitted(self.view.width,
-                                           self.view.theme.linenum_cur(),
-                                           self.view.theme.editor_cur(),
-                                           self.line_num_width());
-        cache.render_buf(buf, self.cursor.y);
-        cache
-    }
-
     fn cursor_translated(&self) -> Cursor {
         let mut cur = self.cursor;
-        cur.x += self.line_num_width();
+        cur.x += self.linenum_width();
         cur
     }
 
@@ -78,39 +70,17 @@ impl Editor {
     fn translate_cursor(&self) -> Cursor {
         let line_idx = self.cursor.y - self.line_offset;
         Cursor {
-            x: self.cursor.x + self.line_num_width(),
+            x: self.cursor.x + self.linenum_width(),
             y: line_idx,
         }
     }
 
     /// Basic initializennr.
     pub fn new() -> Editor {
-        Editor { buffer_name: String::from("<empty>"), ..Default::default() }
-    }
-
-    /// Delete every characters after cursor.
-    fn on_kill_line(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        match hq.buf(&self.buffer_name)?.kill_line() {
-            KillLineRes::Normal => {
-                let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor()]
-                                                  .into_iter()
-                                                  .collect::<String>(),
-                                              self.view.theme.editor);
-                let cur = self.translate_cursor();
-                Ok(Response::Term {
-                    refresh: Some(Refresh {
-                        x: cur.x,
-                        y: cur.y,
-                        rect: Rect::new_from_line(line),
-                    }),
-                    cursor: Some(self.cursor_translated()),
-                })
-            }
-            KillLineRes::Empty(cursor) => {
-                self.cursor = cursor;
-                self.refresh(hq)
-            }
-            _ => Ok(Default::default()),
+        Editor {
+            buffer_name: String::from("<empty>"),
+            line_editor: LineEditor::new("<empty>"),
+            ..Default::default()
         }
     }
 
@@ -147,7 +117,7 @@ impl Editor {
                         // Upward
                         let y_off = line_now;
                         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-                        rect.append(&self.gen_cur_line(hq));
+                        rect.append(&self.line_editor.render(hq, y_off)?);
                         rect.append(&self.line_cache[line_prev]);
                         Ok(Response::Term {
                             refresh: Some(Refresh {
@@ -163,7 +133,7 @@ impl Editor {
                         let y_off = line_prev;
                         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
                         rect.append(&self.line_cache[line_prev]);
-                        rect.append(&self.gen_cur_line(hq));
+                        rect.append(&self.line_editor.render(hq, y_off)?);
                         Ok(Response::Term {
                             refresh: Some(Refresh {
                                 x: 0,
@@ -182,16 +152,37 @@ impl Editor {
 
 impl Component for Editor {
     /// Update each of `line_cache`.
-    fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
+    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
+        self.line_editor.resize(hq, 0, self.view.width)?;
         Ok(())
     }
 
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+        use ui::window::line_editor::Response::*;
+        match self.line_editor.on_key(hq, k)? {
+            Ui(resp) => {
+                Ok(resp)
+            }
+            LineBreak => {
+                // Break the line.
+                Ok(Default::default())
+            }
+            Unhandled => {
+                Ok(Default::default())
+            }
+        }
+    }
+
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        self.render_lines(hq);
+        {
+            let linenum_width = self.linenum_width();
+            self.line_editor.set_linenum_width(linenum_width);
+        }
+        self.refresh_line_cache(hq);
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
             if i == self.cursor.y {
-                rect.append(&self.gen_cur_line(hq));
+                rect.append(&self.line_editor.render(hq, i).unwrap());
             } else {
                 rect.append(line);
             }
@@ -206,83 +197,11 @@ impl Component for Editor {
         })
     }
 
-    /// Move cursor left and right, or Type a character.
-    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
-        match k {
-            event::Key::Ctrl('a') |
-            event::Key::Home => {
-                self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line();
-                self.resp_cursor()
-            }
-            event::Key::Ctrl('e') |
-            event::Key::End => {
-                self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line();
-                self.resp_cursor()
-            }
-            event::Key::CR => {
-                self.cursor = hq.buf(&self.buffer_name)?.break_line();
-                self.refresh(hq)
-            }
-            event::Key::Del => {
-                match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
-                    BackspaceRes::Normal(mut after_cursor) => {
-                        after_cursor.push(' ');
-                        self.cursor.x -= 1;
-                        let cur = self.cursor_translated();
-                        let line = Line::new_from_str(&after_cursor,
-                                                      self.view
-                                                          .theme
-                                                          .editor);
-                        Ok(Response::Term {
-                            refresh: Some(Refresh {
-                                x: cur.x,
-                                y: cur.y,
-                                rect: Rect::new_from_line(line),
-                            }),
-                            cursor: Some(self.translate_cursor()),
-                        })
-                    }
-                    BackspaceRes::PrevLine(cursor) => {
-                        self.cursor = cursor;
-                        self.refresh(hq)
-                    }
-                    _ => Ok(Default::default()),
-                }
-            }
-            event::Key::Ctrl('k') => self.on_kill_line(hq),
-            event::Key::Ctrl('n') |
-            event::Key::Down => self.on_move(hq, 0, 1),
-            event::Key::Ctrl('p') |
-            event::Key::Up => self.on_move(hq, 0, -1),
-            event::Key::Ctrl('f') |
-            event::Key::Right => self.on_move(hq, 1, 0),
-            event::Key::Ctrl('b') |
-            event::Key::Left => self.on_move(hq, -1, 0),
-            event::Key::Char(c) => {
-                let mut after_cursor = String::with_capacity(self.view.width);
-                after_cursor.push(c);
-                after_cursor.push_str(&hq.buf(&self.buffer_name)?
-                    .insert(c, self.spaces_after_cursor()));
-                let cur = self.cursor_translated();
-                let line = Line::new_from_str(&after_cursor, self.view.theme.editor);
-                self.cursor.x += 1;
-                Ok(Response::Term {
-                    refresh: Some(Refresh {
-                        x: cur.x,
-                        y: cur.y,
-                        rect: Rect::new_from_line(line),
-                    }),
-                    cursor: Some(self.translate_cursor()),
-                })
-            }
-            _ => Ok(Default::default()),
-        }
-    }
-
     /// Handle events.
     fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
         match e {
             event::Event::OpenBuffer(s) => {
+                self.line_editor.set_buffer_name(&s);
                 self.buffer_name = s;
                 self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
                 Ok(Default::default())
