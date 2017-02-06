@@ -1,22 +1,23 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use buf::{self, BackspaceRes};
-use ui::comp::{Component, ViewT};
+use ui::comp::ViewT;
 use ui::res::{self, Cursor, Line, Rect, Refresh};
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct LineEditor {
     view: ViewT,
     buffer_name: String,
-    cursor: usize,
     linenum_width: usize,
+    x_offset: usize,  // TODO: Implement this
 }
 
 pub enum Response {
     Ui(res::Response),
-    LineBreak,
+    LineBreak(Cursor),
     PullUp(usize),
+    Move(Cursor, Cursor),
     Unhandled,
 }
 
@@ -48,41 +49,28 @@ impl LineEditor {
 
     /// Calculate the screen's coordinate of the cursor.
     #[inline]
-    fn cursor_translated(&self) -> usize {
-        self.cursor + self.linenum_width
+    fn translate_cursor(&self, cursor: usize) -> usize {
+        cursor + self.linenum_width
     }
 
     #[inline]
-    fn gen_cur_line(&self, hq: &mut Hq) -> Line {
-        let buf = hq.buf(&self.buffer_name).unwrap();
-        let mut cache = Line::new_splitted(self.view.width,
-                                           self.view.theme.linenum_cur(),
-                                           self.view.theme.editor_cur(),
-                                           self.linenum_width);
-        cache.render_buf(buf, 0);
-        cache
-    }
-
-    #[inline]
-    fn spaces_after_cursor(&self) -> usize {
-        self.view.width - self.linenum_width - self.cursor
+    fn spaces_after_cursor(&self, cursor: usize) -> usize {
+        self.view.width - self.linenum_width - cursor
     }
 
     /// Delete the current character.
     fn on_delete(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         use buf::BackspaceRes::{Normal, PrevLine};
-        match hq.buf(&self.buffer_name)?.backspace(self.spaces_after_cursor()) {
+        let buf = hq.buf(&self.buffer_name)?;
+        let cursor = buf.get_x();
+        match buf.backspace(self.spaces_after_cursor(cursor)) {
             Normal(mut after_cursor) => {
                 after_cursor.push(' ');
-                self.cursor -= 1;
-                let line = Line::new_from_str(&after_cursor,
-                                              self.view.theme.editor_cur());
-                self.response_cursor_with_line(line, true)
+                let line = Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+                self.response_cursor_with_line(buf.get_x(), line, true)
             }
-            PrevLine(cursor) => {
+            PrevLine(_cursor) => {
                 // TODO: Implement this.
-                self.cursor = cursor.x;
-                //self.refresh(hq);
                 Ok(Response::Unhandled)
             }
             _ => Ok(Response::Unhandled),
@@ -92,18 +80,17 @@ impl LineEditor {
     /// Delete every characters after cursor.
     fn on_kill_line(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         use buf::KillLineRes::{Normal, Empty};
-        match hq.buf(&self.buffer_name)?.kill_line() {
+        let mut buf = hq.buf(&self.buffer_name)?;
+        let cursor = buf.get_x();
+        match buf.kill_line() {
             Normal => {
-                let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor()]
+                let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor(cursor)]
                                                   .into_iter()
                                                   .collect::<String>(),
                                               self.view.theme.editor);
-                self.response_cursor_with_line(line, false)
+                self.response_cursor_with_line(buf.get_x(), line, false)
             }
-            Empty(cursor) => {
-                self.cursor = cursor.x;
-                Ok(Response::PullUp(cursor.y))
-            }
+            Empty(cursor) => Ok(Response::PullUp(cursor.y)),
             _ => Ok(Response::Unhandled),
         }
     }
@@ -117,17 +104,16 @@ impl LineEditor {
 
     /// Handle move events.
     fn on_move(&mut self, hq: &mut Hq, dx: i8, dy: i8) -> ResultBox<Response> {
-        let (cursor_prev, cursor_now) = {
+        let (cursor_prev, cursor) = {
             let buf = hq.buf(&self.buffer_name)?;
             (buf.get_cursor(), buf.move_cursor(dx, dy))
         };
-        if cursor_prev.y == cursor_now.y {
+        if cursor_prev.y == cursor.y {
             // Move only in here.
-            self.cursor = cursor_now.x;
-            self.response_cursor()
+            self.response_cursor(cursor.x)
         } else {
             // Pass the process to the parrent.
-            panic!("H");
+            Ok(Response::Move(cursor_prev, cursor))
         }
     }
 
@@ -138,32 +124,31 @@ impl LineEditor {
     }
 
     /// Response with cursor.
-    fn response_cursor(&self) -> ResultBox<Response> {
-        self.response_ui(
-            res::Response::Term {
-                cursor: Some(Cursor { x: self.cursor_translated(), y: 0 }),
-                refresh: None,
-            }
-        )
+    fn response_cursor(&self, cursor: usize) -> ResultBox<Response> {
+        self.response_ui(res::Response::Term {
+            cursor: Some(Cursor {
+                x: self.translate_cursor(cursor),
+                y: 0,
+            }),
+            refresh: None,
+        })
     }
 
     /// Response with current cursor and following line.
-    fn response_cursor_with_line(&self, line: Line, on_delete: bool)
+    fn response_cursor_with_line(&self,
+                                 cursor: usize,
+                                 line: Line,
+                                 on_delete: bool)
                                  -> ResultBox<Response> {
-        let x = self.cursor_translated();
-        self.response_ui(
-            res::Response::Term {
-                refresh: Some(Refresh {
-                    x: if on_delete { x } else { x - 1 },
-                    y: 0,
-                    rect: Rect::new_from_line(line),
-                }),
-                cursor: Some(Cursor {
-                    x: x,
-                    y: 0
-                })
-            }
-        )
+        let x = self.translate_cursor(cursor);
+        self.response_ui(res::Response::Term {
+            refresh: Some(Refresh {
+                x: if on_delete { x } else { x - 1 },
+                y: 0,
+                rect: Rect::new_from_line(line),
+            }),
+            cursor: Some(Cursor { x: x, y: 0 }),
+        })
     }
 
     /// Move cursor left and right, or Type a character.
@@ -171,18 +156,17 @@ impl LineEditor {
         match k {
             event::Key::Ctrl('a') |
             event::Key::Home => {
-                self.cursor = hq.buf(&self.buffer_name)?.move_begin_of_line().x;
-                self.response_cursor()
+                let cursor = hq.buf(&self.buffer_name)?.move_begin_of_line().x;
+                self.response_cursor(cursor)
             }
             event::Key::Ctrl('e') |
             event::Key::End => {
-                self.cursor = hq.buf(&self.buffer_name)?.move_end_of_line().x;
-                self.response_cursor()
+                let cursor = hq.buf(&self.buffer_name)?.move_end_of_line().x;
+                self.response_cursor(cursor)
             }
             event::Key::CR => {
-                self.cursor = hq.buf(&self.buffer_name)?.break_line().x;
-                // TODO: Implement this
-                Ok(Response::LineBreak)
+                let cursor = hq.buf(&self.buffer_name)?.break_line();
+                Ok(Response::LineBreak(cursor))
             }
             event::Key::Del => self.on_delete(hq),
             event::Key::Ctrl('k') => self.on_kill_line(hq),
@@ -195,15 +179,16 @@ impl LineEditor {
             event::Key::Ctrl('b') |
             event::Key::Left => self.on_move(hq, -1, 0),
             event::Key::Char(c) => {
+                let buf = hq.buf(&self.buffer_name)?;
                 let mut after_cursor = String::with_capacity(self.view.width);
                 after_cursor.push(c);
-                after_cursor.push_str(&hq.buf(&self.buffer_name)?
-                    .insert(c, self.spaces_after_cursor()));
+                let cursor = buf.get_x();
+                after_cursor.push_str(&buf.insert(c, self.spaces_after_cursor(cursor)));
+                let cursor = buf.get_x();
                 let line = Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
-                self.cursor += 1;
-                self.response_cursor_with_line(line, false)
+                self.response_cursor_with_line(cursor, line, false)
             }
-            _ => Ok(Response::Unhandled)
+            _ => Ok(Response::Unhandled),
         }
     }
 }

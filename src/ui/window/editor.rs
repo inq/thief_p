@@ -1,9 +1,8 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Cursor, Line, Rect, Response, Refresh};
-use ui::comp::{Component, ViewT, View};
+use ui::comp::{Component, ViewT};
 use ui::window::LineEditor;
 
 #[derive(Default, UiView)]
@@ -11,38 +10,12 @@ pub struct Editor {
     view: ViewT,
     line_editor: LineEditor,
     buffer_name: String,
-    cursor: Cursor,
     line_max: usize,
-    line_offset: usize,
+    y_offset: usize,
     line_cache: Vec<Line>,
 }
 
 impl Editor {
-    /// Update the line_caches.
-    /// TODO: Reuse line_cache (expand, shrink).
-    fn refresh_line_cache(&mut self, hq: &mut Hq) {
-        let buf = hq.buf(&self.buffer_name).unwrap();
-        let mut lc = self.line_offset;
-        self.line_cache.clear();
-        while let Some(_) = buf.get(lc) {
-            let mut cache = Line::new_splitted(self.view.width,
-                                               self.view.theme.linenum,
-                                               self.view.theme.editor,
-                                               self.linenum_width());
-            cache.render_buf(buf, lc);
-            lc += 1;
-            self.line_cache.push(cache);
-            if lc > self.view.height + self.line_offset {
-                break;
-            }
-        }
-    }
-
-    #[inline]
-    fn spaces_after_cursor(&self) -> usize {
-        self.view.width - self.linenum_width() - self.cursor.x
-    }
-
     #[inline]
     /// TODO: Cache this.
     fn linenum_width(&self) -> usize {
@@ -59,19 +32,13 @@ impl Editor {
         }
     }
 
-    fn cursor_translated(&self) -> Cursor {
-        let mut cur = self.cursor;
-        cur.x += self.linenum_width();
-        cur
-    }
-
     /// Calculate the screen's coordinate of the cursor.
     #[inline]
-    fn translate_cursor(&self) -> Cursor {
-        let line_idx = self.cursor.y - self.line_offset;
+    fn translate_cursor(&self, cursor: Cursor) -> Cursor {
+        // TODO: Apply the x_offset from line_editor.
         Cursor {
-            x: self.cursor.x + self.linenum_width(),
-            y: line_idx,
+            x: cursor.x + self.linenum_width(),
+            y: cursor.y - self.y_offset,
         }
     }
 
@@ -84,69 +51,70 @@ impl Editor {
         }
     }
 
-    #[inline]
-    fn resp_cursor(&self) -> ResultBox<Response> {
+    /// Response with rect and cursor.
+    fn response_rect_with_cursor(&self,
+                                 rect: Rect,
+                                 y_offset: usize,
+                                 cursor: Cursor)
+                                 -> ResultBox<Response> {
         Ok(Response::Term {
-            cursor: Some(self.translate_cursor()),
-            refresh: None,
+            refresh: Some(Refresh {
+                x: 0,
+                y: y_offset,
+                rect: rect,
+            }),
+            cursor: Some(self.translate_cursor(cursor)),
         })
     }
 
-    /// Handle move events.
-    fn on_move(&mut self, hq: &mut Hq, dx: i8, dy: i8) -> ResultBox<Response> {
-        let line_prev = self.cursor.y - self.line_offset;
-        self.cursor = hq.buf(&self.buffer_name)?.move_cursor(dx, dy);
-        if self.cursor.y < self.line_offset {
+    /// Move the cursor vertically.
+    fn on_move(&mut self, hq: &mut Hq, cursor_prev: Cursor, cursor: Cursor) -> ResultBox<Response> {
+        if cursor.y < self.y_offset {
             // Scroll upward
-            self.line_offset = self.cursor.y;
-            self.refresh(hq)
-        } else {
-            let mut res = None;
-            while self.translate_cursor().y >= self.view.height {
-                // Scroll downward
-                self.line_offset += 1;
-                res = Some(self.refresh(hq)?);
-            }
-            if let Some(r) = res {
-                Ok(r)
-            } else {
-                // Do not scroll
-                let line_now = self.cursor.y - self.line_offset;
-                match line_now {
-                    _ if line_now < line_prev => {
-                        // Upward
-                        let y_off = line_now;
-                        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-                        rect.append(&self.line_editor.render(hq, y_off)?);
-                        rect.append(&self.line_cache[line_prev]);
-                        Ok(Response::Term {
-                            refresh: Some(Refresh {
-                                x: 0,
-                                y: y_off,
-                                rect: rect,
-                            }),
-                            cursor: Some(self.translate_cursor()),
-                        })
-                    }
-                    _ if line_now > line_prev => {
-                        // Downward
-                        let y_off = line_prev;
-                        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-                        rect.append(&self.line_cache[line_prev]);
-                        rect.append(&self.line_editor.render(hq, y_off)?);
-                        Ok(Response::Term {
-                            refresh: Some(Refresh {
-                                x: 0,
-                                y: y_off,
-                                rect: rect,
-                            }),
-                            cursor: Some(self.translate_cursor()),
-                        })
-                    }
-                    _ => self.resp_cursor(),
-                }
+            self.y_offset = cursor.y;
+            return self.refresh(hq);
+        }
+        if cursor.y >= self.y_offset + self.view.height {
+            // Scroll downward
+            self.y_offset = cursor.y + self.view.height;
+            return self.refresh(hq);
+        }
+        if cursor.y < cursor_prev.y {
+            // Move upward
+            let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+            rect.append(&self.line_editor.render(hq, cursor.y)?);
+            rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
+            return self.response_rect_with_cursor(rect, cursor.y - self.y_offset, cursor);
+        }
+        if cursor.y > cursor_prev.y {
+            // Move downward
+            let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+            rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
+            rect.append(&self.line_editor.render(hq, cursor.y)?);
+            return self.response_rect_with_cursor(rect, cursor_prev.y - self.y_offset, cursor);
+        }
+        unreachable!();
+    }
+
+    /// Update the line_caches.
+    /// TODO: Reuse line_cache (expand, shrink).
+    fn refresh_line_cache(&mut self, hq: &mut Hq) -> Cursor {
+        let buf = hq.buf(&self.buffer_name).unwrap();
+        let mut lc = self.y_offset;
+        self.line_cache.clear();
+        while let Some(_) = buf.get(lc) {
+            let mut cache = Line::new_splitted(self.view.width,
+                                               self.view.theme.linenum,
+                                               self.view.theme.editor,
+                                               self.linenum_width());
+            cache.render_buf(buf, lc);
+            lc += 1;
+            self.line_cache.push(cache);
+            if lc > self.view.height + self.y_offset {
+                break;
             }
         }
+        buf.get_cursor()
     }
 }
 
@@ -161,35 +129,35 @@ impl Component for Editor {
         use ui::window::line_editor::Response::*;
         match self.line_editor.on_key(hq, k)? {
             Ui(resp) => {
-                Ok(resp.translate(0, self.cursor.y))
+                // TODO: Do something
+                let y = hq.buf(&self.buffer_name)?.get_y();
+                Ok(resp.translate(0, y))
             }
-            PullUp(y) => {
+            Move(p, c) => self.on_move(hq, p, c),
+            PullUp(_y) => {
                 // Pull-up and refresh the line-editor.
                 // TODO: Implement pull-up instead of refresh
                 Ok(self.refresh(hq)?)
             }
-            LineBreak => {
+            LineBreak(_cursor) => {
                 // Break the line.
                 // TODO: Implement pull-down instead of refresh
-                let y = hq.buf(&self.buffer_name)?.get_cursor().y;
-                self.cursor.y = y;
                 Ok(self.refresh(hq)?)
             }
-            Unhandled => {
-                Ok(Default::default())
-            }
+            Unhandled => Ok(Default::default()),
         }
     }
 
+    /// Refresh the editor.
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         {
             let linenum_width = self.linenum_width();
             self.line_editor.set_linenum_width(linenum_width);
         }
-        self.refresh_line_cache(hq);
+        let cursor = self.refresh_line_cache(hq);
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
-            if i == self.cursor.y {
+            if i + self.y_offset == cursor.y {
                 rect.append(&self.line_editor.render(hq, i).unwrap());
             } else {
                 rect.append(line);
@@ -201,7 +169,7 @@ impl Component for Editor {
                 y: 0,
                 rect: rect,
             }),
-            cursor: Some(self.translate_cursor()),
+            cursor: Some(self.translate_cursor(cursor)),
         })
     }
 

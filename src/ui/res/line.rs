@@ -54,8 +54,8 @@ impl Line {
     pub fn render_buf(&mut self, buf: &mut Buffer, linenum: usize) {
         let splitter = self.splitter;
         self.draw_str(&format!("{:width$}", linenum, width = splitter), 0);
-        if let Some(ref s) = buf.get(linenum) {
-            self.draw_str(&s, splitter);
+        if let Some(s) = buf.get(linenum) {
+            self.draw_str(s, splitter);
         }
     }
 
