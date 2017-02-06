@@ -5,7 +5,7 @@ use buf::{self, BackspaceRes};
 use ui::comp::{Component, ViewT};
 use ui::res::{self, Cursor, Line, Rect, Refresh};
 
-#[derive(Default, UiView)]
+#[derive(Default)]
 pub struct LineEditor {
     view: ViewT,
     buffer_name: String,
@@ -16,6 +16,7 @@ pub struct LineEditor {
 pub enum Response {
     Ui(res::Response),
     LineBreak,
+    PullUp(usize),
     Unhandled,
 }
 
@@ -101,8 +102,7 @@ impl LineEditor {
             }
             Empty(cursor) => {
                 self.cursor = cursor.x;
-                // TODO: Implement this.
-                Ok(Response::Unhandled)
+                Ok(Response::PullUp(cursor.y))
             }
             _ => Ok(Response::Unhandled),
         }

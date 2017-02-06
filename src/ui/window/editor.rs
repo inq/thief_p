@@ -3,7 +3,7 @@ use hq::Hq;
 use util::ResultBox;
 use buf::{BackspaceRes, KillLineRes};
 use ui::res::{Cursor, Line, Rect, Response, Refresh};
-use ui::comp::{Component, ViewT};
+use ui::comp::{Component, ViewT, View};
 use ui::window::LineEditor;
 
 #[derive(Default, UiView)]
@@ -161,11 +161,19 @@ impl Component for Editor {
         use ui::window::line_editor::Response::*;
         match self.line_editor.on_key(hq, k)? {
             Ui(resp) => {
-                Ok(resp)
+                Ok(resp.translate(0, self.cursor.y))
+            }
+            PullUp(y) => {
+                // Pull-up and refresh the line-editor.
+                // TODO: Implement pull-up instead of refresh
+                Ok(self.refresh(hq)?)
             }
             LineBreak => {
                 // Break the line.
-                Ok(Default::default())
+                // TODO: Implement pull-down instead of refresh
+                let y = hq.buf(&self.buffer_name)?.get_cursor().y;
+                self.cursor.y = y;
+                Ok(self.refresh(hq)?)
             }
             Unhandled => {
                 Ok(Default::default())
