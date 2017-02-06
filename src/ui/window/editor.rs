@@ -1,4 +1,5 @@
 use msg::event;
+use buf::Buffer;
 use hq::Hq;
 use util::ResultBox;
 use ui::res::{Cursor, Line, Rect, Response, Refresh};
@@ -46,7 +47,7 @@ impl Editor {
     pub fn new() -> Editor {
         Editor {
             buffer_name: String::from("<empty>"),
-            line_editor: LineEditor::new("<empty>"),
+            line_editor: LineEditor::new(),
             ..Default::default()
         }
     }
@@ -79,10 +80,11 @@ impl Editor {
             self.y_offset = cursor.y + self.view.height;
             return self.refresh(hq);
         }
+        let buf = self.get_buffer(hq)?;
         if cursor.y < cursor_prev.y {
             // Move upward
             let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_editor.render(hq, cursor.y)?);
+            rect.append(&self.line_editor.render(buf, cursor.y)?);
             rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
             return self.response_rect_with_cursor(rect, cursor.y - self.y_offset, cursor);
         }
@@ -90,7 +92,7 @@ impl Editor {
             // Move downward
             let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
             rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
-            rect.append(&self.line_editor.render(hq, cursor.y)?);
+            rect.append(&self.line_editor.render(buf, cursor.y)?);
             return self.response_rect_with_cursor(rect, cursor_prev.y - self.y_offset, cursor);
         }
         unreachable!();
@@ -99,7 +101,7 @@ impl Editor {
     /// Update the line_caches.
     /// TODO: Reuse line_cache (expand, shrink).
     fn refresh_line_cache(&mut self, hq: &mut Hq) -> Cursor {
-        let buf = hq.buf(&self.buffer_name).unwrap();
+        let buf = self.get_buffer(hq).unwrap();
         let mut lc = self.y_offset;
         self.line_cache.clear();
         while let Some(_) = buf.get(lc) {
@@ -116,21 +118,31 @@ impl Editor {
         }
         buf.get_cursor()
     }
+
+    /// Return the buffer of this editor.
+    fn get_buffer<'a>(&self, hq: &'a mut Hq) -> ResultBox<&'a mut Buffer> {
+        hq.buf(&self.buffer_name)
+    }
 }
 
 impl Component for Editor {
     /// Update each of `line_cache`.
-    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()> {
-        self.line_editor.resize(hq, 0, self.view.width)?;
+    fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
+        self.line_editor.resize(0, self.view.width)?;
         Ok(())
     }
 
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         use ui::window::line_editor::Response::*;
-        match self.line_editor.on_key(hq, k)? {
+        let res = {
+            let buf = self.get_buffer(hq)?;
+            self.line_editor.on_key(buf, k)?
+        };
+        match res {
             Ui(resp) => {
                 // TODO: Do something
-                let y = hq.buf(&self.buffer_name)?.get_y();
+                let buf = self.get_buffer(hq)?;
+                let y = buf.get_y();
                 Ok(resp.translate(0, y))
             }
             Move(p, c) => self.on_move(hq, p, c),
@@ -150,15 +162,14 @@ impl Component for Editor {
 
     /// Refresh the editor.
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        {
-            let linenum_width = self.linenum_width();
-            self.line_editor.set_linenum_width(linenum_width);
-        }
+        let linenum_width = self.linenum_width();
+        self.line_editor.set_linenum_width(linenum_width);
         let cursor = self.refresh_line_cache(hq);
+        let buf = self.get_buffer(hq)?;
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
             if i + self.y_offset == cursor.y {
-                rect.append(&self.line_editor.render(hq, i).unwrap());
+                rect.append(&self.line_editor.render(buf, i).unwrap());
             } else {
                 rect.append(line);
             }
@@ -177,9 +188,9 @@ impl Component for Editor {
     fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
         match e {
             event::Event::OpenBuffer(s) => {
-                self.line_editor.set_buffer_name(&s);
                 self.buffer_name = s;
-                self.line_max = hq.buf(&self.buffer_name)?.get_line_num();
+                let buf = self.get_buffer(hq)?;
+                self.line_max = buf.get_line_num();
                 Ok(Default::default())
             }
             _ => Ok(Response::Unhandled),

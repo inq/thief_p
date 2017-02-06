@@ -1,5 +1,5 @@
 use msg::event;
-use hq::Hq;
+use buf::Buffer;
 use util::ResultBox;
 use ui::comp::ViewT;
 use ui::res::{self, Cursor, Line, Rect, Refresh};
@@ -8,7 +8,6 @@ use ui::res::{self, Cursor, Line, Rect, Refresh};
 #[derive(Default)]
 pub struct LineEditor {
     view: ViewT,
-    buffer_name: String,
     linenum_width: usize,
     x_offset: usize,  // TODO: Implement this
 }
@@ -22,12 +21,8 @@ pub enum Response {
 }
 
 impl LineEditor {
-    pub fn set_buffer_name(&mut self, buffer_name: &str) {
-        self.buffer_name = String::from(buffer_name);
-    }
-
-    pub fn new(buffer_name: &str) -> LineEditor {
-        LineEditor { buffer_name: String::from(buffer_name), ..Default::default() }
+    pub fn new() -> LineEditor {
+        Default::default()
     }
 
     /// TODO: Cache the line
@@ -37,8 +32,7 @@ impl LineEditor {
 
     /// Render to the Line object.
     /// TODO: Process long lines
-    pub fn render(&self, hq: &mut Hq, line: usize) -> ResultBox<Line> {
-        let buf = hq.buf(&self.buffer_name)?;
+    pub fn render(&self, buf: &mut Buffer, line: usize) -> ResultBox<Line> {
         let mut cache = Line::new_splitted(self.view.width,
                                            self.view.theme.linenum_cur(),
                                            self.view.theme.editor_cur(),
@@ -59,9 +53,8 @@ impl LineEditor {
     }
 
     /// Delete the current character.
-    fn on_delete(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+    fn on_delete(&mut self, buf: &mut Buffer) -> ResultBox<Response> {
         use buf::BackspaceRes::{Normal, PrevLine};
-        let buf = hq.buf(&self.buffer_name)?;
         let cursor = buf.get_x();
         match buf.backspace(self.spaces_after_cursor(cursor)) {
             Normal(mut after_cursor) => {
@@ -78,9 +71,8 @@ impl LineEditor {
     }
 
     /// Delete every characters after cursor.
-    fn on_kill_line(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+    fn on_kill_line(&mut self, buf: &mut Buffer) -> ResultBox<Response> {
         use buf::KillLineRes::{Normal, Empty};
-        let mut buf = hq.buf(&self.buffer_name)?;
         let cursor = buf.get_x();
         match buf.kill_line() {
             Normal => {
@@ -95,19 +87,17 @@ impl LineEditor {
         }
     }
 
-    /// Update each of `line_cache`.
-    pub fn resize(&mut self, _: &mut Hq, y: usize, width: usize) -> ResultBox<()> {
+    /// Update the y and width.
+    pub fn resize(&mut self, y: usize, width: usize) -> ResultBox<()> {
         self.view.y = y;
         self.view.width = width;
         Ok(())
     }
 
     /// Handle move events.
-    fn on_move(&mut self, hq: &mut Hq, dx: i8, dy: i8) -> ResultBox<Response> {
-        let (cursor_prev, cursor) = {
-            let buf = hq.buf(&self.buffer_name)?;
-            (buf.get_cursor(), buf.move_cursor(dx, dy))
-        };
+    fn on_move(&mut self, buf: &mut Buffer, dx: i8, dy: i8) -> ResultBox<Response> {
+        let cursor_prev = buf.get_cursor();
+        let cursor = buf.move_cursor(dx, dy);
         if cursor_prev.y == cursor.y {
             // Move only in here.
             self.response_cursor(cursor.x)
@@ -152,34 +142,33 @@ impl LineEditor {
     }
 
     /// Move cursor left and right, or Type a character.
-    pub fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+    pub fn on_key(&mut self, buf: &mut Buffer, k: event::Key) -> ResultBox<Response> {
         match k {
             event::Key::Ctrl('a') |
             event::Key::Home => {
-                let cursor = hq.buf(&self.buffer_name)?.move_begin_of_line().x;
+                let cursor = buf.move_begin_of_line().x;
                 self.response_cursor(cursor)
             }
             event::Key::Ctrl('e') |
             event::Key::End => {
-                let cursor = hq.buf(&self.buffer_name)?.move_end_of_line().x;
+                let cursor = buf.move_end_of_line().x;
                 self.response_cursor(cursor)
             }
             event::Key::CR => {
-                let cursor = hq.buf(&self.buffer_name)?.break_line();
+                let cursor = buf.break_line();
                 Ok(Response::LineBreak(cursor))
             }
-            event::Key::Del => self.on_delete(hq),
-            event::Key::Ctrl('k') => self.on_kill_line(hq),
+            event::Key::Del => self.on_delete(buf),
+            event::Key::Ctrl('k') => self.on_kill_line(buf),
             event::Key::Ctrl('n') |
-            event::Key::Down => self.on_move(hq, 0, 1),
+            event::Key::Down => self.on_move(buf, 0, 1),
             event::Key::Ctrl('p') |
-            event::Key::Up => self.on_move(hq, 0, -1),
+            event::Key::Up => self.on_move(buf, 0, -1),
             event::Key::Ctrl('f') |
-            event::Key::Right => self.on_move(hq, 1, 0),
+            event::Key::Right => self.on_move(buf, 1, 0),
             event::Key::Ctrl('b') |
-            event::Key::Left => self.on_move(hq, -1, 0),
+            event::Key::Left => self.on_move(buf, -1, 0),
             event::Key::Char(c) => {
-                let buf = hq.buf(&self.buffer_name)?;
                 let mut after_cursor = String::with_capacity(self.view.width);
                 after_cursor.push(c);
                 let cursor = buf.get_x();
