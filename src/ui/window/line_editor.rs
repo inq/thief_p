@@ -9,7 +9,7 @@ use ui::res::{self, Cursor, Line, Rect, Refresh};
 pub struct LineEditor {
     view: ViewT,
     linenum_width: usize,
-    x_offset: usize,  // TODO: Implement this
+    x_offset: usize, // TODO: Implement this
 }
 
 pub enum Response {

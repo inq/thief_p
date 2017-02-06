@@ -49,7 +49,7 @@ impl Term {
 
     pub fn initial_cursor(&mut self, cursor: &Cursor) {
         if self.initial_cursor.is_none() {
-            self.initial_cursor = Some((*cursor));
+            self.initial_cursor = Some(*cursor);
             self.smcup();
         }
     }
@@ -78,7 +78,7 @@ impl Term {
 
     pub fn write(&mut self, s: &str) {
         if self.buffering {
-            io::stdout().write(s.as_bytes()).unwrap();
+            io::stdout().write_all(s.as_bytes()).unwrap();
         } else {
             self.output.write(s);
         }
