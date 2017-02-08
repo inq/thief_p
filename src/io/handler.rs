@@ -31,11 +31,13 @@ impl Handler {
         })
     }
 
+    /// STDOUT - Consume the output buffer.
     fn handle_stdout(&mut self) -> ResultBox<()> {
         self.term.consume_output_buffer()?;
         Ok(())
     }
 
+    /// STDIN - Fetch from the read buffer.
     fn handle_stdin(&mut self) -> ResultBox<()> {
         let ipt = self.term.read(32)?;
 
@@ -46,7 +48,7 @@ impl Handler {
         let mut cur = self.ipt_buf.clone();
         while let (Some(e), next) = event::Event::from_string(&cur) {
             if let event::Event::Pair(x, y) = e {
-                // TODO: check it
+                // TODO: check this
                 self.term.initial_cursor(&Cursor { x: x, y: y });
                 let (w, h) = self.term.get_size()?;
                 self.handle_event(event::Event::Resize(w, h))?;
@@ -59,7 +61,7 @@ impl Handler {
         Ok(())
     }
 
-    // Handle event from the Ui.
+    /// Handle event from the Ui.
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
         use ui::Response::*;
         let e = self.hq.preprocess(e_raw);

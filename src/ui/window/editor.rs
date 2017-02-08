@@ -110,7 +110,9 @@ impl Editor {
                                          self.view.theme.linenum,
                                          self.view.theme.editor,
                                          self.linenum_width());
-        res.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()), 0, 0);
+        res.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()),
+                     0,
+                     0);
         if let Some(s) = buf.get(linenum) {
             res.draw_str(s, self.linenum_width(), 0);
         }

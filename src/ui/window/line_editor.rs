@@ -37,7 +37,9 @@ impl LineEditor {
                                            self.view.theme.linenum_cur(),
                                            self.view.theme.editor_cur(),
                                            self.linenum_width);
-        cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width), 0, 0);
+        cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width),
+                       0,
+                       0);
         if let Some(s) = buf.get(linenum) {
             cache.draw_str(s, self.linenum_width, 0);
         }

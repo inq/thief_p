@@ -1,5 +1,4 @@
 use ui::res::{Brush, Char, Formatted};
-use buf::Buffer;
 
 #[derive(Debug, Clone)]
 pub struct Line {
