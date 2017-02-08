@@ -85,7 +85,12 @@ impl Editor {
             // Move upward
             let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
             rect.append(&self.line_editor.render(buf, cursor.y)?);
-            rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
+            {
+                let line_cache = self.refresh_line_cache(buf, cursor_prev.y);
+                let prev_line_cache = &mut self.line_cache[cursor_prev.y - self.y_offset];
+                *prev_line_cache = line_cache;
+                rect.append(prev_line_cache);
+            }
             return self.response_rect_with_cursor(rect, cursor.y - self.y_offset, cursor);
         }
         if cursor.y > cursor_prev.y {
@@ -98,24 +103,30 @@ impl Editor {
         unreachable!();
     }
 
+    /// Refresh the single line cache.
+    fn refresh_line_cache(&mut self, buf: &mut Buffer, linenum: usize) -> Line {
+        // TODO: Merge with line_editor
+        let mut res = Line::new_splitted(self.view.width,
+                                         self.view.theme.linenum,
+                                         self.view.theme.editor,
+                                         self.linenum_width());
+        res.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()), 0, 0);
+        if let Some(s) = buf.get(linenum) {
+            res.draw_str(s, self.linenum_width(), 0);
+        }
+        res
+    }
+
     /// Update the line_caches.
     /// TODO: Reuse line_cache (expand, shrink).
-    fn refresh_line_cache(&mut self, hq: &mut Hq) -> Cursor {
+    fn refresh_line_caches(&mut self, hq: &mut Hq) -> Cursor {
         let buf = self.get_buffer(hq).unwrap();
         let mut linenum = self.y_offset;
         self.line_cache.clear();
         while let Some(_) = buf.get(linenum) {
-            // TODO: Merge with line_editor
-            let mut cache = Line::new_splitted(self.view.width,
-                                               self.view.theme.linenum,
-                                               self.view.theme.editor,
-                                               self.linenum_width());
-            cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()), 0, 0);
-            if let Some(s) = buf.get(linenum) {
-                cache.draw_str(s, self.linenum_width(), 0);
-            }
-            linenum += 1;
+            let cache = self.refresh_line_cache(buf, linenum);
             self.line_cache.push(cache);
+            linenum += 1;
             if linenum > self.view.height + self.y_offset {
                 break;
             }
@@ -169,7 +180,7 @@ impl Component for Editor {
     fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
         let linenum_width = self.linenum_width();
         self.line_editor.set_linenum_width(linenum_width);
-        let cursor = self.refresh_line_cache(hq);
+        let cursor = self.refresh_line_caches(hq);
         let buf = self.get_buffer(hq)?;
         let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {

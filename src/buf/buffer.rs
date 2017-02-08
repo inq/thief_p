@@ -43,7 +43,7 @@ impl Buffer {
             Some(self.cur.get_str())
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
-        } else if self.nexts.len() + self.prevs.len() > i {
+        } else if self.nexts.len() + self.prevs.len() >= i {
             self.nexts.get(self.nexts.len() + self.prevs.len() - i)
         } else {
             None
@@ -128,6 +128,7 @@ impl Buffer {
     #[inline]
     pub fn break_line(&mut self) -> msg::Pair {
         self.prevs.push(self.cur.break_line());
+        self.x = 0;
         self.get_cursor()
     }
 
