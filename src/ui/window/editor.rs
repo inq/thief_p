@@ -102,17 +102,21 @@ impl Editor {
     /// TODO: Reuse line_cache (expand, shrink).
     fn refresh_line_cache(&mut self, hq: &mut Hq) -> Cursor {
         let buf = self.get_buffer(hq).unwrap();
-        let mut lc = self.y_offset;
+        let mut linenum = self.y_offset;
         self.line_cache.clear();
-        while let Some(_) = buf.get(lc) {
+        while let Some(_) = buf.get(linenum) {
+            // TODO: Merge with line_editor
             let mut cache = Line::new_splitted(self.view.width,
                                                self.view.theme.linenum,
                                                self.view.theme.editor,
                                                self.linenum_width());
-            cache.render_buf(buf, lc);
-            lc += 1;
+            cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()), 0, 0);
+            if let Some(s) = buf.get(linenum) {
+                cache.draw_str(s, self.linenum_width(), 0);
+            }
+            linenum += 1;
             self.line_cache.push(cache);
-            if lc > self.view.height + self.y_offset {
+            if linenum > self.view.height + self.y_offset {
                 break;
             }
         }
@@ -132,6 +136,7 @@ impl Component for Editor {
         Ok(())
     }
 
+    /// Process keyboard event.
     fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
         use ui::window::line_editor::Response::*;
         let res = {

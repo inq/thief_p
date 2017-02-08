@@ -32,12 +32,15 @@ impl LineEditor {
 
     /// Render to the Line object.
     /// TODO: Process long lines
-    pub fn render(&self, buf: &mut Buffer, line: usize) -> ResultBox<Line> {
+    pub fn render(&self, buf: &mut Buffer, linenum: usize) -> ResultBox<Line> {
         let mut cache = Line::new_splitted(self.view.width,
                                            self.view.theme.linenum_cur(),
                                            self.view.theme.editor_cur(),
                                            self.linenum_width);
-        cache.render_buf(buf, line);
+        cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width), 0, 0);
+        if let Some(s) = buf.get(linenum) {
+            cache.draw_str(s, self.linenum_width, 0);
+        }
         Ok(cache)
     }
 
