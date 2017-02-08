@@ -52,14 +52,15 @@ impl Line {
     /// Fill data from string.
     #[inline]
     pub fn replace(&mut self, src: String, x: usize) -> String {
-        let res = mem::replace(&mut self.cache, src);
-        self.dirty = false;
+        let res = self.get_str().clone();
+        self.cache = src;
         self.prevs.clear();
         self.nexts.clear();
         self.x = 0;
         let mut iter = self.cache.chars();
         while self.x < x {
             if let Some(c) = iter.next() {
+                self.prevs.push(c);
                 self.x += util::term_width(c);
             } else {
                 break;
@@ -68,10 +69,12 @@ impl Line {
         for c in iter.rev() {
             self.nexts.push(c);
         }
+        self.dirty = false;
         res
     }
 
     /// Break the line, and return the first line as string.
+    /// The posterior one replaces self.
     pub fn break_line(&mut self) -> String {
         self.dirty = true;
         self.x = 0;
@@ -95,6 +98,7 @@ impl Line {
 
     /// Insert a char.
     pub fn insert(&mut self, c: char) {
+        self.dirty = true;
         self.x += util::term_width(c);
         self.prevs.push(c);
     }

@@ -1,6 +1,8 @@
 mod editor;
+mod line_editor;
 
 pub use self::editor::Editor;
+pub use self::line_editor::LineEditor;
 
 use msg::event;
 use hq::Hq;

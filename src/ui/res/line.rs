@@ -50,15 +50,6 @@ impl Line {
         }
     }
 
-    #[inline]
-    pub fn render_buf(&mut self, buf: &mut Buffer, linenum: usize) {
-        let splitter = self.splitter;
-        self.draw_str(&format!("{:width$}", linenum, width = splitter), 0);
-        if let Some(ref s) = buf.get(linenum) {
-            self.draw_str(&s, splitter);
-        }
-    }
-
     /// Initialize a new empty line.
     #[inline]
     pub fn new(width: usize, brush: Brush) -> Line {
@@ -88,8 +79,9 @@ impl Line {
     }
 
     /// Draw the given string into heer.
-    pub fn draw_str(&mut self, src: &str, x: usize) {
-        for (i, c) in src.chars().enumerate() {
+    pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) {
+        let limit_x = if limit == 0 { self.width - x } else { limit };
+        for (i, c) in src.chars().enumerate().take(limit_x) {
             self.chars[x + i].chr = c
         }
     }

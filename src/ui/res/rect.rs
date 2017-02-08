@@ -38,7 +38,7 @@ impl Rect {
     }
 
     pub fn draw_str(&mut self, src: &str, x: usize, y: usize) {
-        self.lines[y].draw_str(src, x);
+        self.lines[y].draw_str(src, x, 0);
     }
 
     pub fn draw(&mut self, src: &Rect, x: usize, y: usize) {
