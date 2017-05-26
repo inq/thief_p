@@ -82,8 +82,8 @@ impl LineEditor {
         match buf.kill_line() {
             Normal => {
                 let line = Line::new_from_str(&vec![' '; self.spaces_after_cursor(cursor)]
-                                                  .into_iter()
-                                                  .collect::<String>(),
+                                                   .into_iter()
+                                                   .collect::<String>(),
                                               self.view.theme.editor);
                 self.response_cursor_with_line(buf.get_x(), line, false)
             }
@@ -121,12 +121,12 @@ impl LineEditor {
     /// Response with cursor.
     fn response_cursor(&self, cursor: usize) -> ResultBox<Response> {
         self.response_ui(res::Response::Term {
-            cursor: Some(Cursor {
-                x: self.translate_cursor(cursor),
-                y: 0,
-            }),
-            refresh: None,
-        })
+                             cursor: Some(Cursor {
+                                              x: self.translate_cursor(cursor),
+                                              y: 0,
+                                          }),
+                             refresh: None,
+                         })
     }
 
     /// Response with current cursor and following line.
@@ -137,13 +137,13 @@ impl LineEditor {
                                  -> ResultBox<Response> {
         let x = self.translate_cursor(cursor);
         self.response_ui(res::Response::Term {
-            refresh: Some(Refresh {
-                x: if on_delete { x } else { x - 1 },
-                y: 0,
-                rect: Rect::new_from_line(line),
-            }),
-            cursor: Some(Cursor { x: x, y: 0 }),
-        })
+                             refresh: Some(Refresh {
+                                               x: if on_delete { x } else { x - 1 },
+                                               y: 0,
+                                               rect: Rect::new_from_line(line),
+                                           }),
+                             cursor: Some(Cursor { x: x, y: 0 }),
+                         })
     }
 
     /// Move cursor left and right, or Type a character.

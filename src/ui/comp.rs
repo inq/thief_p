@@ -115,19 +115,21 @@ pub trait Parent {
                 if child.focus() {
                     if let Some(cur) = cursor {
                         res_cursor = Some(Cursor {
-                            x: child.get_view().x + cur.x,
-                            y: child.get_view().y + cur.y,
-                        });
+                                              x: child.get_view().x + cur.x,
+                                              y: child.get_view().y + cur.y,
+                                          });
                     }
                 }
                 if let Some(Refresh { x, y, rect }) = refresh {
-                    res_refresh.rect.draw(&rect, child.get_view().x + x, child.get_view().y + y);
+                    res_refresh
+                        .rect
+                        .draw(&rect, child.get_view().x + x, child.get_view().y + y);
                 }
             }
         }
         Ok(Response::Term {
-            refresh: Some(res_refresh),
-            cursor: res_cursor,
-        })
+               refresh: Some(res_refresh),
+               cursor: res_cursor,
+           })
     }
 }

@@ -1,6 +1,7 @@
 mod shortcut;
 mod workspace;
 mod commands;
+mod enums;
 mod fs;
 
 use buf::Buffer;
@@ -8,8 +9,9 @@ use msg::event;
 use util::ResultBox;
 use hq::fs::Filesys;
 use hq::workspace::Workspace;
-use hq::commands::{Commands, Arg};
+use hq::commands::Commands;
 use hq::shortcut::Shortcut;
+pub use self::enums::{Arg, Func, Request, Response};
 
 pub struct Hq {
     workspace: Workspace,
@@ -30,14 +32,20 @@ impl Hq {
         shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
         shortcut.add("quit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
         Ok(Hq {
-            workspace: Workspace::new()?,
-            commands: commands,
-            shortcut: shortcut,
-        })
+               workspace: Workspace::new()?,
+               commands: commands,
+               shortcut: shortcut,
+           })
+    }
+
+    pub fn request(&mut self, req: Request) -> Response {
+        match req {
+            Request::Event(e) => Response::Event(self.preprocess(e)),
+        }
     }
 
     /// Consume event before UI.
-    pub fn preprocess(&mut self, e: event::Event) -> event::Event {
+    fn preprocess(&mut self, e: event::Event) -> event::Event {
         use msg::event::Event::{CommandBar, Keyboard};
         use msg::event::CommandBar::Shortcut;
         use self::shortcut::Response;
@@ -57,13 +65,13 @@ impl Hq {
     pub fn call(&mut self, command: &str) -> Option<event::Event> {
         use msg::event::Event::*;
         use msg::event::CommandBar::*;
-        use self::commands::Response::*;
-        use self::commands::Arg;
+        use self::Response::*;
         match self.commands.query(command) {
             Func(func, args) => func(&mut self.workspace, args).ok(),
             Require(Arg::Path(_)) => Some(CommandBar(Navigate(String::from(".")))),
             Require(Arg::String(_)) => unimplemented!(),
             Message(m) => Some(CommandBar(Notify(m))),
+            Event(_) => unreachable!(),
         }
     }
 

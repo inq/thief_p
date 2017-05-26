@@ -117,7 +117,8 @@ impl Ui {
     /// Resize the command bar; the bottom-side of the ui.
     #[inline]
     fn resize_command_bar(&mut self, hq: &mut Hq) -> ResultBox<()> {
-        self.command_bar.resize(hq, 0, 0, self.view.width, self.view.height)
+        self.command_bar
+            .resize(hq, 0, 0, self.view.width, self.view.height)
     }
 
     /// Activate command bar, and redraw the corresponding area.
@@ -128,21 +129,21 @@ impl Ui {
         self.resize_command_bar(hq)?;
         // TODO: Make concise.
         Ok(self.command_bar
-            .refresh(hq)?
-            .translate(self.command_bar.get_view().x, self.command_bar.get_view().y))
+               .refresh(hq)?
+               .translate(self.command_bar.get_view().x, self.command_bar.get_view().y))
     }
 
     pub fn new() -> Result<Ui> {
         allow_once!();
         Ok(Ui {
-            hsplit: UiChild::HSplit(HSplit::new(1)),
-            command_bar: {
-                let mut res: CommandBar = Default::default();
-                res.set_focus(false);
-                UiChild::CommandBar(res)
-            },
-            ..Default::default()
-        })
+               hsplit: UiChild::HSplit(HSplit::new(1)),
+               command_bar: {
+                   let mut res: CommandBar = Default::default();
+                   res.set_focus(false);
+                   UiChild::CommandBar(res)
+               },
+               ..Default::default()
+           })
     }
 }
 
@@ -155,9 +156,7 @@ impl Parent for Ui {
     }
 
     fn children(&self) -> Vec<&UiChild> {
-        vec![&self.command_bar, &self.hsplit]
-            .into_iter()
-            .collect()
+        vec![&self.command_bar, &self.hsplit].into_iter().collect()
     }
 }
 

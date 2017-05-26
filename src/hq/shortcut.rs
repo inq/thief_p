@@ -47,13 +47,18 @@ impl Node {
             Node::Internal { ref mut children } => {
                 if idx == keys.len() - 1 {
                     // Leaf node
-                    children.insert(keys[idx], Box::new(Node::new_leaf(value))).is_none()
+                    children
+                        .insert(keys[idx], Box::new(Node::new_leaf(value)))
+                        .is_none()
                 } else {
                     // Inner node
                     if !children.contains_key(&keys[idx]) {
-                        children.insert(keys[idx], Box::new(Node::new_inner())).is_some();
+                        children
+                            .insert(keys[idx], Box::new(Node::new_inner()))
+                            .is_some();
                     }
-                    children.get_mut(&keys[idx])
+                    children
+                        .get_mut(&keys[idx])
                         .map(|n| n.deref_mut().insert(value, keys, idx + 1))
                         .unwrap_or(false)
                 }
@@ -80,8 +85,8 @@ impl Shortcut {
     pub fn key(&mut self, key: event::Key) -> Response {
         self.current.push(key);
         if let Some(n) = self.current
-            .iter()
-            .fold(Some(&self.head), |acc, key| acc.and_then(|n| n.get(*key))) {
+               .iter()
+               .fold(Some(&self.head), |acc, key| acc.and_then(|n| n.get(*key))) {
             if let Node::Leaf(ref s) = *n {
                 self.current.clear();
                 Response::Some(s.clone())

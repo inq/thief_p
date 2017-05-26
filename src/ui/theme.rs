@@ -10,12 +10,18 @@ pub struct Theme {
 impl Theme {
     #[inline]
     pub fn editor_cur(&self) -> Brush {
-        Brush { bg: self.editor_cur_bg, ..self.editor }
+        Brush {
+            bg: self.editor_cur_bg,
+            ..self.editor
+        }
     }
 
     #[inline]
     pub fn linenum_cur(&self) -> Brush {
-        Brush { bg: self.linenum_cur_bg, ..self.linenum }
+        Brush {
+            bg: self.linenum_cur_bg,
+            ..self.linenum
+        }
     }
 }
 

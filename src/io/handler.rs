@@ -3,7 +3,7 @@ use std::convert::From;
 use libc;
 
 use msg::event;
-use hq::Hq;
+use hq::{self, Hq};
 use io::kqueue::Kqueue;
 use io::term::Term;
 use ui::{Ui, Component, Cursor, Refresh};
@@ -11,6 +11,7 @@ use util::ResultBox;
 
 def_error! {
     OutOfCapacity: "out of capacity",
+    Internal: "internal error",
     Exit: "exit request",
 }
 
@@ -24,11 +25,11 @@ pub struct Handler {
 impl Handler {
     pub fn new(ui: Ui) -> ResultBox<Handler> {
         Ok(Handler {
-            term: Term::new()?,
-            hq: Hq::new()?,
-            ui: ui,
-            ipt_buf: String::with_capacity(32),
-        })
+               term: Term::new()?,
+               hq: Hq::new()?,
+               ui: ui,
+               ipt_buf: String::with_capacity(32),
+           })
     }
 
     /// STDOUT - Consume the output buffer.
@@ -64,7 +65,12 @@ impl Handler {
     /// Handle event from the Ui.
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
         use ui::Response::*;
-        let e = self.hq.preprocess(e_raw);
+        let e = if let hq::Response::Event(e) = self.hq.request(hq::Request::Event(e_raw)) {
+            e
+        } else {
+            return Err(From::from(Error::Internal));
+        };
+
         let next = match self.ui.propagate(e, &mut self.hq)? {
             Term { refresh, cursor } => {
                 self.term.show_cursor(false);
@@ -110,9 +116,9 @@ impl Handler {
         let args: Vec<String> = env::args().collect();
         args.get(1)
             .and_then(|file| {
-                self.hq.call("open-file");
-                self.hq.call(file)
-            })
+                          self.hq.call("open-file");
+                          self.hq.call(file)
+                      })
             .and_then(|e| self.handle_event(e).ok());
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;

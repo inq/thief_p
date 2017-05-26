@@ -24,10 +24,10 @@ impl Kqueue {
             return Err(Error::Kqueue);
         }
         Ok(Kqueue {
-            kq: res,
-            changes: Vec::with_capacity(16),
-            events: Vec::with_capacity(16),
-        })
+               kq: res,
+               changes: Vec::with_capacity(16),
+               events: Vec::with_capacity(16),
+           })
     }
 
     /// Fetch kevent into the eventset.
@@ -54,14 +54,15 @@ impl Kqueue {
     /// Add a new kevent into the changeset.
     #[inline]
     fn add_event(&mut self, ident: i32, filter: i16, aux: isize) {
-        self.changes.push(libc::kevent {
-            ident: ident as libc::uintptr_t,
-            filter: filter,
-            flags: libc::EV_ADD,
-            fflags: 0,
-            data: aux,
-            udata: ::std::ptr::null_mut(),
-        })
+        self.changes
+            .push(libc::kevent {
+                      ident: ident as libc::uintptr_t,
+                      filter: filter,
+                      flags: libc::EV_ADD,
+                      fflags: 0,
+                      data: aux,
+                      udata: ::std::ptr::null_mut(),
+                  })
     }
 
     /// Initialize the kqueue API with the changeset.

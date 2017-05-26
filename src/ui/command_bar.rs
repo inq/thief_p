@@ -41,10 +41,10 @@ impl CommandBar {
         rect.draw_str(msg, 0, 0);
         Response::Term {
             refresh: Some(Refresh {
-                x: 0,
-                y: 0,
-                rect: rect,
-            }),
+                              x: 0,
+                              y: 0,
+                              rect: rect,
+                          }),
             cursor: None,
         }
     }
@@ -100,16 +100,18 @@ impl Component for CommandBar {
                         let prev = self.data.len();
                         self.data.push(c);
                         Ok(Response::Term {
-                            refresh: Some(Refresh {
-                                x: prev,
-                                y: 0,
-                                rect: Rect::new_from_char(Char::new(c, self.background)),
-                            }),
-                            cursor: Some(Cursor {
-                                x: self.data.len(),
-                                y: 0,
-                            }),
-                        })
+                               refresh: Some(Refresh {
+                                                 x: prev,
+                                                 y: 0,
+                                                 rect:
+                                                     Rect::new_from_char(Char::new(c,
+                                                                                   self.background)),
+                                             }),
+                               cursor: Some(Cursor {
+                                                x: self.data.len(),
+                                                y: 0,
+                                            }),
+                           })
                     }
                     Notify => {
                         self.status = Status::Standby;
@@ -146,12 +148,12 @@ impl Component for CommandBar {
         };
         rect.draw_str(&self.message, 0, 0);
         Ok(Response::Term {
-            refresh: Some(Refresh {
-                x: 0,
-                y: 0,
-                rect: rect,
-            }),
-            cursor: Some(Cursor { x: 0, y: 0 }),
-        })
+               refresh: Some(Refresh {
+                                 x: 0,
+                                 y: 0,
+                                 rect: rect,
+                             }),
+               cursor: Some(Cursor { x: 0, y: 0 }),
+           })
     }
 }

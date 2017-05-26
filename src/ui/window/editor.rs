@@ -59,13 +59,13 @@ impl Editor {
                                  cursor: Cursor)
                                  -> ResultBox<Response> {
         Ok(Response::Term {
-            refresh: Some(Refresh {
-                x: 0,
-                y: y_offset,
-                rect: rect,
-            }),
-            cursor: Some(self.translate_cursor(cursor)),
-        })
+               refresh: Some(Refresh {
+                                 x: 0,
+                                 y: y_offset,
+                                 rect: rect,
+                             }),
+               cursor: Some(self.translate_cursor(cursor)),
+           })
     }
 
     /// Move the cursor vertically.
@@ -193,13 +193,13 @@ impl Component for Editor {
             }
         }
         Ok(Response::Term {
-            refresh: Some(Refresh {
-                x: 0,
-                y: 0,
-                rect: rect,
-            }),
-            cursor: Some(self.translate_cursor(cursor)),
-        })
+               refresh: Some(Refresh {
+                                 x: 0,
+                                 y: 0,
+                                 rect: rect,
+                             }),
+               cursor: Some(self.translate_cursor(cursor)),
+           })
     }
 
     /// Handle events.

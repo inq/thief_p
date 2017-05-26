@@ -49,12 +49,22 @@ impl Response {
     }
 
     pub fn translate(mut self, tx: usize, ty: usize) -> Response {
-        if let Response::Term { ref mut refresh, ref mut cursor } = self {
-            if let Some(Refresh { ref mut x, ref mut y, .. }) = *refresh {
+        if let Response::Term {
+                   ref mut refresh,
+                   ref mut cursor,
+               } = self {
+            if let Some(Refresh {
+                            ref mut x,
+                            ref mut y,
+                            ..
+                        }) = *refresh {
                 *x += tx;
                 *y += ty;
             }
-            if let Some(Cursor { ref mut x, ref mut y }) = *cursor {
+            if let Some(Cursor {
+                            ref mut x,
+                            ref mut y,
+                        }) = *cursor {
                 *x += tx;
                 *y += ty;
             }
