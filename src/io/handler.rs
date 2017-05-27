@@ -2,11 +2,12 @@ use std::env;
 use std::convert::From;
 use libc;
 
+use term;
 use msg::event;
 use hq::{self, Hq};
 use io::kqueue::Kqueue;
 use io::term::Term;
-use ui::{Ui, Component, Cursor, Refresh};
+use ui::{Ui, Component};
 use util::ResultBox;
 
 def_error! {
@@ -50,7 +51,7 @@ impl Handler {
         while let (Some(e), next) = event::Event::from_string(&cur) {
             if let event::Event::Pair(x, y) = e {
                 // TODO: check this
-                self.term.initial_cursor(&Cursor { x: x, y: y });
+                self.term.initial_cursor(&term::Cursor { x: x, y: y });
                 let (w, h) = self.term.get_size()?;
                 self.handle_event(event::Event::Resize(w, h))?;
             }
@@ -64,7 +65,7 @@ impl Handler {
 
     /// Handle event from the Ui.
     fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
-        use ui::Response::*;
+        use term::Response::*;
         let e = if let hq::Response::Event(e) = self.hq.request(hq::Request::Event(e_raw)) {
             e
         } else {
@@ -74,10 +75,10 @@ impl Handler {
         let next = match self.ui.propagate(e, &mut self.hq)? {
             Term { refresh, cursor } => {
                 self.term.show_cursor(false);
-                if let Some(Refresh { x, y, rect }) = refresh {
+                if let Some(term::Refresh { x, y, rect }) = refresh {
                     self.term.write_ui_buffer(x, y, &rect);
                 }
-                if let Some(Cursor { x, y }) = cursor {
+                if let Some(term::Cursor { x, y }) = cursor {
                     self.term.move_cursor(x, y);
                 }
                 self.term.show_cursor(true);

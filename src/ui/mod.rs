@@ -1,5 +1,4 @@
 mod comp;
-mod res;
 mod hsplit;
 mod theme;
 mod window;
@@ -10,8 +9,8 @@ use hq::Hq;
 use util::ResultBox;
 use ui::comp::{Parent, View, ViewT};
 
+use term;
 pub use ui::comp::Component;
-pub use ui::res::*;
 use ui::theme::Theme;
 use ui::hsplit::HSplit;
 use ui::command_bar::CommandBar;
@@ -36,15 +35,16 @@ impl Component for Ui {
         self.hsplit.resize(hq, 1, 1, self.view.width - 2, height)
     }
 
-    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let rect = Rect::new(self.view.width,
-                             self.view.height,
-                             Brush::new(Color::new(0, 0, 0), Color::new(80, 0, 0)));
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<::term::Response> {
+        let rect = term::Rect::new(self.view.width,
+                                   self.view.height,
+                                   term::Brush::new(term::Color::new(0, 0, 0),
+                                                    term::Color::new(80, 0, 0)));
         self.refresh_children(rect, hq)
     }
 
     /// Propagate to children.
-    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<term::Response> {
         if self.command_bar().focus() {
             self.command_bar.propagate(e, hq)
         } else {
@@ -53,16 +53,16 @@ impl Component for Ui {
     }
 
     /// Handle keyboard events.
-    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<term::Response> {
         use msg::event::Key::*;
         match k {
             Ctrl('c') => self.activate_command_bar(hq),
-            _ => Ok(Response::Unhandled),
+            _ => Ok(term::Response::Unhandled),
         }
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<term::Response> {
         use msg::event::Event::*;
         match e {
             e @ CommandBar(_) => {
@@ -89,8 +89,8 @@ impl Component for Ui {
                     Ok(Default::default())
                 }
             }
-            Quit => Ok(Response::Quit),
-            _ => Ok(Response::Unhandled),
+            Quit => Ok(::term::Response::Quit),
+            _ => Ok(::term::Response::Unhandled),
         }
     }
 }
@@ -123,7 +123,7 @@ impl Ui {
 
     /// Activate command bar, and redraw the corresponding area.
     #[inline]
-    pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+    pub fn activate_command_bar(&mut self, hq: &mut Hq) -> ResultBox<term::Response> {
         self.command_bar_mut().set_focus(true);
         self.hsplit.set_focus(false);
         self.resize_command_bar(hq)?;

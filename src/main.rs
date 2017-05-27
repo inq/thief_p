@@ -11,6 +11,7 @@ mod io;
 mod ui;
 mod hq;
 mod msg;
+mod term;
 
 use ui::Ui;
 use std::fs::File;

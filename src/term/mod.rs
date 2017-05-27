@@ -14,10 +14,12 @@ use msg::Pair;
 pub type Cursor = Pair;
 
 pub enum Response {
+    // TODO: Term
     Unhandled,
     Command(String),
     Quit,
     Term {
+        // TODO: Render
         refresh: Option<Refresh>,
         cursor: Option<Cursor>,
     },

@@ -4,8 +4,8 @@ use libc;
 use std::mem;
 use std::io::{self, Write};
 use io::term::output::Output;
-use ui::{Brush, Line, Rect, Cursor};
 use util::ResultBox;
+use term;
 
 def_error! {
     Initialized: "already initialized",
@@ -20,8 +20,8 @@ def_error! {
 #[derive(Default)]
 pub struct Term {
     buffering: bool,
-    initial_cursor: Option<Cursor>,
-    brush: Option<Brush>,
+    initial_cursor: Option<term::Cursor>,
+    brush: Option<term::Brush>,
     output: Output,
 }
 
@@ -47,7 +47,7 @@ impl Term {
         Ok(())
     }
 
-    pub fn initial_cursor(&mut self, cursor: &Cursor) {
+    pub fn initial_cursor(&mut self, cursor: &term::Cursor) {
         if self.initial_cursor.is_none() {
             self.initial_cursor = Some(*cursor);
             self.smcup();
@@ -58,8 +58,8 @@ impl Term {
         self.output.consume()
     }
 
-    pub fn color(&mut self, b: Option<Brush>) {
-        self.output.write(&Brush::change(&self.brush, &b));
+    pub fn color(&mut self, b: Option<term::Brush>) {
+        self.output.write(&term::Brush::change(&self.brush, &b));
     }
 
     /// Move cursor to the coordinate.
@@ -85,7 +85,7 @@ impl Term {
     }
 
     /// Draw ui::Line after the cursor.
-    pub fn write_ui_line(&mut self, l: &Line) {
+    pub fn write_ui_line(&mut self, l: &term::Line) {
         for c in &l.chars {
             let prev = Some(c.brush);
             if self.brush != prev {
@@ -98,7 +98,7 @@ impl Term {
     }
 
     /// Draw ui::Buffer at the coordinate.
-    pub fn write_ui_buffer(&mut self, x: usize, y: usize, rect: &Rect) {
+    pub fn write_ui_buffer(&mut self, x: usize, y: usize, rect: &term::Rect) {
         self.move_cursor(x, y);
         for (i, l) in rect.lines.iter().enumerate() {
             self.move_cursor(x, y + i);

@@ -7,7 +7,6 @@ pub use self::line_editor::LineEditor;
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::Response;
 
 def_child!(Window <- Editor);
 

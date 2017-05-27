@@ -2,9 +2,9 @@ use msg::event;
 use buf::Buffer;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::{Cursor, Line, Rect, Response, Refresh};
+use term;
 use ui::comp::{Component, ViewT};
-use ui::window::LineEditor;
+use ui::window::{self, LineEditor};
 
 #[derive(Default, UiView)]
 pub struct Editor {
@@ -13,7 +13,7 @@ pub struct Editor {
     buffer_name: String,
     line_max: usize,
     y_offset: usize,
-    line_cache: Vec<Line>,
+    line_cache: Vec<term::Line>,
 }
 
 impl Editor {
@@ -35,9 +35,9 @@ impl Editor {
 
     /// Calculate the screen's coordinate of the cursor.
     #[inline]
-    fn translate_cursor(&self, cursor: Cursor) -> Cursor {
+    fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
         // TODO: Apply the x_offset from line_editor.
-        Cursor {
+        term::Cursor {
             x: cursor.x + self.linenum_width(),
             y: cursor.y - self.y_offset,
         }
@@ -54,12 +54,12 @@ impl Editor {
 
     /// Response with rect and cursor.
     fn response_rect_with_cursor(&self,
-                                 rect: Rect,
+                                 rect: term::Rect,
                                  y_offset: usize,
-                                 cursor: Cursor)
-                                 -> ResultBox<Response> {
-        Ok(Response::Term {
-               refresh: Some(Refresh {
+                                 cursor: term::Cursor)
+                                 -> ResultBox<term::Response> {
+        Ok(term::Response::Term {
+               refresh: Some(term::Refresh {
                                  x: 0,
                                  y: y_offset,
                                  rect: rect,
@@ -69,7 +69,11 @@ impl Editor {
     }
 
     /// Move the cursor vertically.
-    fn on_move(&mut self, hq: &mut Hq, cursor_prev: Cursor, cursor: Cursor) -> ResultBox<Response> {
+    fn on_move(&mut self,
+               hq: &mut Hq,
+               cursor_prev: term::Cursor,
+               cursor: term::Cursor)
+               -> ResultBox<term::Response> {
         if cursor.y < self.y_offset {
             // Scroll upward
             self.y_offset = cursor.y;
@@ -83,7 +87,7 @@ impl Editor {
         let buf = self.get_buffer(hq)?;
         if cursor.y < cursor_prev.y {
             // Move upward
-            let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+            let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
             rect.append(&self.line_editor.render(buf, cursor.y)?);
             {
                 let line_cache = self.refresh_line_cache(buf, cursor_prev.y);
@@ -95,7 +99,7 @@ impl Editor {
         }
         if cursor.y > cursor_prev.y {
             // Move downward
-            let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+            let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
             rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
             rect.append(&self.line_editor.render(buf, cursor.y)?);
             return self.response_rect_with_cursor(rect, cursor_prev.y - self.y_offset, cursor);
@@ -104,12 +108,12 @@ impl Editor {
     }
 
     /// Refresh the single line cache.
-    fn refresh_line_cache(&mut self, buf: &mut Buffer, linenum: usize) -> Line {
+    fn refresh_line_cache(&mut self, buf: &mut Buffer, linenum: usize) -> term::Line {
         // TODO: Merge with line_editor
-        let mut res = Line::new_splitted(self.view.width,
-                                         self.view.theme.linenum,
-                                         self.view.theme.editor,
-                                         self.linenum_width());
+        let mut res = term::Line::new_splitted(self.view.width,
+                                               self.view.theme.linenum,
+                                               self.view.theme.editor,
+                                               self.linenum_width());
         res.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()),
                      0,
                      0);
@@ -121,7 +125,7 @@ impl Editor {
 
     /// Update the line_caches.
     /// TODO: Reuse line_cache (expand, shrink).
-    fn refresh_line_caches(&mut self, hq: &mut Hq) -> Cursor {
+    fn refresh_line_caches(&mut self, hq: &mut Hq) -> term::Cursor {
         let buf = self.get_buffer(hq).unwrap();
         let mut linenum = self.y_offset;
         self.line_cache.clear();
@@ -150,8 +154,8 @@ impl Component for Editor {
     }
 
     /// Process keyboard event.
-    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
-        use ui::window::line_editor::Response::*;
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<term::Response> {
+        use ui::window::line_editor::LineEditorRes::*;
         let res = {
             let buf = self.get_buffer(hq)?;
             self.line_editor.on_key(buf, k)?
@@ -179,12 +183,12 @@ impl Component for Editor {
     }
 
     /// Refresh the editor.
-    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<term::Response> {
         let linenum_width = self.linenum_width();
         self.line_editor.set_linenum_width(linenum_width);
         let cursor = self.refresh_line_caches(hq);
         let buf = self.get_buffer(hq)?;
-        let mut rect = Rect::new(self.view.width, 0, self.view.theme.linenum);
+        let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
             if i + self.y_offset == cursor.y {
                 rect.append(&self.line_editor.render(buf, i).unwrap());
@@ -192,8 +196,8 @@ impl Component for Editor {
                 rect.append(line);
             }
         }
-        Ok(Response::Term {
-               refresh: Some(Refresh {
+        Ok(term::Response::Term {
+               refresh: Some(term::Refresh {
                                  x: 0,
                                  y: 0,
                                  rect: rect,
@@ -203,7 +207,7 @@ impl Component for Editor {
     }
 
     /// Handle events.
-    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<term::Response> {
         match e {
             event::Event::OpenBuffer(s) => {
                 self.buffer_name = s;
@@ -211,7 +215,7 @@ impl Component for Editor {
                 self.line_max = buf.get_line_num();
                 Ok(Default::default())
             }
-            _ => Ok(Response::Unhandled),
+            _ => Ok(term::Response::Unhandled),
         }
     }
 }

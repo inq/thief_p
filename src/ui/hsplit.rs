@@ -1,7 +1,7 @@
 use msg::event;
 use hq::Hq;
 use util::ResultBox;
-use ui::res::{Rect, Brush, Color, Response};
+use term;
 use ui::comp::{ViewT, Parent, Component};
 use ui::window::Window;
 
@@ -26,26 +26,27 @@ impl Component for HSplit {
         Ok(())
     }
 
-    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<Response> {
-        let rect = Rect::new(self.view.width,
-                             self.view.height,
-                             Brush::new(Color::new(0, 0, 0), Color::new(200, 250, 250)));
+    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<term::Response> {
+        let rect = term::Rect::new(self.view.width,
+                                   self.view.height,
+                                   term::Brush::new(term::Color::new(0, 0, 0),
+                                                    term::Color::new(200, 250, 250)));
         self.refresh_children(rect, hq)
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<Response> {
+    fn unhandled(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<term::Response> {
         self.windows[self.focused].propagate(e, hq)
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<Response> {
+    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<term::Response> {
         match k {
             event::Key::Ctrl('d') => {
                 self.toggle_split(hq)?;
                 self.refresh(hq)
             }
-            _ => Ok(Response::Unhandled),
+            _ => Ok(term::Response::Unhandled),
         }
     }
 }

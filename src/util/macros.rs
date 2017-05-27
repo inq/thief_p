@@ -59,13 +59,13 @@ macro_rules! def_child {
 
         impl ::ui::comp::Component for $target {
             def_child!(@child_mut $target, [$($src),*], on_resize(hq: &mut Hq): ResultBox<()>);
-            def_child!(@child_mut $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<Response>);
+            def_child!(@child_mut $target, [$($src),*], refresh(hq: &mut Hq): ResultBox<::term::Response>);
             def_child!(@child_mut $target, [$($src),*],
-                       unhandled(hq: &mut Hq, e: event::Event): ResultBox<Response>);
+                       unhandled(hq: &mut Hq, e: event::Event): ResultBox<::term::Response>);
             def_child!(@child_mut $target, [$($src),*],
-                       handle(hq: &mut Hq, e: event::Event): ResultBox<Response>);
+                       handle(hq: &mut Hq, e: event::Event): ResultBox<::term::Response>);
             def_child!(@child_mut $target, [$($src),*],
-                       on_key(hq: &mut Hq, k: event::Key): ResultBox<Response>);
+                       on_key(hq: &mut Hq, k: event::Key): ResultBox<::term::Response>);
         }
     };
 }
