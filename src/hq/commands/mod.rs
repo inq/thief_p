@@ -1,8 +1,14 @@
 mod command;
 
-use hq::{self, Arg, Func};
+use hq::{Arg, Func};
 use std::collections::BTreeMap;
 pub use self::command::Command;
+
+pub enum Response {
+    Func(Func, Vec<String>),
+    Require(Arg),
+    Message(String),
+}
 
 pub struct Commands {
     commands: BTreeMap<String, Command>,
@@ -25,8 +31,7 @@ impl Commands {
     }
 
     /// Receive a function name or argument.
-    pub fn query(&mut self, command: &str) -> hq::Response {
-        use hq::Response;
+    pub fn query(&mut self, command: &str) -> Response {
         if self.name.is_some() {
             self.args.push(String::from(command));
         } else if self.commands.get(command).is_some() {

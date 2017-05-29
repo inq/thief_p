@@ -4,32 +4,31 @@ use libc;
 
 use term;
 use msg::event;
-use hq::{self, Hq};
+use hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
-use ui::{Ui, Component};
 use util::ResultBox;
+use std::collections::VecDeque;
 
 def_error! {
     OutOfCapacity: "out of capacity",
-    Internal: "internal error",
     Exit: "exit request",
 }
 
 pub struct Handler {
     term: Term,
-    ui: Ui,
-    hq: Hq,
+    hq: hq::Hq,
     ipt_buf: String,
+    event_que: VecDeque<event::Event>,
 }
 
 impl Handler {
-    pub fn new(ui: Ui) -> ResultBox<Handler> {
+    pub fn new(hq: hq::Hq) -> ResultBox<Handler> {
         Ok(Handler {
+               hq,
                term: Term::new()?,
-               hq: Hq::new()?,
-               ui: ui,
                ipt_buf: String::with_capacity(32),
+               event_que: VecDeque::new(),
            })
     }
 
@@ -63,39 +62,36 @@ impl Handler {
         Ok(())
     }
 
-    /// Handle event from the Ui.
-    fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
+    /// Handle event from the Hq.
+    fn handle_event(&mut self, f: event::Event) -> ResultBox<()> {
         use term::Response::*;
-        let e = if let hq::Response::Event(e) = self.hq.request(hq::Request::Event(e_raw)) {
-            e
-        } else {
-            return Err(From::from(Error::Internal));
-        };
 
-        let next = match self.ui.propagate(e, &mut self.hq)? {
-            Term { refresh, cursor } => {
-                self.term.show_cursor(false);
-                if let Some(term::Refresh { x, y, rect }) = refresh {
-                    self.term.write_ui_buffer(x, y, &rect);
+        let mut e_cur = Some(f);
+        loop {
+            e_cur = match self.hq.request(e_cur.unwrap())? {
+                Command(c) => self.hq.call(&c),
+                Term { refresh, cursor } => {
+                    self.term.show_cursor(false);
+                    if let Some(term::Refresh { x, y, rect }) = refresh {
+                        self.term.write_ui_buffer(x, y, &rect);
+                    }
+                    if let Some(term::Cursor { x, y }) = cursor {
+                        self.term.move_cursor(x, y);
+                    }
+                    self.term.show_cursor(true);
+                    None
                 }
-                if let Some(term::Cursor { x, y }) = cursor {
-                    self.term.move_cursor(x, y);
+                Unhandled => None,
+                Quit => {
+                    self.term.release()?;
+                    return Err(From::from(Error::Exit));
                 }
-                self.term.show_cursor(true);
-                None
+            };
+            if !e_cur.is_some() {
+                break;
             }
-            Command(c) => self.hq.call(&c),
-            Quit => {
-                self.term.release()?;
-                return Err(From::from(Error::Exit));
-            }
-            Unhandled => None,
-        };
-        if let Some(e) = next {
-            self.handle_event(e)
-        } else {
-            Ok(())
         }
+        Ok(())
     }
 
     // Handle resize event of terminal.

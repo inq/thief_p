@@ -5,7 +5,6 @@ pub use self::editor::Editor;
 pub use self::line_editor::LineEditor;
 
 use msg::event;
-use hq::Hq;
 use util::ResultBox;
 
 def_child!(Window <- Editor);

@@ -1,4 +1,4 @@
-use hq::Hq;
+use hq;
 use msg::event;
 use ui::Theme;
 use util::ResultBox;
@@ -41,8 +41,8 @@ pub trait View {
 }
 
 pub trait Component: View {
-    fn on_resize(&mut self, hq: &mut Hq) -> ResultBox<()>;
-    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<term::Response>;
+    fn on_resize(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()>;
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response>;
 
     /// True iff the component has the focus.
     #[inline]
@@ -58,40 +58,43 @@ pub trait Component: View {
 
     /// Resize the component; Call the on_resize function.
     fn resize(&mut self,
-              hq: &mut Hq,
+              workspace: &mut hq::Workspace,
               x: usize,
               y: usize,
               width: usize,
               height: usize)
               -> ResultBox<()> {
         self.get_view_mut().update(x, y, width, height);
-        self.on_resize(hq)
+        self.on_resize(workspace)
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self, _: &mut Hq, _: event::Event) -> ResultBox<term::Response> {
+    fn unhandled(&mut self, _: &mut hq::Workspace, _: event::Event) -> ResultBox<term::Response> {
         Ok(Default::default())
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self, _: &mut Hq, _: event::Key) -> ResultBox<term::Response> {
+    fn on_key(&mut self, _: &mut hq::Workspace, _: event::Key) -> ResultBox<term::Response> {
         Ok(term::Response::Unhandled)
     }
 
     /// Handle the given event.
-    fn handle(&mut self, _: &mut Hq, _: event::Event) -> ResultBox<term::Response> {
+    fn handle(&mut self, _: &mut hq::Workspace, _: event::Event) -> ResultBox<term::Response> {
         Ok(term::Response::Unhandled)
     }
 
     /// Propage event to children. This calls handle, and then translate.
-    fn propagate(&mut self, e: event::Event, hq: &mut Hq) -> ResultBox<term::Response> {
+    fn propagate(&mut self,
+                 e: event::Event,
+                 workspace: &mut hq::Workspace)
+                 -> ResultBox<term::Response> {
         let mut res = if let event::Event::Keyboard(k) = e {
-            self.on_key(hq, k)?
+            self.on_key(workspace, k)?
         } else {
-            self.handle(hq, e.clone())?
+            self.handle(workspace, e.clone())?
         };
         if !res.is_handled() {
-            res = self.unhandled(hq, e)?;
+            res = self.unhandled(workspace, e)?;
         }
         Ok(res.translate(self.get_view().x, self.get_view().y))
     }
@@ -103,7 +106,10 @@ pub trait Parent {
     fn children(&self) -> Vec<&Self::Child>;
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&mut self, rect: term::Rect, hq: &mut Hq) -> ResultBox<term::Response> {
+    fn refresh_children(&mut self,
+                        rect: term::Rect,
+                        workspace: &mut hq::Workspace)
+                        -> ResultBox<term::Response> {
         let mut res_refresh = term::Refresh {
             x: 0,
             y: 0,
@@ -111,7 +117,7 @@ pub trait Parent {
         };
         let mut res_cursor = None;
         for ref mut child in self.children_mut() {
-            if let term::Response::Term { refresh, cursor } = child.refresh(hq)? {
+            if let term::Response::Term { refresh, cursor } = child.refresh(workspace)? {
                 if child.focus() {
                     if let Some(cur) = cursor {
                         res_cursor = Some(term::Cursor {

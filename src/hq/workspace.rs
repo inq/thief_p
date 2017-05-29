@@ -33,7 +33,7 @@ impl Workspace {
         &mut self.fs
     }
 
-    pub fn get_mut(&mut self, s: &str) -> ResultBox<&mut Buffer> {
+    pub fn buf(&mut self, s: &str) -> ResultBox<&mut Buffer> {
         self.buffers
             .get_mut(s)
             .ok_or_else(|| From::from(Error::NoElement))

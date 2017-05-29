@@ -1,5 +1,5 @@
 use msg::event;
-use hq::Hq;
+use hq;
 use term;
 use util::ResultBox;
 use ui::comp::{Component, ViewT};
@@ -57,7 +57,7 @@ impl CommandBar {
 
     fn handle_command_bar(&mut self,
                           c: event::CommandBar,
-                          hq: &mut Hq)
+                          workspace: &mut hq::Workspace)
                           -> ResultBox<term::Response> {
         use msg::event::CommandBar::*;
         match c {
@@ -66,12 +66,12 @@ impl CommandBar {
                 self.data.clear();
                 self.message = String::from(msg);
                 self.status = Status::Navigate;
-                self.refresh(hq)
+                self.refresh(workspace)
             }
             Shortcut(s) => {
                 self.message = String::from(s.clone());
                 self.status = Status::Shortcut;
-                self.refresh(hq)
+                self.refresh(workspace)
             }
             Notify(s) => Ok(self.notify(&s)),
         }
@@ -80,7 +80,7 @@ impl CommandBar {
 
 impl Component for CommandBar {
     /// Force the height.
-    fn on_resize(&mut self, _: &mut Hq) -> ResultBox<()> {
+    fn on_resize(&mut self, _: &mut hq::Workspace) -> ResultBox<()> {
         let height_parent = self.view.height;
         self.view.height = if self.status == Status::Navigate {
             height_parent / 3
@@ -92,7 +92,10 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn on_key(&mut self, hq: &mut Hq, k: event::Key) -> ResultBox<term::Response> {
+    fn on_key(&mut self,
+              workspace: &mut hq::Workspace,
+              k: event::Key)
+              -> ResultBox<term::Response> {
         use msg::event::Key;
         match k {
             Key::CR => Ok(term::Response::Command(self.data.clone())),
@@ -121,7 +124,7 @@ impl Component for CommandBar {
                         self.status = Status::Standby;
                         self.data.clear();
                         self.data.push(c);
-                        self.refresh(hq)
+                        self.refresh(workspace)
                     }
                     Shortcut => unreachable!(),
                 }
@@ -131,19 +134,22 @@ impl Component for CommandBar {
     }
 
     /// Handle events.
-    fn handle(&mut self, hq: &mut Hq, e: event::Event) -> ResultBox<term::Response> {
+    fn handle(&mut self,
+              workspace: &mut hq::Workspace,
+              e: event::Event)
+              -> ResultBox<term::Response> {
         use msg::event::Event::*;
         match e {
-            CommandBar(c) => self.handle_command_bar(c, hq),
+            CommandBar(c) => self.handle_command_bar(c, workspace),
             _ => Ok(Default::default()),
         }
     }
 
     /// Refresh the command bar.
-    fn refresh(&mut self, hq: &mut Hq) -> ResultBox<term::Response> {
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response> {
         let mut rect = if self.status == Status::Navigate {
             let mut res = term::Rect::new(self.view.width, self.view.height, self.background);
-            for (i, formatted) in hq.fs().unwrap().render().iter().enumerate() {
+            for (i, formatted) in workspace.fs().render().iter().enumerate() {
                 res.draw_formatted(formatted, 0, i + 1);
             }
             res

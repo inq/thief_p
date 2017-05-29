@@ -7,16 +7,5 @@ pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
 #[derive(Clone)]
 pub enum Arg {
     Path(String),
-    String(String),
-}
-
-pub enum Request {
-    Event(Event),
-}
-
-pub enum Response {
-    Event(Event),
-    Func(Func, Vec<String>),
-    Require(Arg),
-    Message(String),
+//    String(String),
 }

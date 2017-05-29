@@ -13,13 +13,15 @@ mod hq;
 mod msg;
 mod term;
 
-use ui::Ui;
 use std::fs::File;
 use std::io::Write;
 
+/// The main function
+/// ( io => hq => ui )
 fn main() {
-    let ui = Ui::new().unwrap();
-    let mut io = io::Handler::new(ui).unwrap();
+    let ui = ui::Ui::new().unwrap();
+    let hq = hq::Hq::new(ui).unwrap();
+    let mut io = io::Handler::new(hq).unwrap();
     match io.run() {
         Ok(()) => (),
         Err(e) => {
