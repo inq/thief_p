@@ -1,14 +1,14 @@
-use ui::{Style, Brush, Color};
+use term;
 use util;
 
 #[derive(Clone, Debug)]
 pub struct Char {
     pub chr: char,
-    pub brush: Brush,
+    pub brush: term::Brush,
 }
 
 impl Char {
-    pub fn new(chr: char, brush: Brush) -> Char {
+    pub fn new(chr: char, brush: term::Brush) -> Char {
         Char {
             chr: chr,
             brush: brush,
@@ -19,11 +19,12 @@ impl Char {
         util::term_width(self.chr)
     }
 
-    pub fn overwrite(&mut self, s: Style, c: char) {
+    pub fn overwrite(&mut self, s: term::Style, c: char) {
+        use term::Style::{File, Directory};
         self.chr = c;
         self.brush.fg = match s {
-            Style::File => Color::new(200, 100, 100),
-            Style::Directory => Color::new(100, 100, 200),
+            File => term::Color::new(200, 100, 100),
+            Directory => term::Color::new(100, 100, 200),
         }
     }
 }

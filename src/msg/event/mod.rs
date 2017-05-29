@@ -35,10 +35,10 @@ impl Event {
 
     pub fn from_char(c: char) -> Event {
         Event::Keyboard(if c as u32 <= 26 {
-            Key::Ctrl((c as u8 + b'a' - 1) as char)
-        } else {
-            Key::Char(c)
-        })
+                            Key::Ctrl((c as u8 + b'a' - 1) as char)
+                        } else {
+                            Key::Char(c)
+                        })
     }
 
     pub fn from_string(s: &str) -> (Option<Event>, String) {

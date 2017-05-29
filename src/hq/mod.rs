@@ -1,17 +1,21 @@
 mod shortcut;
 mod workspace;
 mod commands;
+mod enums;
 mod fs;
 
-use buf::Buffer;
 use msg::event;
 use util::ResultBox;
-use hq::fs::Filesys;
-use hq::workspace::Workspace;
-use hq::commands::{Commands, Arg};
+use hq::commands::Commands;
 use hq::shortcut::Shortcut;
+use ui::{self, Component};
+use term;
+
+pub use self::enums::{Arg, Func};
+pub use self::workspace::Workspace;
 
 pub struct Hq {
+    ui: ui::Ui,
     workspace: Workspace,
     commands: Commands,
     shortcut: Shortcut,
@@ -19,7 +23,7 @@ pub struct Hq {
 
 impl Hq {
     /// Initialize.
-    pub fn new() -> ResultBox<Hq> {
+    pub fn new(ui: ui::Ui) -> ResultBox<Hq> {
         use msg::event::Key;
         let mut commands = Commands::new();
         commands.add("find-file",
@@ -30,51 +34,44 @@ impl Hq {
         shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
         shortcut.add("quit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
         Ok(Hq {
-            workspace: Workspace::new()?,
-            commands: commands,
-            shortcut: shortcut,
-        })
+               ui,
+               workspace: Workspace::new()?,
+               commands: commands,
+               shortcut: shortcut,
+           })
     }
 
-    /// Consume event before UI.
-    pub fn preprocess(&mut self, e: event::Event) -> event::Event {
+    /// Consume event from Io.
+    pub fn request(&mut self, e: event::Event) -> ResultBox<term::Response> {
         use msg::event::Event::{CommandBar, Keyboard};
         use msg::event::CommandBar::Shortcut;
         use self::shortcut::Response;
-        match e {
-            Keyboard(k) => {
-                match self.shortcut.key(k) {
-                    Response::More(s) => CommandBar(Shortcut(s)),
-                    Response::Some(s) => self.call(&s).unwrap(),
-                    _ => e,
-                }
+        let e = if let Keyboard(k) = e {
+            match self.shortcut.key(k) {
+                Response::More(s) => CommandBar(Shortcut(s)),
+                Response::Some(s) => self.call(&s).unwrap(),
+                _ => e,
             }
-            _ => e,
-        }
+        } else {
+            e
+        };
+        self.handle_event(e)
+    }
+
+    /// TODO: DRY
+    fn handle_event(&mut self, e: event::Event) -> ResultBox<term::Response> {
+        self.ui.propagate(e, &mut self.workspace)
     }
 
     /// Run a given command.
     pub fn call(&mut self, command: &str) -> Option<event::Event> {
         use msg::event::Event::*;
         use msg::event::CommandBar::*;
-        use self::commands::Response::*;
-        use self::commands::Arg;
+        use hq::commands::Response::*;
         match self.commands.query(command) {
             Func(func, args) => func(&mut self.workspace, args).ok(),
             Require(Arg::Path(_)) => Some(CommandBar(Navigate(String::from(".")))),
-            Require(Arg::String(_)) => unimplemented!(),
             Message(m) => Some(CommandBar(Notify(m))),
         }
-    }
-
-    /// Get the filesys instance.
-    /// TODO: remove this.
-    pub fn fs(&mut self) -> ResultBox<&mut Filesys> {
-        Ok(self.workspace.fs())
-    }
-
-    /// Temporary function.
-    pub fn buf(&mut self, s: &str) -> ResultBox<&mut Buffer> {
-        self.workspace.get_mut(s)
     }
 }

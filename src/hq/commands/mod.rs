@@ -1,6 +1,8 @@
 mod command;
+
+use hq::{Arg, Func};
 use std::collections::BTreeMap;
-pub use self::command::{Command, Func, Arg};
+pub use self::command::Command;
 
 pub enum Response {
     Func(Func, Vec<String>),

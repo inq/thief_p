@@ -88,10 +88,10 @@ impl Buffer {
         }
         let cur = Line::new_from_str(&prevs.pop().unwrap_or_default());
         Ok(Buffer {
-            prevs: prevs,
-            cur: cur,
-            ..Default::default()
-        })
+               prevs: prevs,
+               cur: cur,
+               ..Default::default()
+           })
     }
 
     /// Move up the cursor.
@@ -237,7 +237,10 @@ mod tests {
     #[test]
     fn test_buffer_from_file() {
         let mut a = String::with_capacity(1024);
-        fs::File::open("Cargo.toml").unwrap().read_to_string(&mut a).unwrap();
+        fs::File::open("Cargo.toml")
+            .unwrap()
+            .read_to_string(&mut a)
+            .unwrap();
         let buf = Buffer::from_file("Cargo.toml").unwrap();
         assert_eq!(a, buf.to_string());
     }
@@ -254,12 +257,18 @@ mod tests {
         let mut buf: Buffer = Default::default();
         buf.break_line();
         assert_eq!(buf.to_string(), "\n\n");
-        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
+        let mut buf = Buffer {
+            cur: Line::new_from_str(&"Hello, world!"),
+            ..Default::default()
+        };
         assert_eq!(buf.to_string(), "Hello, world!\n");
         buf.cur.set_cursor(usize::max_value());
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf = Buffer { cur: Line::new_from_str(&"Hello, world!"), ..Default::default() };
+        let mut buf = Buffer {
+            cur: Line::new_from_str(&"Hello, world!"),
+            ..Default::default()
+        };
         buf.cur.set_cursor(5);
         buf.break_line();
         assert_eq!(buf.to_string(), "Hello\n, world!\n");

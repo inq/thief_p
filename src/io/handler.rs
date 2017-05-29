@@ -2,12 +2,13 @@ use std::env;
 use std::convert::From;
 use libc;
 
+use term;
 use msg::event;
-use hq::Hq;
+use hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
-use ui::{Ui, Component, Cursor, Refresh};
 use util::ResultBox;
+use std::collections::VecDeque;
 
 def_error! {
     OutOfCapacity: "out of capacity",
@@ -16,19 +17,19 @@ def_error! {
 
 pub struct Handler {
     term: Term,
-    ui: Ui,
-    hq: Hq,
+    hq: hq::Hq,
     ipt_buf: String,
+    event_que: VecDeque<event::Event>,
 }
 
 impl Handler {
-    pub fn new(ui: Ui) -> ResultBox<Handler> {
+    pub fn new(hq: hq::Hq) -> ResultBox<Handler> {
         Ok(Handler {
-            term: Term::new()?,
-            hq: Hq::new()?,
-            ui: ui,
-            ipt_buf: String::with_capacity(32),
-        })
+               hq,
+               term: Term::new()?,
+               ipt_buf: String::with_capacity(32),
+               event_que: VecDeque::new(),
+           })
     }
 
     /// STDOUT - Consume the output buffer.
@@ -49,7 +50,7 @@ impl Handler {
         while let (Some(e), next) = event::Event::from_string(&cur) {
             if let event::Event::Pair(x, y) = e {
                 // TODO: check this
-                self.term.initial_cursor(&Cursor { x: x, y: y });
+                self.term.initial_cursor(&term::Cursor { x: x, y: y });
                 let (w, h) = self.term.get_size()?;
                 self.handle_event(event::Event::Resize(w, h))?;
             }
@@ -61,34 +62,36 @@ impl Handler {
         Ok(())
     }
 
-    /// Handle event from the Ui.
-    fn handle_event(&mut self, e_raw: event::Event) -> ResultBox<()> {
-        use ui::Response::*;
-        let e = self.hq.preprocess(e_raw);
-        let next = match self.ui.propagate(e, &mut self.hq)? {
-            Term { refresh, cursor } => {
-                self.term.show_cursor(false);
-                if let Some(Refresh { x, y, rect }) = refresh {
-                    self.term.write_ui_buffer(x, y, &rect);
+    /// Handle event from the Hq.
+    fn handle_event(&mut self, f: event::Event) -> ResultBox<()> {
+        use term::Response::*;
+
+        let mut e_cur = Some(f);
+        loop {
+            e_cur = match self.hq.request(e_cur.unwrap())? {
+                Command(c) => self.hq.call(&c),
+                Term { refresh, cursor } => {
+                    self.term.show_cursor(false);
+                    if let Some(term::Refresh { x, y, rect }) = refresh {
+                        self.term.write_ui_buffer(x, y, &rect);
+                    }
+                    if let Some(term::Cursor { x, y }) = cursor {
+                        self.term.move_cursor(x, y);
+                    }
+                    self.term.show_cursor(true);
+                    None
                 }
-                if let Some(Cursor { x, y }) = cursor {
-                    self.term.move_cursor(x, y);
+                Unhandled => None,
+                Quit => {
+                    self.term.release()?;
+                    return Err(From::from(Error::Exit));
                 }
-                self.term.show_cursor(true);
-                None
+            };
+            if !e_cur.is_some() {
+                break;
             }
-            Command(c) => self.hq.call(&c),
-            Quit => {
-                self.term.release()?;
-                return Err(From::from(Error::Exit));
-            }
-            Unhandled => None,
-        };
-        if let Some(e) = next {
-            self.handle_event(e)
-        } else {
-            Ok(())
         }
+        Ok(())
     }
 
     // Handle resize event of terminal.
@@ -110,9 +113,9 @@ impl Handler {
         let args: Vec<String> = env::args().collect();
         args.get(1)
             .and_then(|file| {
-                self.hq.call("open-file");
-                self.hq.call(file)
-            })
+                          self.hq.call("open-file");
+                          self.hq.call(file)
+                      })
             .and_then(|e| self.handle_event(e).ok());
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;

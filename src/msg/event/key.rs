@@ -30,9 +30,9 @@ impl Key {
 impl ToString for Key {
     fn to_string(&self) -> String {
         String::from(match *self {
-            Key::Char('a') => "C-a",
-            Key::Char('b') => "C-b",
-            _ => "unknown",
-        })
+                         Key::Char('a') => "C-a",
+                         Key::Char('b') => "C-b",
+                         _ => "unknown",
+                     })
     }
 }

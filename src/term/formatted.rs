@@ -19,10 +19,11 @@ impl Formatted {
     }
 
     pub fn push(mut self, style: Style, token: &str) -> Self {
-        self.entries.push(Entry {
-            style: style,
-            token: String::from(token),
-        });
+        self.entries
+            .push(Entry {
+                      style: style,
+                      token: String::from(token),
+                  });
         self
     }
 

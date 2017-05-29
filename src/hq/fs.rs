@@ -1,6 +1,6 @@
 use std::fs;
 use util::ResultBox;
-use ui::{Style, Formatted};
+use term;
 
 def_error! {
     Internal: "internal error",
@@ -60,25 +60,27 @@ impl Filesys {
             } else {
                 EntryType::File
             };
-            self.files.push(Entry::new(entry.path()
-                                           .file_name()
-                                           .ok_or(Error::Internal)?
-                                           .to_str()
-                                           .ok_or(Error::Internal)?,
-                                       entry_type));
+            self.files
+                .push(Entry::new(entry
+                                     .path()
+                                     .file_name()
+                                     .ok_or(Error::Internal)?
+                                     .to_str()
+                                     .ok_or(Error::Internal)?,
+                                 entry_type));
         }
         Ok(())
     }
 
-    pub fn render(&self) -> Vec<Formatted> {
+    pub fn render(&self) -> Vec<term::Formatted> {
         let mut res = vec![];
         for entry in &self.files {
             let style = if entry.is_dir() {
-                Style::Directory
+                term::Style::Directory
             } else {
-                Style::File
+                term::Style::File
             };
-            res.push(Formatted::new().push(style, &entry.name));
+            res.push(term::Formatted::new().push(style, &entry.name));
         }
         res
     }

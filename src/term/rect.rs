@@ -1,23 +1,23 @@
-use ui::res::{Formatted, Brush, Char, Line};
+use term;
 
 #[derive(Debug)]
 pub struct Rect {
-    pub lines: Vec<Line>,
+    pub lines: Vec<term::Line>,
     pub width: usize,
     pub height: usize,
 }
 
 impl Rect {
-    pub fn new(width: usize, height: usize, brush: Brush) -> Rect {
+    pub fn new(width: usize, height: usize, brush: term::Brush) -> Rect {
         Rect {
-            lines: vec![Line::new(width, brush); height],
+            lines: vec![term::Line::new(width, brush); height],
             width: width,
             height: height,
         }
     }
 
     /// Create a new Rect from Line.
-    pub fn new_from_line(line: Line) -> Rect {
+    pub fn new_from_line(line: term::Line) -> Rect {
         let w = line.width;
         Rect {
             lines: vec![line],
@@ -27,8 +27,8 @@ impl Rect {
     }
 
     /// Create a new Rect from Char.
-    pub fn new_from_char(char: Char) -> Rect {
-        let line = Line::new_from_char(char);
+    pub fn new_from_char(char: term::Char) -> Rect {
+        let line = term::Line::new_from_char(char);
         let w = line.width;
         Rect {
             lines: vec![line],
@@ -50,13 +50,13 @@ impl Rect {
     }
 
     /// Append a Line object.
-    pub fn append(&mut self, src: &Line) {
+    pub fn append(&mut self, src: &term::Line) {
         self.lines.push(src.clone());
         self.height += 1;
     }
 
     /// Draw the formatted string here.
-    pub fn draw_formatted(&mut self, src: &Formatted, x: usize, y: usize) {
+    pub fn draw_formatted(&mut self, src: &term::Formatted, x: usize, y: usize) {
         if let Some(ref mut line) = self.lines.get_mut(y) {
             line.draw_formatted(src, x)
         }

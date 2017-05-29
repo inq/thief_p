@@ -1,15 +1,4 @@
-use msg::event::Event;
-use util::ResultBox;
-use hq::workspace::Workspace;
-
-pub type Func = fn(&mut Workspace, Vec<String>) -> ResultBox<Event>;
-
-#[allow(dead_code)]
-#[derive(Clone)]
-pub enum Arg {
-    Path(String),
-    String(String),
-}
+use hq::{Arg, Func};
 
 #[allow(dead_code)]
 pub struct Command {
