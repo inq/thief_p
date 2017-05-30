@@ -16,14 +16,14 @@ def_error! {
 
 pub struct Handler {
     term: Term,
-    hq: hq::Hq,
+    hq: hq::Handler,
     ipt_buf: String,
 }
 
 impl Handler {
-    pub fn new(hq: hq::Hq) -> ResultBox<Handler> {
+    pub fn new(hq_handler: hq::Handler) -> ResultBox<Handler> {
         Ok(Handler {
-               hq,
+               hq: hq_handler,
                term: Term::new()?,
                ipt_buf: String::with_capacity(32),
            })

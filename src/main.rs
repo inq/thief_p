@@ -19,10 +19,10 @@ use std::io::Write;
 /// The main function
 /// ( io => hq => ui )
 fn main() {
-    let ui = ui::Ui::new().unwrap();
-    let hq = hq::Hq::new(ui).unwrap();
-    let mut io = io::Handler::new(hq).unwrap();
-    match io.run() {
+    let screen = ui::Screen::new().unwrap();
+    let hq_handler = hq::Handler::new(screen).unwrap();
+    let mut io_handler = io::Handler::new(hq_handler).unwrap();
+    match io_handler.run() {
         Ok(()) => (),
         Err(e) => {
             let mut f = File::create("log/main.log").unwrap();
