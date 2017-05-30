@@ -8,7 +8,6 @@ use hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
 use util::ResultBox;
-use std::collections::VecDeque;
 
 def_error! {
     OutOfCapacity: "out of capacity",
@@ -19,7 +18,6 @@ pub struct Handler {
     term: Term,
     hq: hq::Hq,
     ipt_buf: String,
-    event_que: VecDeque<event::Event>,
 }
 
 impl Handler {
@@ -28,7 +26,6 @@ impl Handler {
                hq,
                term: Term::new()?,
                ipt_buf: String::with_capacity(32),
-               event_que: VecDeque::new(),
            })
     }
 
