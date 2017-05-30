@@ -1,6 +1,5 @@
 use hq;
-use msg::event;
-use ui::Theme;
+use ui::{self, Theme};
 use util::ResultBox;
 use term;
 
@@ -42,7 +41,7 @@ pub trait View {
 
 pub trait Component: View {
     fn on_resize(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()>;
-    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response>;
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response>;
 
     /// True iff the component has the focus.
     #[inline]
@@ -69,26 +68,26 @@ pub trait Component: View {
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self, _: &mut hq::Workspace, _: event::Event) -> ResultBox<term::Response> {
-        Ok(Default::default())
+    fn unhandled(&mut self, _: &mut hq::Workspace, _: ui::Request) -> ResultBox<ui::Response> {
+        Ok(ui::Response::None)
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self, _: &mut hq::Workspace, _: event::Key) -> ResultBox<term::Response> {
-        Ok(term::Response::Unhandled)
+    fn on_key(&mut self, _: &mut hq::Workspace, _: term::Key) -> ResultBox<ui::Response> {
+        Ok(ui::Response::Unhandled)
     }
 
     /// Handle the given event.
-    fn handle(&mut self, _: &mut hq::Workspace, _: event::Event) -> ResultBox<term::Response> {
-        Ok(term::Response::Unhandled)
+    fn handle(&mut self, _: &mut hq::Workspace, _: ui::Request) -> ResultBox<ui::Response> {
+        Ok(ui::Response::Unhandled)
     }
 
     /// Propage event to children. This calls handle, and then translate.
     fn propagate(&mut self,
-                 e: event::Event,
+                 e: ui::Request,
                  workspace: &mut hq::Workspace)
-                 -> ResultBox<term::Response> {
-        let mut res = if let event::Event::Keyboard(k) = e {
+                 -> ResultBox<ui::Response> {
+        let mut res = if let ui::Request::Keyboard(k) = e {
             self.on_key(workspace, k)?
         } else {
             self.handle(workspace, e.clone())?
@@ -109,7 +108,7 @@ pub trait Parent {
     fn refresh_children(&mut self,
                         rect: term::Rect,
                         workspace: &mut hq::Workspace)
-                        -> ResultBox<term::Response> {
+                        -> ResultBox<ui::Response> {
         let mut res_refresh = term::Refresh {
             x: 0,
             y: 0,
@@ -117,13 +116,10 @@ pub trait Parent {
         };
         let mut res_cursor = None;
         for ref mut child in self.children_mut() {
-            if let term::Response::Term { refresh, cursor } = child.refresh(workspace)? {
+            if let ui::Response::Term { refresh, cursor } = child.refresh(workspace)? {
                 if child.focus() {
                     if let Some(cur) = cursor {
-                        res_cursor = Some(term::Cursor {
-                                              x: child.get_view().x + cur.x,
-                                              y: child.get_view().y + cur.y,
-                                          });
+                        res_cursor = Some((child.get_view().x + cur.0, child.get_view().y + cur.1));
                     }
                 }
                 if let Some(term::Refresh { x, y, rect }) = refresh {
@@ -133,7 +129,7 @@ pub trait Parent {
                 }
             }
         }
-        Ok(term::Response::Term {
+        Ok(ui::Response::Term {
                refresh: Some(res_refresh),
                cursor: res_cursor,
            })

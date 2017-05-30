@@ -1,4 +1,4 @@
-use msg::event;
+use ui;
 use buf::Buffer;
 use term;
 use util::ResultBox;
@@ -13,7 +13,7 @@ pub struct LineEditor {
 }
 
 pub enum LineEditorRes {
-    Ui(term::Response),
+    Ui(ui::Response),
     LineBreak(term::Cursor),
     PullUp(usize),
     Move(term::Cursor, term::Cursor),
@@ -87,7 +87,7 @@ impl LineEditor {
                                                     self.view.theme.editor);
                 self.response_cursor_with_line(buf.get_x(), line, false)
             }
-            Empty(cursor) => Ok(LineEditorRes::PullUp(cursor.y)),
+            Empty(cursor) => Ok(LineEditorRes::PullUp(cursor.1)),
             _ => Ok(LineEditorRes::Unhandled),
         }
     }
@@ -103,9 +103,9 @@ impl LineEditor {
     fn on_move(&mut self, buf: &mut Buffer, dx: i8, dy: i8) -> ResultBox<LineEditorRes> {
         let cursor_prev = buf.get_cursor();
         let cursor = buf.move_cursor(dx, dy);
-        if cursor_prev.y == cursor.y {
+        if cursor_prev.1 == cursor.1 {
             // Move only in here.
-            self.response_cursor(cursor.x)
+            self.response_cursor(cursor.0)
         } else {
             // Pass the process to the parrent.
             Ok(LineEditorRes::Move(cursor_prev, cursor))
@@ -114,17 +114,14 @@ impl LineEditor {
 
     /// Response wrapper for UI
     #[inline]
-    fn response_ui(&self, response: term::Response) -> ResultBox<LineEditorRes> {
+    fn response_ui(&self, response: ui::Response) -> ResultBox<LineEditorRes> {
         Ok(LineEditorRes::Ui(response))
     }
 
     /// Response with cursor.
     fn response_cursor(&self, cursor: usize) -> ResultBox<LineEditorRes> {
-        self.response_ui(term::Response::Term {
-                             cursor: Some(term::Cursor {
-                                              x: self.translate_cursor(cursor),
-                                              y: 0,
-                                          }),
+        self.response_ui(ui::Response::Term {
+                             cursor: Some((self.translate_cursor(cursor), 0)),
                              refresh: None,
                          })
     }
@@ -136,44 +133,44 @@ impl LineEditor {
                                  on_delete: bool)
                                  -> ResultBox<LineEditorRes> {
         let x = self.translate_cursor(cursor);
-        self.response_ui(term::Response::Term {
+        self.response_ui(ui::Response::Term {
                              refresh: Some(term::Refresh {
                                                x: if on_delete { x } else { x - 1 },
                                                y: 0,
                                                rect: term::Rect::new_from_line(line),
                                            }),
-                             cursor: Some(term::Cursor { x: x, y: 0 }),
+                             cursor: Some((x, 0)),
                          })
     }
 
     /// Move cursor left and right, or Type a character.
-    pub fn on_key(&mut self, buf: &mut Buffer, k: event::Key) -> ResultBox<LineEditorRes> {
+    pub fn on_key(&mut self, buf: &mut Buffer, k: term::Key) -> ResultBox<LineEditorRes> {
         match k {
-            event::Key::Ctrl('a') |
-            event::Key::Home => {
-                let cursor = buf.move_begin_of_line().x;
+            term::Key::Ctrl('a') |
+            term::Key::Home => {
+                let cursor = buf.move_begin_of_line().0;
                 self.response_cursor(cursor)
             }
-            event::Key::Ctrl('e') |
-            event::Key::End => {
-                let cursor = buf.move_end_of_line().x;
+            term::Key::Ctrl('e') |
+            term::Key::End => {
+                let cursor = buf.move_end_of_line().0;
                 self.response_cursor(cursor)
             }
-            event::Key::CR => {
+            term::Key::CR => {
                 let cursor = buf.break_line();
                 Ok(LineEditorRes::LineBreak(cursor))
             }
-            event::Key::Del => self.on_delete(buf),
-            event::Key::Ctrl('k') => self.on_kill_line(buf),
-            event::Key::Ctrl('n') |
-            event::Key::Down => self.on_move(buf, 0, 1),
-            event::Key::Ctrl('p') |
-            event::Key::Up => self.on_move(buf, 0, -1),
-            event::Key::Ctrl('f') |
-            event::Key::Right => self.on_move(buf, 1, 0),
-            event::Key::Ctrl('b') |
-            event::Key::Left => self.on_move(buf, -1, 0),
-            event::Key::Char(c) => {
+            term::Key::Del => self.on_delete(buf),
+            term::Key::Ctrl('k') => self.on_kill_line(buf),
+            term::Key::Ctrl('n') |
+            term::Key::Down => self.on_move(buf, 0, 1),
+            term::Key::Ctrl('p') |
+            term::Key::Up => self.on_move(buf, 0, -1),
+            term::Key::Ctrl('f') |
+            term::Key::Right => self.on_move(buf, 1, 0),
+            term::Key::Ctrl('b') |
+            term::Key::Left => self.on_move(buf, -1, 0),
+            term::Key::Char(c) => {
                 let mut after_cursor = String::with_capacity(self.view.width);
                 after_cursor.push(c);
                 let cursor = buf.get_x();

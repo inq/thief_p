@@ -10,14 +10,13 @@ mod buf;
 mod io;
 mod ui;
 mod hq;
-mod msg;
 mod term;
 
 use std::fs::File;
 use std::io::Write;
 
 /// The main function
-/// ( io => hq => ui )
+/// io::Handler => hq::Handler => ui::Screen
 fn main() {
     let screen = ui::Screen::new().unwrap();
     let hq_handler = hq::Handler::new(screen).unwrap();

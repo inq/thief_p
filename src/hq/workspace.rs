@@ -1,9 +1,9 @@
+use ui;
 use std::collections::BTreeMap;
 use std::path::Path;
 use hq::fs::Filesys;
 use buf::Buffer;
 use util::ResultBox;
-use msg::event::Event;
 
 def_error! {
     NoElement: "no element.",
@@ -39,7 +39,7 @@ impl Workspace {
             .ok_or_else(|| From::from(Error::NoElement))
     }
 
-    pub fn find_file(&mut self, args: Vec<String>) -> ResultBox<Event> {
+    pub fn find_file(&mut self, args: Vec<String>) -> ResultBox<ui::Request> {
         let s = &args[0];
         let file_name = Path::new(s)
             .file_name()
@@ -52,10 +52,10 @@ impl Workspace {
             .get_mut(file_name)
             .ok_or(Error::Internal)?
             .set_cursor(0, 0);
-        Ok(Event::OpenBuffer(String::from(file_name)))
+        Ok(ui::Request::OpenBuffer(String::from(file_name)))
     }
 
-    pub fn quit(&mut self, _: Vec<String>) -> ResultBox<Event> {
-        Ok(Event::Quit)
+    pub fn quit(&mut self, _: Vec<String>) -> ResultBox<ui::Request> {
+        Ok(ui::Request::Quit)
     }
 }

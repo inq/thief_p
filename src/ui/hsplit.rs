@@ -1,7 +1,7 @@
-use msg::event;
 use hq;
 use util::ResultBox;
 use term;
+use ui;
 use ui::comp::{ViewT, Parent, Component};
 use ui::window::Window;
 
@@ -26,7 +26,7 @@ impl Component for HSplit {
         Ok(())
     }
 
-    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response> {
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
         let rect = term::Rect::new(self.view.width,
                                    self.view.height,
                                    term::Brush::new(term::Color::new(0, 0, 0),
@@ -37,22 +37,19 @@ impl Component for HSplit {
     /// Propagate if the event is not handled.
     fn unhandled(&mut self,
                  workspace: &mut hq::Workspace,
-                 e: event::Event)
-                 -> ResultBox<term::Response> {
+                 e: ui::Request)
+                 -> ResultBox<ui::Response> {
         self.windows[self.focused].propagate(e, workspace)
     }
 
     /// Handle the keyboard event.
-    fn on_key(&mut self,
-              workspace: &mut hq::Workspace,
-              k: event::Key)
-              -> ResultBox<term::Response> {
+    fn on_key(&mut self, workspace: &mut hq::Workspace, k: term::Key) -> ResultBox<ui::Response> {
         match k {
-            event::Key::Ctrl('d') => {
+            term::Key::Ctrl('d') => {
                 self.toggle_split(workspace)?;
                 self.refresh(workspace)
             }
-            _ => Ok(term::Response::Unhandled),
+            _ => Ok(ui::Response::Unhandled),
         }
     }
 }

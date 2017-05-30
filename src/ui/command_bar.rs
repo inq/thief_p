@@ -1,6 +1,6 @@
-use msg::event;
 use hq;
 use term;
+use ui;
 use util::ResultBox;
 use ui::comp::{Component, ViewT};
 
@@ -36,11 +36,11 @@ impl Default for CommandBar {
 
 impl CommandBar {
     /// Notify a given message.
-    fn notify(&mut self, msg: &str) -> term::Response {
+    fn notify(&mut self, msg: &str) -> ui::Response {
         self.status = Status::Notify;
         let mut rect = term::Rect::new(self.view.width, self.view.height, self.background);
         rect.draw_str(msg, 0, 0);
-        term::Response::Term {
+        ui::Response::Term {
             refresh: Some(term::Refresh {
                               x: 0,
                               y: 0,
@@ -56,24 +56,23 @@ impl CommandBar {
     }
 
     fn handle_command_bar(&mut self,
-                          c: event::CommandBar,
+                          c: ui::CommandBar,
                           workspace: &mut hq::Workspace)
-                          -> ResultBox<term::Response> {
-        use msg::event::CommandBar::*;
+                          -> ResultBox<ui::Response> {
         match c {
-            Navigate(msg) => {
+            ui::CommandBar::Navigate(msg) => {
                 // Turn on the navigator
                 self.data.clear();
                 self.message = String::from(msg);
                 self.status = Status::Navigate;
                 self.refresh(workspace)
             }
-            Shortcut(s) => {
+            ui::CommandBar::Shortcut(s) => {
                 self.message = String::from(s.clone());
                 self.status = Status::Shortcut;
                 self.refresh(workspace)
             }
-            Notify(s) => Ok(self.notify(&s)),
+            ui::CommandBar::Notify(s) => Ok(self.notify(&s)),
         }
     }
 }
@@ -92,21 +91,17 @@ impl Component for CommandBar {
     }
 
     /// Handle the keyboard input.
-    fn on_key(&mut self,
-              workspace: &mut hq::Workspace,
-              k: event::Key)
-              -> ResultBox<term::Response> {
-        use msg::event::Key;
+    fn on_key(&mut self, workspace: &mut hq::Workspace, k: term::Key) -> ResultBox<ui::Response> {
         match k {
-            Key::CR => Ok(term::Response::Command(self.data.clone())),
-            Key::Char(c) => {
+            term::Key::CR => Ok(ui::Response::Command(self.data.clone())),
+            term::Key::Char(c) => {
                 use self::Status::*;
                 match self.status {
                     Standby | Navigate => {
                         // TODO: Must consider unicode.
                         let prev = self.data.len();
                         self.data.push(c);
-                        Ok(term::Response::Term {
+                        Ok(ui::Response::Term {
                                refresh: Some(term::Refresh {
                                                  x: prev,
                                                  y: 0,
@@ -114,10 +109,7 @@ impl Component for CommandBar {
                                                      term::Rect::new_from_char(term::Char::new(c,
                                                                                    self.background)),
                                              }),
-                               cursor: Some(term::Cursor {
-                                                x: self.data.len(),
-                                                y: 0,
-                                            }),
+                               cursor: Some((self.data.len(), 0)),
                            })
                     }
                     Notify => {
@@ -129,24 +121,20 @@ impl Component for CommandBar {
                     Shortcut => unreachable!(),
                 }
             }
-            _ => Ok(Default::default()),
+            _ => Ok(ui::Response::None),
         }
     }
 
     /// Handle events.
-    fn handle(&mut self,
-              workspace: &mut hq::Workspace,
-              e: event::Event)
-              -> ResultBox<term::Response> {
-        use msg::event::Event::*;
+    fn handle(&mut self, workspace: &mut hq::Workspace, e: ui::Request) -> ResultBox<ui::Response> {
         match e {
-            CommandBar(c) => self.handle_command_bar(c, workspace),
-            _ => Ok(Default::default()),
+            ui::Request::CommandBar(c) => self.handle_command_bar(c, workspace),
+            _ => Ok(ui::Response::None),
         }
     }
 
     /// Refresh the command bar.
-    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response> {
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
         let mut rect = if self.status == Status::Navigate {
             let mut res = term::Rect::new(self.view.width, self.view.height, self.background);
             for (i, formatted) in workspace.fs().render().iter().enumerate() {
@@ -157,13 +145,13 @@ impl Component for CommandBar {
             term::Rect::new(self.view.width, self.view.height, self.background)
         };
         rect.draw_str(&self.message, 0, 0);
-        Ok(term::Response::Term {
+        Ok(ui::Response::Term {
                refresh: Some(term::Refresh {
                                  x: 0,
                                  y: 0,
                                  rect: rect,
                              }),
-               cursor: Some(term::Cursor { x: 0, y: 0 }),
+               cursor: Some((0, 0)),
            })
     }
 }

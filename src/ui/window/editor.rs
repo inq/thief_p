@@ -1,8 +1,8 @@
-use msg::event;
 use buf::Buffer;
 use hq;
 use util::ResultBox;
 use term;
+use ui;
 use ui::comp::{Component, ViewT};
 use ui::window::LineEditor;
 
@@ -37,10 +37,7 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
         // TODO: Apply the x_offset from line_editor.
-        term::Cursor {
-            x: cursor.x + self.linenum_width(),
-            y: cursor.y - self.y_offset,
-        }
+        (cursor.0 + self.linenum_width(), cursor.1 - self.y_offset)
     }
 
     /// Basic initializennr.
@@ -57,8 +54,8 @@ impl Editor {
                                  rect: term::Rect,
                                  y_offset: usize,
                                  cursor: term::Cursor)
-                                 -> ResultBox<term::Response> {
-        Ok(term::Response::Term {
+                                 -> ResultBox<ui::Response> {
+        Ok(ui::Response::Term {
                refresh: Some(term::Refresh {
                                  x: 0,
                                  y: y_offset,
@@ -73,36 +70,36 @@ impl Editor {
                workspace: &mut hq::Workspace,
                cursor_prev: term::Cursor,
                cursor: term::Cursor)
-               -> ResultBox<term::Response> {
-        if cursor.y < self.y_offset {
+               -> ResultBox<ui::Response> {
+        if cursor.1 < self.y_offset {
             // Scroll upward
-            self.y_offset = cursor.y;
+            self.y_offset = cursor.1;
             return self.refresh(workspace);
         }
-        if cursor.y >= self.y_offset + self.view.height {
+        if cursor.1 >= self.y_offset + self.view.height {
             // Scroll downward
-            self.y_offset = cursor.y + self.view.height;
+            self.y_offset = cursor.1 + self.view.height;
             return self.refresh(workspace);
         }
         let buf = self.get_buffer(workspace)?;
-        if cursor.y < cursor_prev.y {
+        if cursor.1 < cursor_prev.1 {
             // Move upward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_editor.render(buf, cursor.y)?);
+            rect.append(&self.line_editor.render(buf, cursor.1)?);
             {
-                let line_cache = self.refresh_line_cache(buf, cursor_prev.y);
-                let prev_line_cache = &mut self.line_cache[cursor_prev.y - self.y_offset];
+                let line_cache = self.refresh_line_cache(buf, cursor_prev.1);
+                let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
                 *prev_line_cache = line_cache;
                 rect.append(prev_line_cache);
             }
-            return self.response_rect_with_cursor(rect, cursor.y - self.y_offset, cursor);
+            return self.response_rect_with_cursor(rect, cursor.1 - self.y_offset, cursor);
         }
-        if cursor.y > cursor_prev.y {
+        if cursor.1 > cursor_prev.1 {
             // Move downward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_cache[cursor_prev.y - self.y_offset]);
-            rect.append(&self.line_editor.render(buf, cursor.y)?);
-            return self.response_rect_with_cursor(rect, cursor_prev.y - self.y_offset, cursor);
+            rect.append(&self.line_cache[cursor_prev.1 - self.y_offset]);
+            rect.append(&self.line_editor.render(buf, cursor.1)?);
+            return self.response_rect_with_cursor(rect, cursor_prev.1 - self.y_offset, cursor);
         }
         unreachable!();
     }
@@ -154,10 +151,7 @@ impl Component for Editor {
     }
 
     /// Process keyboard event.
-    fn on_key(&mut self,
-              workspace: &mut hq::Workspace,
-              k: event::Key)
-              -> ResultBox<term::Response> {
+    fn on_key(&mut self, workspace: &mut hq::Workspace, k: term::Key) -> ResultBox<ui::Response> {
         use ui::window::line_editor::LineEditorRes::*;
         let res = {
             let buf = self.get_buffer(workspace)?;
@@ -181,25 +175,25 @@ impl Component for Editor {
                 // TODO: Implement pull-down instead of refresh
                 Ok(self.refresh(workspace)?)
             }
-            Unhandled => Ok(Default::default()),
+            Unhandled => Ok(ui::Response::None),
         }
     }
 
     /// Refresh the editor.
-    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<term::Response> {
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
         let linenum_width = self.linenum_width();
         self.line_editor.set_linenum_width(linenum_width);
         let cursor = self.refresh_line_caches(workspace);
         let buf = self.get_buffer(workspace)?;
         let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
-            if i + self.y_offset == cursor.y {
+            if i + self.y_offset == cursor.1 {
                 rect.append(&self.line_editor.render(buf, i).unwrap());
             } else {
                 rect.append(line);
             }
         }
-        Ok(term::Response::Term {
+        Ok(ui::Response::Term {
                refresh: Some(term::Refresh {
                                  x: 0,
                                  y: 0,
@@ -212,16 +206,16 @@ impl Component for Editor {
     /// Handle events.
     fn handle(&mut self,
               workspace: &mut hq::Workspace,
-              e: event::Event)
-              -> ResultBox<term::Response> {
+              e: ::ui::Request)
+              -> ResultBox<ui::Response> {
         match e {
-            event::Event::OpenBuffer(s) => {
+            ::ui::Request::OpenBuffer(s) => {
                 self.buffer_name = s;
                 let buf = self.get_buffer(workspace)?;
                 self.line_max = buf.get_line_num();
-                Ok(Default::default())
+                Ok(ui::Response::None)
             }
-            _ => Ok(term::Response::Unhandled),
+            _ => Ok(ui::Response::Unhandled),
         }
     }
 }

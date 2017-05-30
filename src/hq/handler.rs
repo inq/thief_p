@@ -1,13 +1,15 @@
-use msg::event;
 use util::ResultBox;
 use ui::{self, Component};
 use term;
 
+use hq;
 use hq::enums::Arg;
-use hq::commands::Commands;
+use hq::commands::{self, Commands};
 use hq::shortcut::Shortcut;
 use hq::workspace::Workspace;
 
+/// io::Handler -- Request -->
+///            <-- Response--  hq::Handler
 pub struct Handler {
     screen: ui::Screen,
     workspace: Workspace,
@@ -18,15 +20,15 @@ pub struct Handler {
 impl Handler {
     /// Initialize.
     pub fn new(screen: ui::Screen) -> ResultBox<Handler> {
-        use msg::event::Key;
         let mut commands = Commands::new();
         commands.add("find-file",
                      vec![Arg::Path(String::from("filename"))],
                      Workspace::find_file);
         commands.add("quit", vec![], Workspace::quit);
         let mut shortcut = Shortcut::new();
-        shortcut.add("find-file", vec![Key::Ctrl('x'), Key::Ctrl('f')]);
-        shortcut.add("quit", vec![Key::Ctrl('x'), Key::Ctrl('c')]);
+        shortcut.add("find-file",
+                     vec![term::Key::Ctrl('x'), term::Key::Ctrl('f')]);
+        shortcut.add("quit", vec![term::Key::Ctrl('x'), term::Key::Ctrl('c')]);
         Ok(Handler {
                screen,
                workspace: Workspace::new()?,
@@ -36,35 +38,39 @@ impl Handler {
     }
 
     /// Consume event from Io.
-    pub fn request(&mut self, e: event::Event) -> ResultBox<term::Response> {
-        use msg::event::Event::{CommandBar, Keyboard};
-        use msg::event::CommandBar::Shortcut;
-        use hq::shortcut::Response;
-        let e = if let Keyboard(k) = e {
+    pub fn request(&mut self, e: hq::Request) -> ResultBox<hq::Response> {
+        use hq::shortcut;
+        let e = if let hq::Request::Keyboard(k) = e {
             match self.shortcut.key(k) {
-                Response::More(s) => CommandBar(Shortcut(s)),
-                Response::Some(s) => self.call(&s).unwrap(),
-                _ => e,
+                shortcut::Response::More(s) => ui::Request::CommandBar(ui::CommandBar::Shortcut(s)),
+                shortcut::Response::Some(s) => self.call(&s).unwrap(),
+                _ => e.to_ui(),
             }
         } else {
-            e
+            e.to_ui()
         };
         self.handle_event(e)
     }
 
-    fn handle_event(&mut self, e: event::Event) -> ResultBox<term::Response> {
-        self.screen.propagate(e, &mut self.workspace)
+    fn handle_event(&mut self, e: ui::Request) -> ResultBox<hq::Response> {
+        match self.screen.propagate(e, &mut self.workspace)? {
+            ui::Response::Quit => Ok(hq::Response::Quit),
+            ui::Response::Term { refresh, cursor } => Ok(hq::Response::Term { refresh, cursor }),
+            ui::Response::None => Ok(hq::Response::None),
+            e => panic!("{:?}", e),
+        }
     }
 
     /// Run a given command.
-    pub fn call(&mut self, command: &str) -> Option<event::Event> {
-        use msg::event::Event::*;
-        use msg::event::CommandBar::*;
-        use hq::commands::Response::*;
+    pub fn call(&mut self, command: &str) -> Option<ui::Request> {
         match self.commands.query(command) {
-            Func(func, args) => func(&mut self.workspace, args).ok(),
-            Require(Arg::Path(_)) => Some(CommandBar(Navigate(String::from(".")))),
-            Message(m) => Some(CommandBar(Notify(m))),
+            commands::Response::Func(func, args) => func(&mut self.workspace, args).ok(),
+            commands::Response::Require(Arg::Path(_)) => {
+                Some(ui::Request::CommandBar(ui::CommandBar::Navigate(String::from("."))))
+            }
+            commands::Response::Message(m) => {
+                Some(ui::Request::CommandBar(ui::CommandBar::Notify(m)))
+            }
         }
     }
 }

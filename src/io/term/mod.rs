@@ -40,7 +40,7 @@ impl Term {
         self.buffering(true)?;
         self.echo(true)?;
         if let Some(cursor) = self.initial_cursor {
-            self.move_cursor(cursor.x + 1, cursor.y + 1);
+            self.move_cursor(cursor.0 + 1, cursor.1 + 1);
         }
         self.rmcup();
         io::stdout().flush()?;

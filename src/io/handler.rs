@@ -3,7 +3,6 @@ use std::convert::From;
 use libc;
 
 use term;
-use msg::event;
 use hq;
 use io::kqueue::Kqueue;
 use io::term::Term;
@@ -44,12 +43,12 @@ impl Handler {
         }
         self.ipt_buf.push_str(&ipt);
         let mut cur = self.ipt_buf.clone();
-        while let (Some(e), next) = event::Event::from_string(&cur) {
-            if let event::Event::Pair(x, y) = e {
+        while let (Some(e), next) = hq::Request::from_string(&cur) {
+            if let hq::Request::Pair(x, y) = e {
                 // TODO: check this
-                self.term.initial_cursor(&term::Cursor { x: x, y: y });
+                self.term.initial_cursor(&(x, y));
                 let (w, h) = self.term.get_size()?;
-                self.handle_event(event::Event::Resize(w, h))?;
+                self.handle_event(hq::Request::Resize(w, h))?;
             }
             self.handle_event(e)?;
             cur = next.clone();
@@ -59,42 +58,33 @@ impl Handler {
         Ok(())
     }
 
-    /// Handle event from the Hq.
-    fn handle_event(&mut self, f: event::Event) -> ResultBox<()> {
-        use term::Response::*;
-
-        let mut e_cur = Some(f);
-        loop {
-            e_cur = match self.hq.request(e_cur.unwrap())? {
-                Command(c) => self.hq.call(&c),
-                Term { refresh, cursor } => {
-                    self.term.show_cursor(false);
-                    if let Some(term::Refresh { x, y, rect }) = refresh {
-                        self.term.write_ui_buffer(x, y, &rect);
-                    }
-                    if let Some(term::Cursor { x, y }) = cursor {
-                        self.term.move_cursor(x, y);
-                    }
-                    self.term.show_cursor(true);
-                    None
+    /// Handle result from the Hq.
+    fn handle_event(&mut self, e: hq::Request) -> ResultBox<()> {
+        match self.hq.request(e)? {
+            //hq::Response::Command(c) => self.hq.call(&c),
+            hq::Response::Term { refresh, cursor } => {
+                self.term.show_cursor(false);
+                if let Some(term::Refresh { x, y, rect }) = refresh {
+                    self.term.write_ui_buffer(x, y, &rect);
                 }
-                Unhandled => None,
-                Quit => {
-                    self.term.release()?;
-                    return Err(From::from(Error::Exit));
+                if let Some((x, y)) = cursor {
+                    self.term.move_cursor(x, y);
                 }
-            };
-            if !e_cur.is_some() {
-                break;
+                self.term.show_cursor(true);
             }
-        }
+            hq::Response::Quit => {
+                self.term.release()?;
+                return Err(From::from(Error::Exit));
+            }
+            _ => (),
+        };
         Ok(())
     }
 
     // Handle resize event of terminal.
     fn handle_sigwinch(&mut self) -> ResultBox<()> {
         let (w, h) = self.term.get_size()?;
-        self.handle_event(event::Event::Resize(w, h))
+        self.handle_event(hq::Request::Resize(w, h))
     }
 
     pub fn handle(&mut self, ident: usize) -> ResultBox<()> {
@@ -108,12 +98,14 @@ impl Handler {
 
     pub fn run(&mut self) -> ResultBox<()> {
         let args: Vec<String> = env::args().collect();
+        /*
         args.get(1)
             .and_then(|file| {
                           self.hq.call("open-file");
                           self.hq.call(file)
                       })
             .and_then(|e| self.handle_event(e).ok());
+         */
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;
         kqueue.kevent(self)

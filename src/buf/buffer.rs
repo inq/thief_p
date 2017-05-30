@@ -1,8 +1,8 @@
+use hq;
 use std::io::{BufReader, BufRead};
 use std::{fs, path};
 use util::ResultBox;
 use buf::Line;
-use msg;
 
 pub struct Buffer {
     cur: Line,
@@ -26,13 +26,13 @@ impl Default for Buffer {
 
 pub enum BackspaceRes {
     Normal(String),
-    PrevLine(msg::Pair),
+    PrevLine(hq::Pair),
     Unchanged,
 }
 
 pub enum KillLineRes {
     Normal,
-    Empty(msg::Pair),
+    Empty(hq::Pair),
     Unchanged,
 }
 
@@ -69,11 +69,8 @@ impl Buffer {
 
     /// Get the position of the cursor.
     #[inline]
-    pub fn get_cursor(&self) -> msg::Pair {
-        msg::Pair {
-            x: self.get_x(),
-            y: self.get_y(),
-        }
+    pub fn get_cursor(&self) -> hq::Pair {
+        (self.get_x(), self.get_y())
     }
 
     /// Construct a buffer from a file.
@@ -112,21 +109,21 @@ impl Buffer {
 
     /// Move to the beginning of the line.
     #[inline]
-    pub fn move_begin_of_line(&mut self) -> msg::Pair {
+    pub fn move_begin_of_line(&mut self) -> hq::Pair {
         self.cur.move_begin();
         self.get_cursor()
     }
 
     /// Move to the end of the line
     #[inline]
-    pub fn move_end_of_line(&mut self) -> msg::Pair {
+    pub fn move_end_of_line(&mut self) -> hq::Pair {
         self.cur.move_end();
         self.get_cursor()
     }
 
     /// Break the line at the location of the cursor.
     #[inline]
-    pub fn break_line(&mut self) -> msg::Pair {
+    pub fn break_line(&mut self) -> hq::Pair {
         self.prevs.push(self.cur.break_line());
         self.x = 0;
         self.get_cursor()
@@ -170,7 +167,7 @@ impl Buffer {
     }
 
     /// Move cursor.
-    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> msg::Pair {
+    pub fn move_cursor(&mut self, dx: i8, dy: i8) -> hq::Pair {
         if dx != 0 {
             if dx > 0 {
                 if !self.cur.move_right() {
@@ -189,10 +186,7 @@ impl Buffer {
                 self.move_up(x);
             }
         }
-        msg::Pair {
-            x: self.get_x(),
-            y: self.get_y(),
-        }
+        (self.get_x(), self.get_y())
     }
 
     /// Read characters after cursor.

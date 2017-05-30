@@ -1,17 +1,17 @@
-use msg::event;
+use term;
 use std::ops::{Deref, DerefMut};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
 pub enum Node {
-    Internal { children: BTreeMap<event::Key, Box<Node>>, },
+    Internal { children: BTreeMap<term::Key, Box<Node>>, },
     Leaf(String),
 }
 
 #[derive(Debug)]
 pub struct Shortcut {
     head: Node,
-    current: Vec<event::Key>,
+    current: Vec<term::Key>,
 }
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ impl Node {
     }
 
     /// Find the next node.
-    fn get(&self, key: event::Key) -> Option<&Node> {
+    fn get(&self, key: term::Key) -> Option<&Node> {
         match *self {
             Node::Internal { ref children } => children.get(&key).map(|n| n.deref()),
             _ => None,
@@ -42,7 +42,7 @@ impl Node {
     }
 
     /// Insert a new node.
-    fn insert(&mut self, value: &str, keys: Vec<event::Key>, idx: usize) -> bool {
+    fn insert(&mut self, value: &str, keys: Vec<term::Key>, idx: usize) -> bool {
         match *self {
             Node::Internal { ref mut children } => {
                 if idx == keys.len() - 1 {
@@ -77,12 +77,12 @@ impl Shortcut {
     }
 
     /// Add a new shortcut.
-    pub fn add(&mut self, value: &str, keys: Vec<event::Key>) {
+    pub fn add(&mut self, value: &str, keys: Vec<term::Key>) {
         assert!(self.head.insert(value, keys, 0));
     }
 
     /// Handle key event.
-    pub fn key(&mut self, key: event::Key) -> Response {
+    pub fn key(&mut self, key: term::Key) -> Response {
         self.current.push(key);
         if let Some(n) = self.current
                .iter()
@@ -116,16 +116,16 @@ mod tests {
     #[test]
     fn test_add_shortcut() {
         let mut sc = Shortcut::new();
-        sc.add("exit", vec![event::Key::Ctrl('x'), event::Key::Ctrl('c')]);
-        if let Response::None = sc.key(event::Key::Ctrl('c')) {
+        sc.add("exit", vec![term::Key::Ctrl('x'), term::Key::Ctrl('c')]);
+        if let Response::None = sc.key(term::Key::Ctrl('c')) {
         } else {
             panic!("failed")
         };
-        if let Response::More(_) = sc.key(event::Key::Ctrl('x')) {
+        if let Response::More(_) = sc.key(term::Key::Ctrl('x')) {
         } else {
             panic!("failed")
         };
-        if let Response::Undefined = sc.key(event::Key::Ctrl('x')) {
+        if let Response::Undefined = sc.key(term::Key::Ctrl('x')) {
         } else {
             panic!("failed")
         };

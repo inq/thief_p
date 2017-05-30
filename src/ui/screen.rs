@@ -1,7 +1,7 @@
-use msg::event;
-use term;
 use hq;
+use term;
 use util::ResultBox;
+use ui;
 use ui::comp::{Component, Parent, View, ViewT};
 use ui::hsplit::HSplit;
 use ui::command_bar::CommandBar;
@@ -27,7 +27,7 @@ impl Component for Screen {
             .resize(workspace, 1, 1, self.view.width - 2, height)
     }
 
-    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<::term::Response> {
+    fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
         let rect = term::Rect::new(self.view.width,
                                    self.view.height,
                                    term::Brush::new(term::Color::new(0, 0, 0),
@@ -38,8 +38,8 @@ impl Component for Screen {
     /// Propagate to children.
     fn unhandled(&mut self,
                  workspace: &mut hq::Workspace,
-                 e: event::Event)
-                 -> ResultBox<term::Response> {
+                 e: ui::Request)
+                 -> ResultBox<ui::Response> {
         if self.command_bar().focus() {
             self.command_bar.propagate(e, workspace)
         } else {
@@ -48,23 +48,16 @@ impl Component for Screen {
     }
 
     /// Handle keyboard events.
-    fn on_key(&mut self,
-              workspace: &mut hq::Workspace,
-              k: event::Key)
-              -> ResultBox<term::Response> {
-        use msg::event::Key::*;
+    fn on_key(&mut self, workspace: &mut hq::Workspace, k: term::Key) -> ResultBox<ui::Response> {
         match k {
-            Ctrl('c') => self.activate_command_bar(workspace),
-            _ => Ok(term::Response::Unhandled),
+            term::Key::Ctrl('c') => self.activate_command_bar(workspace),
+            _ => Ok(ui::Response::Unhandled),
         }
     }
 
     /// Send some functions into command bar. Otherwise, into hsplit.
-    fn handle(&mut self,
-              workspace: &mut hq::Workspace,
-              e: event::Event)
-              -> ResultBox<term::Response> {
-        use msg::event::Event::*;
+    fn handle(&mut self, workspace: &mut hq::Workspace, e: ui::Request) -> ResultBox<ui::Response> {
+        use ui::Request::*;
         match e {
             e @ CommandBar(_) => {
                 self.activate_command_bar(workspace)?;
@@ -87,11 +80,11 @@ impl Component for Screen {
                 } else {
                     // Before initialize
                     self.hsplit.propagate(e, workspace)?;
-                    Ok(Default::default())
+                    Ok(ui::Response::None)
                 }
             }
-            Quit => Ok(::term::Response::Quit),
-            _ => Ok(::term::Response::Unhandled),
+            Quit => Ok(ui::Response::Quit),
+            _ => Ok(ui::Response::Unhandled),
         }
     }
 }
@@ -126,7 +119,7 @@ impl Screen {
     #[inline]
     pub fn activate_command_bar(&mut self,
                                 workspace: &mut hq::Workspace)
-                                -> ResultBox<term::Response> {
+                                -> ResultBox<ui::Response> {
         self.command_bar_mut().set_focus(true);
         self.hsplit.set_focus(false);
         self.resize_command_bar(workspace)?;
