@@ -11,7 +11,6 @@ pub struct LineEditor {
     linenum_width: usize,
     x_offset: usize,
     more_right: bool,
-    more_left: bool,
 }
 
 pub enum LineEditorRes {
@@ -123,6 +122,9 @@ impl LineEditor {
             if cursor.0 - self.x_offset >= self.width() {
                 // Scroll right
                 self.x_offset += 1;
+                Ok(LineEditorRes::Refresh)
+            } else if self.x_offset > 0 && cursor.0 - self.x_offset <= 1 {
+                self.x_offset -= 1;
                 Ok(LineEditorRes::Refresh)
             } else {
                 self.response_cursor(cursor.0)
