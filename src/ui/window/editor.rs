@@ -37,7 +37,7 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
         // TODO: Apply the x_offset from line_editor.
-        (cursor.0 + self.linenum_width(), cursor.1 - self.y_offset)
+        (self.line_editor.translate_cursor(cursor.0), cursor.1 - self.y_offset)
     }
 
     /// Basic initializennr.
@@ -173,6 +173,10 @@ impl Component for Editor {
             LineBreak(_cursor) => {
                 // Break the line.
                 // TODO: Implement pull-down instead of refresh
+                Ok(self.refresh(workspace)?)
+            }
+            Refresh => {
+                // Refresh
                 Ok(self.refresh(workspace)?)
             }
             Unhandled => Ok(ui::Response::None),

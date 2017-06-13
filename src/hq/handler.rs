@@ -8,10 +8,6 @@ use hq::commands::{self, Commands};
 use hq::shortcut::Shortcut;
 use hq::workspace::Workspace;
 
-def_error! {
-    Internal: "internal error",
-}
-
 /// `io::Handler` -- `Request` -->
 ///              <-- `Response`--  `hq::Handler`
 pub struct Handler {

@@ -10,6 +10,8 @@ pub struct LineEditor {
     view: ViewT,
     linenum_width: usize,
     x_offset: usize,
+    more_right: bool,
+    more_left: bool,
 }
 
 pub enum LineEditorRes {
@@ -17,6 +19,7 @@ pub enum LineEditorRes {
     LineBreak(term::Cursor),
     PullUp(usize),
     Move(term::Cursor, term::Cursor),
+    Refresh,
     Unhandled,
 }
 
@@ -31,8 +34,9 @@ impl LineEditor {
     }
 
     /// Render to the Line object.
+    ///
     /// TODO: Process long lines
-    pub fn render(&self, buf: &mut Buffer, linenum: usize) -> ResultBox<term::Line> {
+    pub fn render(&mut self, buf: &mut Buffer, linenum: usize) -> ResultBox<term::Line> {
         let mut cache = term::Line::new_splitted(self.view.width,
                                                  self.view.theme.linenum_cur(),
                                                  self.view.theme.editor_cur(),
@@ -41,15 +45,22 @@ impl LineEditor {
                        0,
                        0);
         if let Some(s) = buf.get(linenum) {
-            cache.draw_str(s, self.linenum_width, 0);
+            let margin = if self.x_offset > 0 {
+                cache.draw_str(&"<<", self.linenum_width, 0);
+                2
+            } else {
+                0
+            };
+            self.more_right =
+                cache.draw_str(&s[self.x_offset + margin..], self.linenum_width + margin, 0);
         }
         Ok(cache)
     }
 
     /// Calculate the screen's coordinate of the cursor.
     #[inline]
-    fn translate_cursor(&self, cursor: usize) -> usize {
-        cursor + self.linenum_width
+    pub fn translate_cursor(&self, cursor: usize) -> usize {
+        cursor + self.linenum_width - self.x_offset
     }
 
     #[inline]
@@ -99,13 +110,23 @@ impl LineEditor {
         Ok(())
     }
 
+    fn width(&self) -> usize {
+        self.view.width - self.linenum_width - if self.more_right { 2 } else { 0 }
+    }
+
     /// Handle move events.
     fn on_move(&mut self, buf: &mut Buffer, dx: i8, dy: i8) -> ResultBox<LineEditorRes> {
         let cursor_prev = buf.get_cursor();
         let cursor = buf.move_cursor(dx, dy);
         if cursor_prev.1 == cursor.1 {
             // Move only in here.
-            self.response_cursor(cursor.0)
+            if cursor.0 - self.x_offset >= self.width() {
+                // Scroll right
+                self.x_offset += 1;
+                Ok(LineEditorRes::Refresh)
+            } else {
+                self.response_cursor(cursor.0)
+            }
         } else {
             // Pass the process to the parrent.
             Ok(LineEditorRes::Move(cursor_prev, cursor))
@@ -145,7 +166,8 @@ impl LineEditor {
 
     /// Accept the char input.
     pub fn on_char(&mut self, buf: &mut Buffer, c: char) -> ResultBox<LineEditorRes> {
-        if self.view.width < buf.get_x() {
+        if self.view.width < buf.get_x() + 4 {
+            panic!("{} {}", self.view.width, buf.get_x());
             let cursor = buf.get_x();
             let after_cursor = String::with_capacity(self.view.width);
             let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
@@ -203,18 +225,23 @@ mod tests {
         let mut editor = LineEditor::new();
         editor.resize(0, 10);
         let mut buffer = Buffer::from_file("Cargo.toml").unwrap();
-        assert_eq!("[package] ", format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        assert_eq!("[package] ",
+                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        editor.on_char(&mut buffer, 'a').unwrap();
+        assert_eq!("a[package]",
+                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
         editor.on_char(&mut buffer, 'a');
-        assert_eq!("a[package]", format!("{}", editor.render(&mut buffer, 0).unwrap()));
-        editor.on_char(&mut buffer, 'a');
-        assert_eq!("aa[packa>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        assert_eq!("aaaa[pac>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
+        assert_eq!("aa[packa>>",
+                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
         editor.on_char(&mut buffer, 'a');
         editor.on_char(&mut buffer, 'a');
-        assert_eq!("aaaaaaaa>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        assert_eq!("aaaa[pac>>",
+                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        assert_eq!("aaaaaaaa>>",
+                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
     }
 }

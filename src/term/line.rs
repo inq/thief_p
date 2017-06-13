@@ -93,18 +93,23 @@ impl Line {
     }
 
     /// Draw the given string into heer.
+    /// Return true iff there is more string on the right.
+    ///
     /// TODO: Process full-width characters.
-    pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) {
+    pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) -> bool {
         let mut limit_x = if limit == 0 { self.width - x } else { limit };
-        let right_more = limit_x < src.len();
-        if right_more { limit_x -= 2; }
-        for (i, c) in src.chars().enumerate() {
-            if i >= limit_x { break };
-            self.chars[x + i].chr = c;
-        }
-        if right_more {
+        let more_right = limit_x < src.len();
+        if more_right {
+            limit_x -= 2;
             self.chars[self.width - 1].chr = '>';
             self.chars[self.width - 2].chr = '>';
         }
+        for (i, c) in src.chars().enumerate() {
+            if i >= limit_x {
+                break;
+            };
+            self.chars[x + i].chr = c;
+        }
+        more_right
     }
 }
