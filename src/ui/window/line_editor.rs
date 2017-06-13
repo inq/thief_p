@@ -203,14 +203,18 @@ mod tests {
         let mut editor = LineEditor::new();
         editor.resize(0, 10);
         let mut buffer = Buffer::from_file("Cargo.toml").unwrap();
+        assert_eq!("[package] ", format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        editor.on_char(&mut buffer, 'a');
+        assert_eq!("a[package]", format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        editor.on_char(&mut buffer, 'a');
+        assert_eq!("aa[packa>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        assert_eq!("aaaa[pac>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
         editor.on_char(&mut buffer, 'a');
         editor.on_char(&mut buffer, 'a');
         editor.on_char(&mut buffer, 'a');
         editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        println!("{}", editor.render(&mut buffer, 0).unwrap());
+        assert_eq!("aaaaaaaa>>", format!("{}", editor.render(&mut buffer, 0).unwrap()));
     }
 }
