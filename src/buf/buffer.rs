@@ -84,11 +84,13 @@ impl Buffer {
             }
         }
         let cur = Line::new_from_str(&prevs.pop().unwrap_or_default());
-        Ok(Buffer {
-               prevs: prevs,
-               cur: cur,
-               ..Default::default()
-           })
+        let mut buf = Buffer {
+            prevs: prevs,
+            cur: cur,
+            ..Default::default()
+        };
+        buf.set_cursor(0, 0);
+        Ok(buf)
     }
 
     /// Move up the cursor.

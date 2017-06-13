@@ -115,7 +115,7 @@ pub trait Parent {
             rect: rect,
         };
         let mut res_cursor = None;
-        for ref mut child in self.children_mut() {
+        for child in self.children_mut() {
             if let ui::Response::Term { refresh, cursor } = child.refresh(workspace)? {
                 if child.focus() {
                     if let Some(cur) = cursor {

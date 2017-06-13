@@ -8,8 +8,12 @@ use hq::commands::{self, Commands};
 use hq::shortcut::Shortcut;
 use hq::workspace::Workspace;
 
-/// io::Handler -- Request -->
-///            <-- Response--  hq::Handler
+def_error! {
+    Internal: "internal error",
+}
+
+/// `io::Handler` -- `Request` -->
+///              <-- `Response`--  `hq::Handler`
 pub struct Handler {
     screen: ui::Screen,
     workspace: Workspace,
@@ -44,10 +48,10 @@ impl Handler {
             match self.shortcut.key(k) {
                 shortcut::Response::More(s) => ui::Request::CommandBar(ui::CommandBar::Shortcut(s)),
                 shortcut::Response::Some(s) => self.call(&s).unwrap(),
-                _ => e.to_ui(),
+                _ => e.into_ui(),
             }
         } else {
-            e.to_ui()
+            e.into_ui()
         };
         self.handle_event(e)
     }
@@ -57,6 +61,10 @@ impl Handler {
             ui::Response::Quit => Ok(hq::Response::Quit),
             ui::Response::Term { refresh, cursor } => Ok(hq::Response::Term { refresh, cursor }),
             ui::Response::None => Ok(hq::Response::None),
+            ui::Response::Command(s) => {
+                let req = self.call(&s).unwrap();
+                self.handle_event(req)
+            }
             e => panic!("{:?}", e),
         }
     }

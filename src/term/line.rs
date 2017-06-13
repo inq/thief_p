@@ -1,4 +1,5 @@
 use term;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Line {
@@ -6,6 +7,16 @@ pub struct Line {
     pub width: usize,
     text_width: usize,
     splitter: usize,
+}
+
+impl fmt::Display for Line {
+    /// Write as the string.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for chr in &self.chars {
+            write!(f, "{}", chr)?;
+        }
+        Ok(())
+    }
 }
 
 impl Line {

@@ -9,7 +9,7 @@ use ui::comp::ViewT;
 pub struct LineEditor {
     view: ViewT,
     linenum_width: usize,
-    x_offset: usize, // TODO: Implement this
+    x_offset: usize,
 }
 
 pub enum LineEditorRes {
@@ -143,6 +143,24 @@ impl LineEditor {
                          })
     }
 
+    /// Accept the char input.
+    pub fn on_char(&mut self, buf: &mut Buffer, c: char) -> ResultBox<LineEditorRes> {
+        if self.view.width < buf.get_x() {
+            let cursor = buf.get_x();
+            let after_cursor = String::with_capacity(self.view.width);
+            let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+            self.response_cursor_with_line(cursor, line, false)
+        } else {
+            let mut after_cursor = String::with_capacity(self.view.width);
+            after_cursor.push(c);
+            let cursor = buf.get_x();
+            after_cursor.push_str(&buf.insert(c, self.spaces_after_cursor(cursor)));
+            let cursor = buf.get_x();
+            let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+            self.response_cursor_with_line(cursor, line, false)
+        }
+    }
+
     /// Move cursor left and right, or Type a character.
     pub fn on_key(&mut self, buf: &mut Buffer, k: term::Key) -> ResultBox<LineEditorRes> {
         match k {
@@ -170,16 +188,29 @@ impl LineEditor {
             term::Key::Right => self.on_move(buf, 1, 0),
             term::Key::Ctrl('b') |
             term::Key::Left => self.on_move(buf, -1, 0),
-            term::Key::Char(c) => {
-                let mut after_cursor = String::with_capacity(self.view.width);
-                after_cursor.push(c);
-                let cursor = buf.get_x();
-                after_cursor.push_str(&buf.insert(c, self.spaces_after_cursor(cursor)));
-                let cursor = buf.get_x();
-                let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
-                self.response_cursor_with_line(cursor, line, false)
-            }
+            term::Key::Char(c) => self.on_char(buf, c),
             _ => Ok(LineEditorRes::Unhandled),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_on_key() {
+        let mut editor = LineEditor::new();
+        editor.resize(0, 10);
+        let mut buffer = Buffer::from_file("Cargo.toml").unwrap();
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        println!("{}", editor.render(&mut buffer, 0).unwrap());
     }
 }

@@ -12,7 +12,7 @@ pub enum Request {
 
 impl Request {
     /// Convert to ui::Request
-    pub fn to_ui(self) -> ui::Request {
+    pub fn into_ui(self) -> ui::Request {
         match self {
             Request::Keyboard(k) => ui::Request::Keyboard(k),
             Request::Resize(w, h) => ui::Request::Resize(w, h),

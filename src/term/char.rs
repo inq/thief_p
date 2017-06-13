@@ -1,10 +1,18 @@
 use term;
 use util;
+use std::fmt;
 
 #[derive(Clone, Debug)]
 pub struct Char {
     pub chr: char,
     pub brush: term::Brush,
+}
+
+impl fmt::Display for Char {
+    /// Write the character.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.chr)
+    }
 }
 
 impl Char {
