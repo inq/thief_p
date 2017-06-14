@@ -102,10 +102,7 @@ impl Line {
     /// Draw the given string into here.
     ///
     /// TODO: Process full-width characters.
-    pub fn draw_str(&mut self,
-                    src: &str,
-                    x: usize,
-                    limit: usize) {
+    pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) {
         let mut limit_x = if limit == 0 { self.width - x } else { limit };
         for (i, c) in src.chars().enumerate() {
             if i >= limit_x {

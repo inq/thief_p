@@ -46,19 +46,19 @@ impl LineEditor {
         if let Some(s) = buf.get(linenum) {
             let margin = if self.x_offset > 0 {
                 cache.draw_str_ex(&"<<",
-                               self.linenum_width,
-                               0,
-                               self.view.theme.arrow_fg,
-                               self.view.theme.arrow_fg);
+                                  self.linenum_width,
+                                  0,
+                                  self.view.theme.arrow_fg,
+                                  self.view.theme.arrow_fg);
                 2
             } else {
                 0
             };
             self.more_right = cache.draw_str_ex(&s[self.x_offset + margin..],
-                                             self.linenum_width + margin,
-                                             0,
-                                             self.view.theme.editor.fg,
-                                             self.view.theme.arrow_fg);
+                                                self.linenum_width + margin,
+                                                0,
+                                                self.view.theme.editor.fg,
+                                                self.view.theme.arrow_fg);
         }
         Ok(cache)
     }
