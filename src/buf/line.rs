@@ -128,6 +128,7 @@ impl Line {
     /// Move cursor right by 1 character.
     pub fn move_right(&mut self) -> bool {
         if let Some(c) = self.nexts.pop() {
+            assert!(c != '\n');
             self.x += util::term_width(c);;
             self.prevs.push(c);
             true

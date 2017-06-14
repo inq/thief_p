@@ -3,6 +3,7 @@ use term;
 pub struct Theme {
     pub editor: term::Brush,
     pub linenum: term::Brush,
+    pub arrow_fg: term::Color,
     editor_cur_bg: term::Color,
     linenum_cur_bg: term::Color,
 }
@@ -32,6 +33,7 @@ impl Default for Theme {
                                      term::Color::new(40, 40, 40)),
             linenum: term::Brush::new(term::Color::new(200, 200, 200),
                                       term::Color::new(80, 80, 80)),
+            arrow_fg: term::Color::new(255, 127, 127),
             editor_cur_bg: term::Color::new(60, 60, 70),
             linenum_cur_bg: term::Color::new(100, 100, 110),
         }
