@@ -3,6 +3,7 @@ use buf::Buffer;
 use term;
 use util::ResultBox;
 use ui::comp::ViewT;
+use std::io::{self, Write};
 
 #[allow(dead_code)]
 #[derive(Default)]
@@ -66,8 +67,11 @@ impl LineEditor {
     /// Calculate the screen's coordinate of the cursor.
     #[inline]
     pub fn translate_cursor(&self, cursor: usize) -> usize {
-        assert!(cursor + self.linenum_width >= self.x_offset);
-        cursor + self.linenum_width - self.x_offset
+        if cursor + self.linenum_width < self.x_offset {
+            panic!("{} {} {}", cursor, self.linenum_width, self.x_offset);
+        } else {
+            cursor + self.linenum_width - self.x_offset
+        }
     }
 
     #[inline]
@@ -193,19 +197,36 @@ impl LineEditor {
         }
     }
 
+    /// Ajdust x_offset to make sense.
+    /// Return true iff the x_offset has been changed.
+    fn adjust_x_offset(&mut self, cursor: usize, line_width: usize) -> bool {
+        if self.x_offset > cursor {
+            self.x_offset = cursor;
+            return true;
+        }
+        false
+    }
+
+    pub fn on_head_tail(&mut self, buf: &mut Buffer, head: bool) -> ResultBox<LineEditorRes> {
+        let cursor = if head {
+            buf.move_begin_of_line().0
+        } else {
+            buf.move_end_of_line().0
+        };
+        if self.adjust_x_offset(cursor, buf.line_length()) {
+            Ok(LineEditorRes::Refresh)
+        } else {
+            self.response_cursor(cursor)
+        }
+    }
+
     /// Move cursor left and right, or Type a character.
     pub fn on_key(&mut self, buf: &mut Buffer, k: term::Key) -> ResultBox<LineEditorRes> {
         match k {
             term::Key::Ctrl('a') |
-            term::Key::Home => {
-                let cursor = buf.move_begin_of_line().0;
-                self.response_cursor(cursor)
-            }
+            term::Key::Home => self.on_head_tail(buf, true),
             term::Key::Ctrl('e') |
-            term::Key::End => {
-                let cursor = buf.move_end_of_line().0;
-                self.response_cursor(cursor)
-            }
+            term::Key::End => self.on_head_tail(buf, false),
             term::Key::CR => {
                 let cursor = buf.break_line();
                 Ok(LineEditorRes::LineBreak(cursor))

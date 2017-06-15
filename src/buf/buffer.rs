@@ -50,6 +50,11 @@ impl Buffer {
         }
     }
 
+    /// Return the length of the line (visible)
+    pub fn line_length(&self) -> usize {
+        self.cur.length()
+    }
+
     /// Return the total number of lines.
     pub fn get_line_num(&self) -> usize {
         1 + self.prevs.len() + self.nexts.len()

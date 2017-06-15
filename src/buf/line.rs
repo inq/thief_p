@@ -32,6 +32,12 @@ impl Line {
         res
     }
 
+    /// Return the length.
+    pub fn length(&self) -> usize {
+        self.prevs.chars().fold(0, |r, s| r + util::term_width(s)) +
+        self.nexts.chars().fold(0, |r, s| r + util::term_width(s))
+    }
+
     /// Return the terminal x of the cursor.
     #[inline]
     pub fn get_x(&self) -> usize {
