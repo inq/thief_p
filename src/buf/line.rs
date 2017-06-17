@@ -206,7 +206,6 @@ impl Line {
 
     /// Convert to a string.
     /// This can be used for the debugging purpose.
-    #[cfg(test)]
     pub fn to_string(&self) -> String {
         let mut res = self.prevs.to_owned();
         res.push_str(&self.nexts.chars().rev().collect::<String>());

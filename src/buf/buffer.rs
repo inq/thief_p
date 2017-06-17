@@ -50,6 +50,10 @@ impl Buffer {
         }
     }
 
+    pub fn cur(&self) -> &Line {
+        &self.cur
+    }
+
     /// Return the length of the line (visible)
     pub fn line_length(&self) -> usize {
         self.cur.length()

@@ -63,7 +63,10 @@ impl LineEditor {
     }
 
     /// Render to the Line object.
-    pub fn render(&mut self, buf: &mut Buffer, linenum: usize) -> ResultBox<term::Line> {
+    pub fn render(&mut self, buf: &mut Buffer) -> ResultBox<term::Line> {
+        let color_editor = self.view.theme.editor.fg;
+        let color_arrow = self.view.theme.arrow_fg;
+
         let mut cache = term::Line::new_splitted(
             self.view.width,
             self.view.theme.linenum_cur(),
@@ -71,31 +74,23 @@ impl LineEditor {
             self.linenum_width,
         );
         cache.draw_str(
-            &format!("{:width$}", linenum, width = self.linenum_width),
+            &format!("{:width$}", buf.get_y(), width = self.linenum_width),
             0,
             0,
         );
-        if let Some(s) = buf.get(linenum) {
-            let margin = if self.x_offset > 0 {
-                cache.draw_str_ex(
-                    "<",
-                    self.linenum_width,
-                    0,
-                    self.view.theme.arrow_fg,
-                    self.view.theme.arrow_fg,
-                );
-                1
-            } else {
-                0
-            };
-            self.more_right = cache.draw_str_ex(
-                &s[self.x_offset + margin..],
-                self.linenum_width + margin,
-                0,
-                self.view.theme.editor.fg,
-                self.view.theme.arrow_fg,
-            );
-        }
+        let margin = if self.x_offset > 0 {
+            cache.draw_str_ex("<", self.linenum_width, 0, color_arrow, color_arrow);
+            1
+        } else {
+            0
+        };
+        self.more_right = cache.draw_str_ex(
+            &buf.cur().to_string()[self.x_offset + margin..],
+            self.linenum_width + margin,
+            0,
+            color_editor,
+            color_arrow,
+        );
         Ok(cache)
     }
 
