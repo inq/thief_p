@@ -21,13 +21,13 @@ impl Handler {
     /// Initialize.
     pub fn new(screen: ui::Screen) -> ResultBox<Handler> {
         let mut commands = Commands::new();
+        let mut shortcut = Shortcut::new();
         commands.add(
             "find-file",
             vec![Arg::Path(String::from("filename"))],
             Workspace::find_file,
         );
         commands.add("quit", vec![], Workspace::quit);
-        let mut shortcut = Shortcut::new();
         shortcut.add(
             "find-file",
             vec![term::Key::Ctrl('x'), term::Key::Ctrl('f')],

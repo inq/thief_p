@@ -39,13 +39,15 @@ impl Commands {
         } else {
             return Response::Message(String::from("Not exists the corresponding command."));
         }
-        if let Some(ref name) = self.name {
-            if let Some(cmd) = self.commands.get(name) {
+        if let Some(name) = self.name.take() {
+            if let Some(cmd) = self.commands.get(&name) {
                 if cmd.args_len() == self.args.len() {
                     let mut res = vec![];
                     res.append(&mut self.args);
                     return Response::Func(cmd.func, res);
                 } else {
+                    // TODO: Find a clear way
+                    self.name = Some(name);
                     return Response::Require(cmd.arg(self.args.len()));
                 }
             }
