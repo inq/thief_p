@@ -46,11 +46,12 @@ impl Line {
     /// Initialize a new line with two color brushes.
     /// The width of the left side is given by `splitter`.
     #[inline]
-    pub fn new_splitted(width: usize,
-                        brush_l: term::Brush,
-                        brush_r: term::Brush,
-                        splitter: usize)
-                        -> Line {
+    pub fn new_splitted(
+        width: usize,
+        brush_l: term::Brush,
+        brush_r: term::Brush,
+        splitter: usize,
+    ) -> Line {
         Line {
             chars: {
                 let mut res = vec![term::Char::new(' ', brush_l); splitter];
@@ -92,11 +93,52 @@ impl Line {
         }
     }
 
-    /// Draw the given string into heer.
+    /// Write a singl character with a color.
+    fn write_char(&mut self, location: usize, symbol: char, color: term::Color) {
+        let p = &mut self.chars[location];
+        p.chr = symbol;
+        p.brush.fg = color;
+    }
+
+    /// Draw the given string into here.
+    ///
+    /// TODO: Process full-width characters.
     pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) {
         let limit_x = if limit == 0 { self.width - x } else { limit };
-        for (i, c) in src.chars().enumerate().take(limit_x) {
-            self.chars[x + i].chr = c
+        for (i, c) in src.chars().enumerate() {
+            if i >= limit_x {
+                break;
+            };
+            self.chars[x + i].chr = c;
         }
+    }
+
+    /// Draw the given string into line_editor.
+    /// Return true iff there is more string on the right.
+    ///
+    /// TODO: Process full-width characters.
+    pub fn draw_str_ex(
+        &mut self,
+        src: &str,
+        x: usize,
+        limit: usize,
+        color_fg: term::Color,
+        color_arrow: term::Color,
+    ) -> bool {
+        let mut limit_x = if limit == 0 { self.width - x } else { limit };
+        let more_right = limit_x < src.len();
+        if more_right {
+            limit_x -= 1;
+            let w = self.width;
+            self.write_char(w - 1, '>', color_arrow);
+        }
+        for (i, c) in src.chars().enumerate() {
+            if i >= limit_x {
+                break;
+            };
+            self.chars[x + i].chr = c;
+            self.chars[x + i].brush.fg = color_fg
+        }
+        more_right
     }
 }

@@ -37,7 +37,10 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
         // TODO: Apply the x_offset from line_editor.
-        (cursor.0 + self.linenum_width(), cursor.1 - self.y_offset)
+        (
+            self.line_editor.translate_cursor(cursor.0),
+            cursor.1 - self.y_offset,
+        )
     }
 
     /// Basic initializennr.
@@ -50,27 +53,29 @@ impl Editor {
     }
 
     /// Response with rect and cursor.
-    fn response_rect_with_cursor(&self,
-                                 rect: term::Rect,
-                                 y_offset: usize,
-                                 cursor: term::Cursor)
-                                 -> ResultBox<ui::Response> {
+    fn response_rect_with_cursor(
+        &self,
+        rect: term::Rect,
+        y_offset: usize,
+        cursor: term::Cursor,
+    ) -> ResultBox<ui::Response> {
         Ok(ui::Response::Term {
-               refresh: Some(term::Refresh {
-                                 x: 0,
-                                 y: y_offset,
-                                 rect: rect,
-                             }),
-               cursor: Some(self.translate_cursor(cursor)),
-           })
+            refresh: Some(term::Refresh {
+                x: 0,
+                y: y_offset,
+                rect: rect,
+            }),
+            cursor: Some(self.translate_cursor(cursor)),
+        })
     }
 
     /// Move the cursor vertically.
-    fn on_move(&mut self,
-               workspace: &mut hq::Workspace,
-               cursor_prev: term::Cursor,
-               cursor: term::Cursor)
-               -> ResultBox<ui::Response> {
+    fn on_move(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        cursor_prev: term::Cursor,
+        cursor: term::Cursor,
+    ) -> ResultBox<ui::Response> {
         if cursor.1 < self.y_offset {
             // Scroll upward
             self.y_offset = cursor.1;
@@ -85,7 +90,7 @@ impl Editor {
         if cursor.1 < cursor_prev.1 {
             // Move upward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_editor.render(buf, cursor.1)?);
+            rect.append(&self.line_editor.render(buf)?);
             {
                 let line_cache = self.refresh_line_cache(buf, cursor_prev.1);
                 let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
@@ -97,8 +102,13 @@ impl Editor {
         if cursor.1 > cursor_prev.1 {
             // Move downward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_cache[cursor_prev.1 - self.y_offset]);
-            rect.append(&self.line_editor.render(buf, cursor.1)?);
+            {
+                let line_cache = self.refresh_line_cache(buf, cursor_prev.1);
+                let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
+                *prev_line_cache = line_cache;
+                rect.append(prev_line_cache);
+            }
+            rect.append(&self.line_editor.render(buf)?);
             return self.response_rect_with_cursor(rect, cursor_prev.1 - self.y_offset, cursor);
         }
         unreachable!();
@@ -107,15 +117,27 @@ impl Editor {
     /// Refresh the single line cache.
     fn refresh_line_cache(&mut self, buf: &mut Buffer, linenum: usize) -> term::Line {
         // TODO: Merge with line_editor
-        let mut res = term::Line::new_splitted(self.view.width,
-                                               self.view.theme.linenum,
-                                               self.view.theme.editor,
-                                               self.linenum_width());
-        res.draw_str(&format!("{:width$}", linenum, width = self.linenum_width()),
-                     0,
-                     0);
+        let mut res = term::Line::new_splitted(
+            self.view.width,
+            self.view.theme.linenum,
+            self.view.theme.editor,
+            self.linenum_width(),
+        );
+        res.draw_str_ex(
+            &format!("{:width$}", linenum, width = self.linenum_width()),
+            0,
+            0,
+            self.view.theme.editor.fg,
+            self.view.theme.arrow_fg,
+        );
         if let Some(s) = buf.get(linenum) {
-            res.draw_str(s, self.linenum_width(), 0);
+            res.draw_str_ex(
+                s,
+                self.linenum_width(),
+                0,
+                self.view.theme.editor.fg,
+                self.view.theme.arrow_fg,
+            );
         }
         res
     }
@@ -165,14 +187,8 @@ impl Component for Editor {
                 Ok(resp.translate(0, y))
             }
             Move(p, c) => self.on_move(workspace, p, c),
-            PullUp(_y) => {
-                // Pull-up and refresh the line-editor.
-                // TODO: Implement pull-up instead of refresh
-                Ok(self.refresh(workspace)?)
-            }
-            LineBreak(_cursor) => {
-                // Break the line.
-                // TODO: Implement pull-down instead of refresh
+            PullUp | LineBreak(_) | Refresh => {
+                // TODO: Implement pull-up / pull-down instead of refresh
                 Ok(self.refresh(workspace)?)
             }
             Unhandled => Ok(ui::Response::None),
@@ -188,26 +204,27 @@ impl Component for Editor {
         let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
         for (i, line) in self.line_cache.iter().enumerate() {
             if i + self.y_offset == cursor.1 {
-                rect.append(&self.line_editor.render(buf, i).unwrap());
+                rect.append(&self.line_editor.render(buf).unwrap());
             } else {
                 rect.append(line);
             }
         }
         Ok(ui::Response::Term {
-               refresh: Some(term::Refresh {
-                                 x: 0,
-                                 y: 0,
-                                 rect: rect,
-                             }),
-               cursor: Some(self.translate_cursor(cursor)),
-           })
+            refresh: Some(term::Refresh {
+                x: 0,
+                y: 0,
+                rect: rect,
+            }),
+            cursor: Some(self.translate_cursor(cursor)),
+        })
     }
 
     /// Handle events.
-    fn handle(&mut self,
-              workspace: &mut hq::Workspace,
-              e: ::ui::Request)
-              -> ResultBox<ui::Response> {
+    fn handle(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        e: ::ui::Request,
+    ) -> ResultBox<ui::Response> {
         match e {
             ::ui::Request::OpenBuffer(s) => {
                 self.buffer_name = s;

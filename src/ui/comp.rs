@@ -56,13 +56,14 @@ pub trait Component: View {
     }
 
     /// Resize the component; Call the on_resize function.
-    fn resize(&mut self,
-              workspace: &mut hq::Workspace,
-              x: usize,
-              y: usize,
-              width: usize,
-              height: usize)
-              -> ResultBox<()> {
+    fn resize(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        x: usize,
+        y: usize,
+        width: usize,
+        height: usize,
+    ) -> ResultBox<()> {
         self.get_view_mut().update(x, y, width, height);
         self.on_resize(workspace)
     }
@@ -83,10 +84,11 @@ pub trait Component: View {
     }
 
     /// Propage event to children. This calls handle, and then translate.
-    fn propagate(&mut self,
-                 e: ui::Request,
-                 workspace: &mut hq::Workspace)
-                 -> ResultBox<ui::Response> {
+    fn propagate(
+        &mut self,
+        e: ui::Request,
+        workspace: &mut hq::Workspace,
+    ) -> ResultBox<ui::Response> {
         let mut res = if let ui::Request::Keyboard(k) = e {
             self.on_key(workspace, k)?
         } else {
@@ -105,10 +107,11 @@ pub trait Parent {
     fn children(&self) -> Vec<&Self::Child>;
 
     /// Draw the children and transform each sequenced results.
-    fn refresh_children(&mut self,
-                        rect: term::Rect,
-                        workspace: &mut hq::Workspace)
-                        -> ResultBox<ui::Response> {
+    fn refresh_children(
+        &mut self,
+        rect: term::Rect,
+        workspace: &mut hq::Workspace,
+    ) -> ResultBox<ui::Response> {
         let mut res_refresh = term::Refresh {
             x: 0,
             y: 0,
@@ -123,15 +126,17 @@ pub trait Parent {
                     }
                 }
                 if let Some(term::Refresh { x, y, rect }) = refresh {
-                    res_refresh
-                        .rect
-                        .draw(&rect, child.get_view().x + x, child.get_view().y + y);
+                    res_refresh.rect.draw(
+                        &rect,
+                        child.get_view().x + x,
+                        child.get_view().y + y,
+                    );
                 }
             }
         }
         Ok(ui::Response::Term {
-               refresh: Some(res_refresh),
-               cursor: res_cursor,
-           })
+            refresh: Some(res_refresh),
+            cursor: res_cursor,
+        })
     }
 }

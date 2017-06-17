@@ -21,7 +21,6 @@ pub enum Request {
 
 #[derive(Debug)]
 pub enum Response {
-    OpenBuffer(String),
     Command(String),
     Unhandled,
     Quit,
@@ -45,14 +44,16 @@ impl Response {
 
     pub fn translate(mut self, tx: usize, ty: usize) -> Response {
         if let Response::Term {
-                   ref mut refresh,
-                   ref mut cursor,
-               } = self {
+            ref mut refresh,
+            ref mut cursor,
+        } = self
+        {
             if let Some(term::Refresh {
                             ref mut x,
                             ref mut y,
                             ..
-                        }) = *refresh {
+                        }) = *refresh
+            {
                 *x += tx;
                 *y += ty;
             }

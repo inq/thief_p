@@ -84,9 +84,10 @@ impl Shortcut {
     /// Handle key event.
     pub fn key(&mut self, key: term::Key) -> Response {
         self.current.push(key);
-        if let Some(n) = self.current
-               .iter()
-               .fold(Some(&self.head), |acc, key| acc.and_then(|n| n.get(*key))) {
+        if let Some(n) = self.current.iter().fold(Some(&self.head), |acc, key| {
+            acc.and_then(|n| n.get(*key))
+        })
+        {
             if let Node::Leaf(ref s) = *n {
                 self.current.clear();
                 Response::Some(s.clone())

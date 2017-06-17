@@ -60,14 +60,15 @@ impl Filesys {
             } else {
                 EntryType::File
             };
-            self.files
-                .push(Entry::new(entry
-                                     .path()
-                                     .file_name()
-                                     .ok_or(Error::Internal)?
-                                     .to_str()
-                                     .ok_or(Error::Internal)?,
-                                 entry_type));
+            self.files.push(Entry::new(
+                entry
+                    .path()
+                    .file_name()
+                    .ok_or(Error::Internal)?
+                    .to_str()
+                    .ok_or(Error::Internal)?,
+                entry_type,
+            ));
         }
         Ok(())
     }

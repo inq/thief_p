@@ -33,10 +33,10 @@ impl Request {
 
     pub fn from_char(c: char) -> Request {
         Request::Keyboard(if c as u32 <= 26 {
-                              term::Key::Ctrl((c as u8 + b'a' - 1) as char)
-                          } else {
-                              term::Key::Char(c)
-                          })
+            term::Key::Ctrl((c as u8 + b'a' - 1) as char)
+        } else {
+            term::Key::Char(c)
+        })
     }
 
     pub fn from_string(s: &str) -> (Option<Request>, String) {

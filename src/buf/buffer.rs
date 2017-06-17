@@ -32,7 +32,7 @@ pub enum BackspaceRes {
 
 pub enum KillLineRes {
     Normal,
-    Empty(hq::Pair),
+    PullUp,
     Unchanged,
 }
 
@@ -48,6 +48,10 @@ impl Buffer {
         } else {
             None
         }
+    }
+
+    pub fn cur(&self) -> &Line {
+        &self.cur
     }
 
     /// Return the total number of lines.
@@ -149,7 +153,7 @@ impl Buffer {
             KillLineRes::Normal
         } else if let Some(line) = self.nexts.pop() {
             self.cur.append(line);
-            KillLineRes::Empty(self.get_cursor())
+            KillLineRes::PullUp
         } else {
             KillLineRes::Unchanged
         }

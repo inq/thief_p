@@ -130,9 +130,11 @@ impl Term {
     pub fn read(&self, limit: usize) -> ResultBox<String> {
         let mut buf = Vec::with_capacity(limit);
         unsafe {
-            let res = libc::read(libc::STDIN_FILENO,
-                                 buf.as_mut_ptr() as *mut libc::c_void,
-                                 buf.capacity() as usize);
+            let res = libc::read(
+                libc::STDIN_FILENO,
+                buf.as_mut_ptr() as *mut libc::c_void,
+                buf.capacity() as usize,
+            );
             if res < 0 {
                 return Err(From::from(Error::Read));
             }

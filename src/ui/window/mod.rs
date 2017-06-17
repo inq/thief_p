@@ -1,5 +1,6 @@
 mod editor;
 mod line_editor;
+mod movable;
 
 pub use self::editor::Editor;
 pub use self::line_editor::LineEditor;

@@ -1,4 +1,3 @@
-use std::env;
 use std::convert::From;
 use libc;
 
@@ -22,10 +21,10 @@ pub struct Handler {
 impl Handler {
     pub fn new(hq_handler: hq::Handler) -> ResultBox<Handler> {
         Ok(Handler {
-               hq: hq_handler,
-               term: Term::new()?,
-               ipt_buf: String::with_capacity(32),
-           })
+            hq: hq_handler,
+            term: Term::new()?,
+            ipt_buf: String::with_capacity(32),
+        })
     }
 
     /// STDOUT - Consume the output buffer.
@@ -97,15 +96,6 @@ impl Handler {
     }
 
     pub fn run(&mut self) -> ResultBox<()> {
-        let args: Vec<String> = env::args().collect();
-        /*
-        args.get(1)
-            .and_then(|file| {
-                          self.hq.call("open-file");
-                          self.hq.call(file)
-                      })
-            .and_then(|e| self.handle_event(e).ok());
-         */
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;
         kqueue.kevent(self)

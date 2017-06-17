@@ -43,8 +43,9 @@ impl Line {
         if self.dirty {
             self.cache.clear();
             self.cache.push_str(&self.prevs);
-            self.cache
-                .push_str(&self.nexts.chars().rev().collect::<String>());
+            self.cache.push_str(
+                &self.nexts.chars().rev().collect::<String>(),
+            );
             self.dirty = false;
         }
         &self.cache
@@ -108,8 +109,8 @@ impl Line {
     pub fn push_before(&mut self, str: &str) {
         self.x += str.chars()
             .map({
-                     |c| util::term_width(c)
-                 })
+                |c| util::term_width(c)
+            })
             .sum();
         self.prevs.push_str(str);
     }
@@ -128,6 +129,7 @@ impl Line {
     /// Move cursor right by 1 character.
     pub fn move_right(&mut self) -> bool {
         if let Some(c) = self.nexts.pop() {
+            assert_ne!(c, '\n');
             self.x += util::term_width(c);;
             self.prevs.push(c);
             true
@@ -144,16 +146,16 @@ impl Line {
         self.x = self.prevs
             .chars()
             .map({
-                     |c| util::term_width(c)
-                 })
+                |c| util::term_width(c)
+            })
             .sum();
     }
 
     /// Append a line to this.
     pub fn append(&mut self, target: String) {
-        let target = mem::replace(&mut self.nexts, target);
-        self.nexts
-            .push_str(&target.chars().rev().collect::<String>());
+        self.nexts.push_str(
+            &target.chars().rev().collect::<String>(),
+        );
     }
 
     /// Move to the begining of the line.
@@ -185,6 +187,7 @@ impl Line {
     pub fn kill(&mut self) -> bool {
         let res = !self.nexts.is_empty();
         self.nexts.clear();
+        self.dirty = true;
         res
     }
 
@@ -197,7 +200,6 @@ impl Line {
 
     /// Convert to a string.
     /// This can be used for the debugging purpose.
-    #[cfg(test)]
     pub fn to_string(&self) -> String {
         let mut res = self.prevs.to_owned();
         res.push_str(&self.nexts.chars().rev().collect::<String>());
