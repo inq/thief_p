@@ -27,18 +27,20 @@ impl Component for HSplit {
     }
 
     fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
-        let rect = term::Rect::new(self.view.width,
-                                   self.view.height,
-                                   term::Brush::new(term::Color::new(0, 0, 0),
-                                                    term::Color::new(200, 250, 250)));
+        let rect = term::Rect::new(
+            self.view.width,
+            self.view.height,
+            term::Brush::new(term::Color::new(0, 0, 0), term::Color::new(200, 250, 250)),
+        );
         self.refresh_children(rect, workspace)
     }
 
     /// Propagate if the event is not handled.
-    fn unhandled(&mut self,
-                 workspace: &mut hq::Workspace,
-                 e: ui::Request)
-                 -> ResultBox<ui::Response> {
+    fn unhandled(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        e: ui::Request,
+    ) -> ResultBox<ui::Response> {
         self.windows[self.focused].propagate(e, workspace)
     }
 

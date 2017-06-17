@@ -21,20 +21,24 @@ impl Handler {
     /// Initialize.
     pub fn new(screen: ui::Screen) -> ResultBox<Handler> {
         let mut commands = Commands::new();
-        commands.add("find-file",
-                     vec![Arg::Path(String::from("filename"))],
-                     Workspace::find_file);
+        commands.add(
+            "find-file",
+            vec![Arg::Path(String::from("filename"))],
+            Workspace::find_file,
+        );
         commands.add("quit", vec![], Workspace::quit);
         let mut shortcut = Shortcut::new();
-        shortcut.add("find-file",
-                     vec![term::Key::Ctrl('x'), term::Key::Ctrl('f')]);
+        shortcut.add(
+            "find-file",
+            vec![term::Key::Ctrl('x'), term::Key::Ctrl('f')],
+        );
         shortcut.add("quit", vec![term::Key::Ctrl('x'), term::Key::Ctrl('c')]);
         Ok(Handler {
-               screen,
-               workspace: Workspace::new()?,
-               commands: commands,
-               shortcut: shortcut,
-           })
+            screen,
+            workspace: Workspace::new()?,
+            commands: commands,
+            shortcut: shortcut,
+        })
     }
 
     /// Consume event from Io.
@@ -70,7 +74,9 @@ impl Handler {
         match self.commands.query(command) {
             commands::Response::Func(func, args) => func(&mut self.workspace, args).ok(),
             commands::Response::Require(Arg::Path(_)) => {
-                Some(ui::Request::CommandBar(ui::CommandBar::Navigate(String::from("."))))
+                Some(ui::Request::CommandBar(
+                    ui::CommandBar::Navigate(String::from(".")),
+                ))
             }
             commands::Response::Message(m) => {
                 Some(ui::Request::CommandBar(ui::CommandBar::Notify(m)))

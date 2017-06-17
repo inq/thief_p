@@ -23,23 +23,30 @@ impl Component for Screen {
     fn on_resize(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()> {
         self.resize_command_bar(workspace)?;
         let height = self.view.height - self.command_bar().height() - 2;
-        self.hsplit
-            .resize(workspace, 1, 1, self.view.width - 2, height)
+        self.hsplit.resize(
+            workspace,
+            1,
+            1,
+            self.view.width - 2,
+            height,
+        )
     }
 
     fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
-        let rect = term::Rect::new(self.view.width,
-                                   self.view.height,
-                                   term::Brush::new(term::Color::new(0, 0, 0),
-                                                    term::Color::new(80, 0, 0)));
+        let rect = term::Rect::new(
+            self.view.width,
+            self.view.height,
+            term::Brush::new(term::Color::new(0, 0, 0), term::Color::new(80, 0, 0)),
+        );
         self.refresh_children(rect, workspace)
     }
 
     /// Propagate to children.
-    fn unhandled(&mut self,
-                 workspace: &mut hq::Workspace,
-                 e: ui::Request)
-                 -> ResultBox<ui::Response> {
+    fn unhandled(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        e: ui::Request,
+    ) -> ResultBox<ui::Response> {
         if self.command_bar().focus() {
             self.command_bar.propagate(e, workspace)
         } else {
@@ -111,35 +118,42 @@ impl Screen {
     /// Resize the command bar; the bottom-side of the ui.
     #[inline]
     fn resize_command_bar(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()> {
-        self.command_bar
-            .resize(workspace, 0, 0, self.view.width, self.view.height)
+        self.command_bar.resize(
+            workspace,
+            0,
+            0,
+            self.view.width,
+            self.view.height,
+        )
     }
 
     /// Activate command bar, and redraw the corresponding area.
     #[inline]
-    pub fn activate_command_bar(&mut self,
-                                workspace: &mut hq::Workspace)
-                                -> ResultBox<ui::Response> {
+    pub fn activate_command_bar(
+        &mut self,
+        workspace: &mut hq::Workspace,
+    ) -> ResultBox<ui::Response> {
         self.command_bar_mut().set_focus(true);
         self.hsplit.set_focus(false);
         self.resize_command_bar(workspace)?;
         // TODO: Make concise.
-        Ok(self.command_bar
-               .refresh(workspace)?
-               .translate(self.command_bar.get_view().x, self.command_bar.get_view().y))
+        Ok(self.command_bar.refresh(workspace)?.translate(
+            self.command_bar.get_view().x,
+            self.command_bar.get_view().y,
+        ))
     }
 
     pub fn new() -> Result<Screen> {
         allow_once!();
         Ok(Screen {
-               hsplit: UiChild::HSplit(HSplit::new(1)),
-               command_bar: {
-                   let mut res: CommandBar = Default::default();
-                   res.set_focus(false);
-                   UiChild::CommandBar(res)
-               },
-               ..Default::default()
-           })
+            hsplit: UiChild::HSplit(HSplit::new(1)),
+            command_bar: {
+                let mut res: CommandBar = Default::default();
+                res.set_focus(false);
+                UiChild::CommandBar(res)
+            },
+            ..Default::default()
+        })
     }
 }
 

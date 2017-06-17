@@ -35,7 +35,7 @@ impl Line {
     /// Return the length.
     pub fn length(&self) -> usize {
         self.prevs.chars().fold(0, |r, s| r + util::term_width(s)) +
-        self.nexts.chars().fold(0, |r, s| r + util::term_width(s))
+            self.nexts.chars().fold(0, |r, s| r + util::term_width(s))
     }
 
     /// Return the terminal x of the cursor.
@@ -49,8 +49,9 @@ impl Line {
         if self.dirty {
             self.cache.clear();
             self.cache.push_str(&self.prevs);
-            self.cache
-                .push_str(&self.nexts.chars().rev().collect::<String>());
+            self.cache.push_str(
+                &self.nexts.chars().rev().collect::<String>(),
+            );
             self.dirty = false;
         }
         &self.cache
@@ -114,8 +115,8 @@ impl Line {
     pub fn push_before(&mut self, str: &str) {
         self.x += str.chars()
             .map({
-                     |c| util::term_width(c)
-                 })
+                |c| util::term_width(c)
+            })
             .sum();
         self.prevs.push_str(str);
     }
@@ -151,16 +152,17 @@ impl Line {
         self.x = self.prevs
             .chars()
             .map({
-                     |c| util::term_width(c)
-                 })
+                |c| util::term_width(c)
+            })
             .sum();
     }
 
     /// Append a line to this.
     pub fn append(&mut self, target: String) {
         let target = mem::replace(&mut self.nexts, target);
-        self.nexts
-            .push_str(&target.chars().rev().collect::<String>());
+        self.nexts.push_str(
+            &target.chars().rev().collect::<String>(),
+        );
     }
 
     /// Move to the begining of the line.

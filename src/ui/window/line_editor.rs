@@ -3,7 +3,7 @@ use buf::Buffer;
 use term;
 use util::ResultBox;
 use ui::comp::ViewT;
-use std::io::{self, Write};
+use ui::window::movable::{Movable, Direction};
 
 #[allow(dead_code)]
 #[derive(Default)]
@@ -23,6 +23,35 @@ pub enum LineEditorRes {
     Unhandled,
 }
 
+impl Movable for LineEditor {
+    fn x_offset(&self) -> usize {
+        self.x_offset
+    }
+
+    fn set_x_offset(&mut self, value: usize) {
+        self.x_offset = value;
+    }
+
+    fn increase_x_offset(&mut self, amount: usize) {
+        self.x_offset += amount;
+    }
+
+    fn decrease_x_offset(&mut self, amount: usize) {
+        self.x_offset -= amount;
+    }
+
+    fn width(&self) -> usize {
+        self.view.width - self.linenum_width - if self.more_right { 1 } else { 0 }
+    }
+
+    fn response_cursor(&self, cursor: usize) -> ResultBox<LineEditorRes> {
+        self.response_ui(ui::Response::Term {
+            cursor: Some((self.translate_cursor(cursor), 0)),
+            refresh: None,
+        })
+    }
+}
+
 impl LineEditor {
     pub fn new() -> LineEditor {
         Default::default()
@@ -34,32 +63,38 @@ impl LineEditor {
     }
 
     /// Render to the Line object.
-    ///
-    /// TODO: Process long lines
     pub fn render(&mut self, buf: &mut Buffer, linenum: usize) -> ResultBox<term::Line> {
-        let mut cache = term::Line::new_splitted(self.view.width,
-                                                 self.view.theme.linenum_cur(),
-                                                 self.view.theme.editor_cur(),
-                                                 self.linenum_width);
-        cache.draw_str(&format!("{:width$}", linenum, width = self.linenum_width),
-                       0,
-                       0);
+        let mut cache = term::Line::new_splitted(
+            self.view.width,
+            self.view.theme.linenum_cur(),
+            self.view.theme.editor_cur(),
+            self.linenum_width,
+        );
+        cache.draw_str(
+            &format!("{:width$}", linenum, width = self.linenum_width),
+            0,
+            0,
+        );
         if let Some(s) = buf.get(linenum) {
             let margin = if self.x_offset > 0 {
-                cache.draw_str_ex(&"<<",
-                                  self.linenum_width,
-                                  0,
-                                  self.view.theme.arrow_fg,
-                                  self.view.theme.arrow_fg);
-                2
+                cache.draw_str_ex(
+                    "<",
+                    self.linenum_width,
+                    0,
+                    self.view.theme.arrow_fg,
+                    self.view.theme.arrow_fg,
+                );
+                1
             } else {
                 0
             };
-            self.more_right = cache.draw_str_ex(&s[self.x_offset + margin..],
-                                                self.linenum_width + margin,
-                                                0,
-                                                self.view.theme.editor.fg,
-                                                self.view.theme.arrow_fg);
+            self.more_right = cache.draw_str_ex(
+                &s[self.x_offset + margin..],
+                self.linenum_width + margin,
+                0,
+                self.view.theme.editor.fg,
+                self.view.theme.arrow_fg,
+            );
         }
         Ok(cache)
     }
@@ -103,10 +138,12 @@ impl LineEditor {
         let cursor = buf.get_x();
         match buf.kill_line() {
             Normal => {
-                let line = term::Line::new_from_str(&vec![' '; self.spaces_after_cursor(cursor)]
-                                                         .into_iter()
-                                                         .collect::<String>(),
-                                                    self.view.theme.editor);
+                let line = term::Line::new_from_str(
+                    &vec![' '; self.spaces_after_cursor(cursor)]
+                        .into_iter()
+                        .collect::<String>(),
+                    self.view.theme.editor,
+                );
                 self.response_cursor_with_line(buf.get_x(), line, false)
             }
             Empty(cursor) => Ok(LineEditorRes::PullUp(cursor.1)),
@@ -121,67 +158,34 @@ impl LineEditor {
         Ok(())
     }
 
-    fn width(&self) -> usize {
-        self.view.width - self.linenum_width - if self.more_right { 2 } else { 0 }
-    }
-
-    /// Handle move events.
-    fn on_move(&mut self, buf: &mut Buffer, dx: i8, dy: i8) -> ResultBox<LineEditorRes> {
-        let cursor_prev = buf.get_cursor();
-        let cursor = buf.move_cursor(dx, dy);
-        if cursor_prev.1 == cursor.1 {
-            // Move only in here.
-            if cursor.0 - self.x_offset >= self.width() {
-                // Scroll right
-                self.x_offset += 1;
-                Ok(LineEditorRes::Refresh)
-            } else if self.x_offset > 0 && cursor.0 - self.x_offset <= 1 {
-                self.x_offset -= 1;
-                Ok(LineEditorRes::Refresh)
-            } else {
-                self.response_cursor(cursor.0)
-            }
-        } else {
-            // Pass the process to the parrent.
-            Ok(LineEditorRes::Move(cursor_prev, cursor))
-        }
-    }
-
     /// Response wrapper for UI
     #[inline]
     fn response_ui(&self, response: ui::Response) -> ResultBox<LineEditorRes> {
         Ok(LineEditorRes::Ui(response))
     }
 
-    /// Response with cursor.
-    fn response_cursor(&self, cursor: usize) -> ResultBox<LineEditorRes> {
-        self.response_ui(ui::Response::Term {
-                             cursor: Some((self.translate_cursor(cursor), 0)),
-                             refresh: None,
-                         })
-    }
-
     /// Response with current cursor and following line.
-    fn response_cursor_with_line(&self,
-                                 cursor: usize,
-                                 line: term::Line,
-                                 on_delete: bool)
-                                 -> ResultBox<LineEditorRes> {
+    fn response_cursor_with_line(
+        &self,
+        cursor: usize,
+        line: term::Line,
+        on_delete: bool,
+    ) -> ResultBox<LineEditorRes> {
         let x = self.translate_cursor(cursor);
         self.response_ui(ui::Response::Term {
-                             refresh: Some(term::Refresh {
-                                               x: if on_delete { x } else { x - 1 },
-                                               y: 0,
-                                               rect: term::Rect::new_from_line(line),
-                                           }),
-                             cursor: Some((x, 0)),
-                         })
+            refresh: Some(term::Refresh {
+                x: if on_delete { x } else { x - 1 },
+                y: 0,
+                rect: term::Rect::new_from_line(line),
+            }),
+            cursor: Some((x, 0)),
+        })
     }
 
     /// Accept the char input.
     pub fn on_char(&mut self, buf: &mut Buffer, c: char) -> ResultBox<LineEditorRes> {
-        if self.view.width < buf.get_x() + 4 {
-            panic!("{} {}", self.view.width, buf.get_x());
+        if self.view.width < buf.get_x() + 2 {
+            //panic!("{} {}", self.view.width, buf.get_x());
             let cursor = buf.get_x();
             let after_cursor = String::with_capacity(self.view.width);
             let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
@@ -197,36 +201,13 @@ impl LineEditor {
         }
     }
 
-    /// Ajdust x_offset to make sense.
-    /// Return true iff the x_offset has been changed.
-    fn adjust_x_offset(&mut self, cursor: usize, line_width: usize) -> bool {
-        if self.x_offset > cursor {
-            self.x_offset = cursor;
-            return true;
-        }
-        false
-    }
-
-    pub fn on_head_tail(&mut self, buf: &mut Buffer, head: bool) -> ResultBox<LineEditorRes> {
-        let cursor = if head {
-            buf.move_begin_of_line().0
-        } else {
-            buf.move_end_of_line().0
-        };
-        if self.adjust_x_offset(cursor, buf.line_length()) {
-            Ok(LineEditorRes::Refresh)
-        } else {
-            self.response_cursor(cursor)
-        }
-    }
-
     /// Move cursor left and right, or Type a character.
     pub fn on_key(&mut self, buf: &mut Buffer, k: term::Key) -> ResultBox<LineEditorRes> {
         match k {
             term::Key::Ctrl('a') |
-            term::Key::Home => self.on_head_tail(buf, true),
+            term::Key::Home => self.on_home_end(buf, true),
             term::Key::Ctrl('e') |
-            term::Key::End => self.on_head_tail(buf, false),
+            term::Key::End => self.on_home_end(buf, false),
             term::Key::CR => {
                 let cursor = buf.break_line();
                 Ok(LineEditorRes::LineBreak(cursor))
@@ -234,13 +215,13 @@ impl LineEditor {
             term::Key::Del => self.on_delete(buf),
             term::Key::Ctrl('k') => self.on_kill_line(buf),
             term::Key::Ctrl('n') |
-            term::Key::Down => self.on_move(buf, 0, 1),
+            term::Key::Down => self.on_move(buf, Direction::Vertical(1)),
             term::Key::Ctrl('p') |
-            term::Key::Up => self.on_move(buf, 0, -1),
+            term::Key::Up => self.on_move(buf, Direction::Vertical(-1)),
             term::Key::Ctrl('f') |
-            term::Key::Right => self.on_move(buf, 1, 0),
+            term::Key::Right => self.on_move(buf, Direction::Horizontal(1)),
             term::Key::Ctrl('b') |
-            term::Key::Left => self.on_move(buf, -1, 0),
+            term::Key::Left => self.on_move(buf, Direction::Horizontal(-1)),
             term::Key::Char(c) => self.on_char(buf, c),
             _ => Ok(LineEditorRes::Unhandled),
         }
@@ -256,23 +237,33 @@ mod tests {
         let mut editor = LineEditor::new();
         editor.resize(0, 10);
         let mut buffer = Buffer::from_file("Cargo.toml").unwrap();
-        assert_eq!("[package] ",
-                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        assert_eq!(
+            "[package] ",
+            format!("{}", editor.render(&mut buffer, 0).unwrap())
+        );
         editor.on_char(&mut buffer, 'a').unwrap();
-        assert_eq!("a[package]",
-                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        assert_eq!(
+            "a[package]",
+            format!("{}", editor.render(&mut buffer, 0).unwrap())
+        );
         editor.on_char(&mut buffer, 'a');
-        assert_eq!("aa[packa>>",
-                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        assert_eq!("aaaa[pac>>",
-                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
+        assert_eq!(
+            "aa[packag>",
+            format!("{}", editor.render(&mut buffer, 0).unwrap())
+        );
         editor.on_char(&mut buffer, 'a');
         editor.on_char(&mut buffer, 'a');
-        assert_eq!("aaaaaaaa>>",
-                   format!("{}", editor.render(&mut buffer, 0).unwrap()));
+        assert_eq!(
+            "aaaa[pack>",
+            format!("{}", editor.render(&mut buffer, 0).unwrap())
+        );
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a');
+        assert_eq!(
+            "aaaaaaaa[>",
+            format!("{}", editor.render(&mut buffer, 0).unwrap())
+        );
     }
 }

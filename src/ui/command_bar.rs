@@ -28,8 +28,10 @@ impl Default for CommandBar {
             data: String::with_capacity(80),
             message: String::with_capacity(80),
             view: Default::default(),
-            background: term::Brush::new(term::Color::new(220, 220, 220),
-                                         term::Color::new(60, 30, 30)),
+            background: term::Brush::new(
+                term::Color::new(220, 220, 220),
+                term::Color::new(60, 30, 30),
+            ),
         }
     }
 }
@@ -42,10 +44,10 @@ impl CommandBar {
         rect.draw_str(msg, 0, 0);
         ui::Response::Term {
             refresh: Some(term::Refresh {
-                              x: 0,
-                              y: 0,
-                              rect: rect,
-                          }),
+                x: 0,
+                y: 0,
+                rect: rect,
+            }),
             cursor: None,
         }
     }
@@ -55,10 +57,11 @@ impl CommandBar {
         if self.focus() { self.view.height } else { 1 }
     }
 
-    fn handle_command_bar(&mut self,
-                          c: ui::CommandBar,
-                          workspace: &mut hq::Workspace)
-                          -> ResultBox<ui::Response> {
+    fn handle_command_bar(
+        &mut self,
+        c: ui::CommandBar,
+        workspace: &mut hq::Workspace,
+    ) -> ResultBox<ui::Response> {
         match c {
             ui::CommandBar::Navigate(msg) => {
                 // Turn on the navigator
@@ -102,15 +105,15 @@ impl Component for CommandBar {
                         let prev = self.data.len();
                         self.data.push(c);
                         Ok(ui::Response::Term {
-                               refresh: Some(term::Refresh {
-                                                 x: prev,
-                                                 y: 0,
-                                                 rect:
-                                                     term::Rect::new_from_char(term::Char::new(c,
-                                                                                   self.background)),
-                                             }),
-                               cursor: Some((self.data.len(), 0)),
-                           })
+                            refresh: Some(term::Refresh {
+                                x: prev,
+                                y: 0,
+                                rect: term::Rect::new_from_char(
+                                    term::Char::new(c, self.background),
+                                ),
+                            }),
+                            cursor: Some((self.data.len(), 0)),
+                        })
                     }
                     Notify => {
                         self.status = Status::Standby;
@@ -146,12 +149,12 @@ impl Component for CommandBar {
         };
         rect.draw_str(&self.message, 0, 0);
         Ok(ui::Response::Term {
-               refresh: Some(term::Refresh {
-                                 x: 0,
-                                 y: 0,
-                                 rect: rect,
-                             }),
-               cursor: Some((0, 0)),
-           })
+            refresh: Some(term::Refresh {
+                x: 0,
+                y: 0,
+                rect: rect,
+            }),
+            cursor: Some((0, 0)),
+        })
     }
 }

@@ -24,24 +24,26 @@ impl Kqueue {
             return Err(Error::Kqueue);
         }
         Ok(Kqueue {
-               kq: res,
-               changes: Vec::with_capacity(16),
-               events: Vec::with_capacity(16),
-           })
+            kq: res,
+            changes: Vec::with_capacity(16),
+            events: Vec::with_capacity(16),
+        })
     }
 
     /// Fetch kevent into the eventset.
     fn fetch_events(&mut self) -> Result<()> {
         unsafe {
-            let res = libc::kevent(self.kq,
-                                   ::std::ptr::null(),
-                                   0,
-                                   self.events.as_mut_ptr(),
-                                   self.events.capacity() as i32,
-                                   &libc::timespec {
-                                       tv_sec: 0,
-                                       tv_nsec: 0,
-                                   });
+            let res = libc::kevent(
+                self.kq,
+                ::std::ptr::null(),
+                0,
+                self.events.as_mut_ptr(),
+                self.events.capacity() as i32,
+                &libc::timespec {
+                    tv_sec: 0,
+                    tv_nsec: 0,
+                },
+            );
             if res == -1 {
                 return Err(Error::Kevent);
             } else {
@@ -54,15 +56,14 @@ impl Kqueue {
     /// Add a new kevent into the changeset.
     #[inline]
     fn add_event(&mut self, ident: i32, filter: i16, aux: isize) {
-        self.changes
-            .push(libc::kevent {
-                      ident: ident as libc::uintptr_t,
-                      filter: filter,
-                      flags: libc::EV_ADD,
-                      fflags: 0,
-                      data: aux,
-                      udata: ::std::ptr::null_mut(),
-                  })
+        self.changes.push(libc::kevent {
+            ident: ident as libc::uintptr_t,
+            filter: filter,
+            flags: libc::EV_ADD,
+            fflags: 0,
+            data: aux,
+            udata: ::std::ptr::null_mut(),
+        })
     }
 
     /// Initialize the kqueue API with the changeset.
@@ -73,15 +74,17 @@ impl Kqueue {
         self.add_event(libc::SIGWINCH, libc::EVFILT_SIGNAL, 0);
         self.add_event(TIMER_IDENT, libc::EVFILT_TIMER, 100);
         let res = unsafe {
-            libc::kevent(self.kq,
-                         self.changes.as_ptr(),
-                         self.changes.len() as i32,
-                         ::std::ptr::null_mut(),
-                         0,
-                         &libc::timespec {
-                             tv_sec: 0,
-                             tv_nsec: 0,
-                         })
+            libc::kevent(
+                self.kq,
+                self.changes.as_ptr(),
+                self.changes.len() as i32,
+                ::std::ptr::null_mut(),
+                0,
+                &libc::timespec {
+                    tv_sec: 0,
+                    tv_nsec: 0,
+                },
+            )
         };
         if res == -1 {
             Err(Error::Kevent)

@@ -24,8 +24,10 @@ impl Workspace {
             fs: Filesys::new()?,
         };
         // TODO: Refactor me!
-        res.buffers
-            .insert(String::from("<empty>"), Default::default());
+        res.buffers.insert(
+            String::from("<empty>"),
+            Default::default(),
+        );
         Ok(res)
     }
 
@@ -34,9 +36,9 @@ impl Workspace {
     }
 
     pub fn buf(&mut self, s: &str) -> ResultBox<&mut Buffer> {
-        self.buffers
-            .get_mut(s)
-            .ok_or_else(|| From::from(Error::NoElement))
+        self.buffers.get_mut(s).ok_or_else(
+            || From::from(Error::NoElement),
+        )
     }
 
     pub fn find_file(&mut self, args: Vec<String>) -> ResultBox<ui::Request> {

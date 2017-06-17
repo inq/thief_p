@@ -46,11 +46,12 @@ impl Line {
     /// Initialize a new line with two color brushes.
     /// The width of the left side is given by `splitter`.
     #[inline]
-    pub fn new_splitted(width: usize,
-                        brush_l: term::Brush,
-                        brush_r: term::Brush,
-                        splitter: usize)
-                        -> Line {
+    pub fn new_splitted(
+        width: usize,
+        brush_l: term::Brush,
+        brush_r: term::Brush,
+        splitter: usize,
+    ) -> Line {
         Line {
             chars: {
                 let mut res = vec![term::Char::new(' ', brush_l); splitter];
@@ -103,7 +104,7 @@ impl Line {
     ///
     /// TODO: Process full-width characters.
     pub fn draw_str(&mut self, src: &str, x: usize, limit: usize) {
-        let mut limit_x = if limit == 0 { self.width - x } else { limit };
+        let limit_x = if limit == 0 { self.width - x } else { limit };
         for (i, c) in src.chars().enumerate() {
             if i >= limit_x {
                 break;
@@ -116,20 +117,20 @@ impl Line {
     /// Return true iff there is more string on the right.
     ///
     /// TODO: Process full-width characters.
-    pub fn draw_str_ex(&mut self,
-                       src: &str,
-                       x: usize,
-                       limit: usize,
-                       color_fg: term::Color,
-                       color_arrow: term::Color)
-                       -> bool {
+    pub fn draw_str_ex(
+        &mut self,
+        src: &str,
+        x: usize,
+        limit: usize,
+        color_fg: term::Color,
+        color_arrow: term::Color,
+    ) -> bool {
         let mut limit_x = if limit == 0 { self.width - x } else { limit };
         let more_right = limit_x < src.len();
         if more_right {
-            limit_x -= 2;
+            limit_x -= 1;
             let w = self.width;
             self.write_char(w - 1, '>', color_arrow);
-            self.write_char(w - 2, '>', color_arrow);
         }
         for (i, c) in src.chars().enumerate() {
             if i >= limit_x {

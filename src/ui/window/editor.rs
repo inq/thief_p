@@ -37,7 +37,10 @@ impl Editor {
     #[inline]
     fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
         // TODO: Apply the x_offset from line_editor.
-        (self.line_editor.translate_cursor(cursor.0), cursor.1 - self.y_offset)
+        (
+            self.line_editor.translate_cursor(cursor.0),
+            cursor.1 - self.y_offset,
+        )
     }
 
     /// Basic initializennr.
@@ -50,27 +53,29 @@ impl Editor {
     }
 
     /// Response with rect and cursor.
-    fn response_rect_with_cursor(&self,
-                                 rect: term::Rect,
-                                 y_offset: usize,
-                                 cursor: term::Cursor)
-                                 -> ResultBox<ui::Response> {
+    fn response_rect_with_cursor(
+        &self,
+        rect: term::Rect,
+        y_offset: usize,
+        cursor: term::Cursor,
+    ) -> ResultBox<ui::Response> {
         Ok(ui::Response::Term {
-               refresh: Some(term::Refresh {
-                                 x: 0,
-                                 y: y_offset,
-                                 rect: rect,
-                             }),
-               cursor: Some(self.translate_cursor(cursor)),
-           })
+            refresh: Some(term::Refresh {
+                x: 0,
+                y: y_offset,
+                rect: rect,
+            }),
+            cursor: Some(self.translate_cursor(cursor)),
+        })
     }
 
     /// Move the cursor vertically.
-    fn on_move(&mut self,
-               workspace: &mut hq::Workspace,
-               cursor_prev: term::Cursor,
-               cursor: term::Cursor)
-               -> ResultBox<ui::Response> {
+    fn on_move(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        cursor_prev: term::Cursor,
+        cursor: term::Cursor,
+    ) -> ResultBox<ui::Response> {
         if cursor.1 < self.y_offset {
             // Scroll upward
             self.y_offset = cursor.1;
@@ -107,21 +112,27 @@ impl Editor {
     /// Refresh the single line cache.
     fn refresh_line_cache(&mut self, buf: &mut Buffer, linenum: usize) -> term::Line {
         // TODO: Merge with line_editor
-        let mut res = term::Line::new_splitted(self.view.width,
-                                               self.view.theme.linenum,
-                                               self.view.theme.editor,
-                                               self.linenum_width());
-        res.draw_str_ex(&format!("{:width$}", linenum, width = self.linenum_width()),
-                        0,
-                        0,
-                        self.view.theme.editor.fg,
-                        self.view.theme.arrow_fg);
+        let mut res = term::Line::new_splitted(
+            self.view.width,
+            self.view.theme.linenum,
+            self.view.theme.editor,
+            self.linenum_width(),
+        );
+        res.draw_str_ex(
+            &format!("{:width$}", linenum, width = self.linenum_width()),
+            0,
+            0,
+            self.view.theme.editor.fg,
+            self.view.theme.arrow_fg,
+        );
         if let Some(s) = buf.get(linenum) {
-            res.draw_str_ex(s,
-                            self.linenum_width(),
-                            0,
-                            self.view.theme.editor.fg,
-                            self.view.theme.arrow_fg);
+            res.draw_str_ex(
+                s,
+                self.linenum_width(),
+                0,
+                self.view.theme.editor.fg,
+                self.view.theme.arrow_fg,
+            );
         }
         res
     }
@@ -204,20 +215,21 @@ impl Component for Editor {
             }
         }
         Ok(ui::Response::Term {
-               refresh: Some(term::Refresh {
-                                 x: 0,
-                                 y: 0,
-                                 rect: rect,
-                             }),
-               cursor: Some(self.translate_cursor(cursor)),
-           })
+            refresh: Some(term::Refresh {
+                x: 0,
+                y: 0,
+                rect: rect,
+            }),
+            cursor: Some(self.translate_cursor(cursor)),
+        })
     }
 
     /// Handle events.
-    fn handle(&mut self,
-              workspace: &mut hq::Workspace,
-              e: ::ui::Request)
-              -> ResultBox<ui::Response> {
+    fn handle(
+        &mut self,
+        workspace: &mut hq::Workspace,
+        e: ::ui::Request,
+    ) -> ResultBox<ui::Response> {
         match e {
             ::ui::Request::OpenBuffer(s) => {
                 self.buffer_name = s;
