@@ -50,7 +50,7 @@ pub trait Movable {
 
     /// Handle move events.
     fn on_move(&mut self, buf: &mut Buffer, direction: Direction) -> ResultBox<LineEditorRes> {
-        let cursor_prev = buf.get_cursor();
+        let cursor_prev = buf.cursor();
         let cursor = buf.move_cursor(direction.dx(), direction.dy());
         if cursor_prev.1 == cursor.1 {
             // Move only in here.

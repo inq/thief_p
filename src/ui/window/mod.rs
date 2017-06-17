@@ -1,6 +1,7 @@
 mod editor;
 mod line_editor;
 mod movable;
+mod scrollable;
 
 pub use self::editor::Editor;
 pub use self::line_editor::LineEditor;

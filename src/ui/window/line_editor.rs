@@ -74,7 +74,7 @@ impl LineEditor {
             self.linenum_width,
         );
         cache.draw_str(
-            &format!("{:width$}", buf.get_y(), width = self.linenum_width),
+            &format!("{:width$}", buf.y(), width = self.linenum_width),
             0,
             0,
         );
@@ -112,12 +112,12 @@ impl LineEditor {
     /// Delete the current character.
     fn on_delete(&mut self, buf: &mut Buffer) -> ResultBox<LineEditorRes> {
         use buf::BackspaceRes::{Normal, PrevLine};
-        let cursor = buf.get_x();
+        let cursor = buf.x();
         match buf.backspace(self.spaces_after_cursor(cursor)) {
             Normal(mut after_cursor) => {
                 after_cursor.push(' ');
                 let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
-                self.response_cursor_with_line(buf.get_x(), line, true)
+                self.response_cursor_with_line(buf.x(), line, true)
             }
             PrevLine(_cursor) => {
                 // TODO: Implement this.
@@ -170,18 +170,18 @@ impl LineEditor {
 
     /// Accept the char input.
     pub fn on_char(&mut self, buf: &mut Buffer, c: char) -> ResultBox<LineEditorRes> {
-        if self.view.width < buf.get_x() + 2 {
-            //panic!("{} {}", self.view.width, buf.get_x());
-            let cursor = buf.get_x();
+        if self.view.width < buf.x() + 2 {
+            //panic!("{} {}", self.view.width, buf.x());
+            let cursor = buf.x();
             let after_cursor = String::with_capacity(self.view.width);
             let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
             self.response_cursor_with_line(cursor, line, false)
         } else {
             let mut after_cursor = String::with_capacity(self.view.width);
             after_cursor.push(c);
-            let cursor = buf.get_x();
+            let cursor = buf.x();
             after_cursor.push_str(&buf.insert(c, self.spaces_after_cursor(cursor)));
-            let cursor = buf.get_x();
+            let cursor = buf.x();
             let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
             self.response_cursor_with_line(cursor, line, false)
         }
