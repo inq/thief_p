@@ -187,6 +187,7 @@ impl Line {
     pub fn kill(&mut self) -> bool {
         let res = !self.nexts.is_empty();
         self.nexts.clear();
+        self.dirty = true;
         res
     }
 

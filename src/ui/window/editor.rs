@@ -102,7 +102,12 @@ impl Editor {
         if cursor.1 > cursor_prev.1 {
             // Move downward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            rect.append(&self.line_cache[cursor_prev.1 - self.y_offset]);
+            {
+                let line_cache = self.refresh_line_cache(buf, cursor_prev.1);
+                let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
+                *prev_line_cache = line_cache;
+                rect.append(prev_line_cache);
+            }
             rect.append(&self.line_editor.render(buf)?);
             return self.response_rect_with_cursor(rect, cursor_prev.1 - self.y_offset, cursor);
         }
