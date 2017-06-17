@@ -1,4 +1,3 @@
-use std::env;
 use std::convert::From;
 use libc;
 
@@ -97,16 +96,6 @@ impl Handler {
     }
 
     pub fn run(&mut self) -> ResultBox<()> {
-        /*
-        TODO: Parse arguments
-        let args: Vec<String> = env::args().collect();
-        args.get(1)
-            .and_then(|file| {
-                          self.hq.call("open-file");
-                          self.hq.call(file)
-                      })
-            .and_then(|e| self.handle_event(e).ok());
-         */
         let mut kqueue = Kqueue::new()?;
         kqueue.init()?;
         kqueue.kevent(self)

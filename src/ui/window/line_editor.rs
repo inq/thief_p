@@ -17,7 +17,7 @@ pub struct LineEditor {
 pub enum LineEditorRes {
     Ui(ui::Response),
     LineBreak(term::Cursor),
-    PullUp(usize),
+    PullUp,
     Move(term::Cursor, term::Cursor),
     Refresh,
     Unhandled,
@@ -129,19 +129,10 @@ impl LineEditor {
 
     /// Delete every characters after cursor.
     fn on_kill_line(&mut self, buf: &mut Buffer) -> ResultBox<LineEditorRes> {
-        use buf::KillLineRes::{Normal, Empty};
-        let cursor = buf.get_x();
+        use buf::KillLineRes::{Normal, PullUp};
         match buf.kill_line() {
-            Normal => {
-                let line = term::Line::new_from_str(
-                    &vec![' '; self.spaces_after_cursor(cursor)]
-                        .into_iter()
-                        .collect::<String>(),
-                    self.view.theme.editor,
-                );
-                self.response_cursor_with_line(buf.get_x(), line, false)
-            }
-            Empty(cursor) => Ok(LineEditorRes::PullUp(cursor.1)),
+            Normal => Ok(LineEditorRes::Refresh),
+            PullUp => Ok(LineEditorRes::PullUp),
             _ => Ok(LineEditorRes::Unhandled),
         }
     }
@@ -230,35 +221,35 @@ mod tests {
     #[test]
     fn test_on_key() {
         let mut editor = LineEditor::new();
-        editor.resize(0, 10);
+        editor.resize(0, 10).unwrap();
         let mut buffer = Buffer::from_file("Cargo.toml").unwrap();
         assert_eq!(
             "[package] ",
-            format!("{}", editor.render(&mut buffer, 0).unwrap())
+            format!("{}", editor.render(&mut buffer).unwrap())
         );
         editor.on_char(&mut buffer, 'a').unwrap();
         assert_eq!(
             "a[package]",
-            format!("{}", editor.render(&mut buffer, 0).unwrap())
+            format!("{}", editor.render(&mut buffer).unwrap())
         );
-        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a').unwrap();
         assert_eq!(
             "aa[packag>",
-            format!("{}", editor.render(&mut buffer, 0).unwrap())
+            format!("{}", editor.render(&mut buffer).unwrap())
         );
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a').unwrap();
+        editor.on_char(&mut buffer, 'a').unwrap();
         assert_eq!(
             "aaaa[pack>",
-            format!("{}", editor.render(&mut buffer, 0).unwrap())
+            format!("{}", editor.render(&mut buffer).unwrap())
         );
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
-        editor.on_char(&mut buffer, 'a');
+        editor.on_char(&mut buffer, 'a').unwrap();
+        editor.on_char(&mut buffer, 'a').unwrap();
+        editor.on_char(&mut buffer, 'a').unwrap();
+        editor.on_char(&mut buffer, 'a').unwrap();
         assert_eq!(
             "aaaaaaaa[>",
-            format!("{}", editor.render(&mut buffer, 0).unwrap())
+            format!("{}", editor.render(&mut buffer).unwrap())
         );
     }
 }

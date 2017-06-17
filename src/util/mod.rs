@@ -1,6 +1,5 @@
 #[macro_use]
 mod macros;
-mod key;
 
 pub type ResultBox<T> = ::std::result::Result<T, Box<::std::error::Error>>;
 

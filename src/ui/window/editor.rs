@@ -182,18 +182,8 @@ impl Component for Editor {
                 Ok(resp.translate(0, y))
             }
             Move(p, c) => self.on_move(workspace, p, c),
-            PullUp(_y) => {
-                // Pull-up and refresh the line-editor.
-                // TODO: Implement pull-up instead of refresh
-                Ok(self.refresh(workspace)?)
-            }
-            LineBreak(_cursor) => {
-                // Break the line.
-                // TODO: Implement pull-down instead of refresh
-                Ok(self.refresh(workspace)?)
-            }
-            Refresh => {
-                // Refresh
+            PullUp | LineBreak(_) | Refresh => {
+                // TODO: Implement pull-up / pull-down instead of refresh
                 Ok(self.refresh(workspace)?)
             }
             Unhandled => Ok(ui::Response::None),

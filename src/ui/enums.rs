@@ -21,7 +21,6 @@ pub enum Request {
 
 #[derive(Debug)]
 pub enum Response {
-    OpenBuffer(String),
     Command(String),
     Unhandled,
     Quit,

@@ -32,12 +32,6 @@ impl Line {
         res
     }
 
-    /// Return the length.
-    pub fn length(&self) -> usize {
-        self.prevs.chars().fold(0, |r, s| r + util::term_width(s)) +
-            self.nexts.chars().fold(0, |r, s| r + util::term_width(s))
-    }
-
     /// Return the terminal x of the cursor.
     #[inline]
     pub fn get_x(&self) -> usize {
@@ -135,7 +129,7 @@ impl Line {
     /// Move cursor right by 1 character.
     pub fn move_right(&mut self) -> bool {
         if let Some(c) = self.nexts.pop() {
-            assert!(c != '\n');
+            assert_ne!(c, '\n');
             self.x += util::term_width(c);;
             self.prevs.push(c);
             true
@@ -159,7 +153,6 @@ impl Line {
 
     /// Append a line to this.
     pub fn append(&mut self, target: String) {
-        let target = mem::replace(&mut self.nexts, target);
         self.nexts.push_str(
             &target.chars().rev().collect::<String>(),
         );
