@@ -9,8 +9,7 @@ pub trait Scrollable {
     fn y_offset(&self) -> usize;
     fn height(&self) -> usize;
     fn set_y_offset(&mut self, value: usize);
-    fn refresh_with_buffer(&mut self, buffer: &mut buf::Buffer)
-                           -> ResultBox<ui::Response>;
+    fn refresh_with_buffer(&mut self, buffer: &mut buf::Buffer) -> ResultBox<ui::Response>;
 
     /// Calculate the screen's coordinate of the cursor.
     fn translate_cursor(&self, cursor: term::Cursor) -> term::Cursor {
@@ -23,10 +22,7 @@ pub trait Scrollable {
         (x, y)
     }
 
-    fn scroll(
-        &mut self,
-        buffer: &mut buf::Buffer,
-    ) -> bool {
+    fn scroll(&mut self, buffer: &mut buf::Buffer) -> bool {
         let cursor = buffer.cursor();
         if cursor.1 < self.y_offset() {
             // Scroll upward
@@ -36,7 +32,7 @@ pub trait Scrollable {
         if cursor.1 >= self.y_offset() + self.height() {
             // Scroll downward
             let height = self.height();
-            self.set_y_offset(cursor.1 + height);
+            self.set_y_offset(cursor.1 - height);
             return true;
         }
         false

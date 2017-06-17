@@ -34,13 +34,10 @@ impl Scrollable for Editor {
         self.y_offset = value;
     }
 
-    fn refresh_with_buffer(
-        &mut self,
-        buffer: &mut buf::Buffer,
-    ) -> ResultBox<ui::Response> {
+    fn refresh_with_buffer(&mut self, buffer: &mut buf::Buffer) -> ResultBox<ui::Response> {
+        self.refresh_line_caches(buffer);
         let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
         let cursor = buffer.cursor();
-
         for (i, line) in self.line_cache.iter().enumerate() {
             if i + self.y_offset == cursor.1 {
                 rect.append(&self.line_editor.render(buffer).unwrap());
@@ -169,12 +166,11 @@ impl Editor {
 
     /// Update the line_caches.
     /// TODO: Reuse line_cache (expand, shrink).
-    fn refresh_line_caches(&mut self, workspace: &mut hq::Workspace) {
-        let buf = self.get_buffer(workspace).unwrap();
+    fn refresh_line_caches(&mut self, buffer: &mut buf::Buffer) {
         let mut linenum = self.y_offset;
         self.line_cache.clear();
-        while let Some(_) = buf.get(linenum) {
-            let cache = self.refresh_line_cache(buf, linenum);
+        while let Some(_) = buffer.get(linenum) {
+            let cache = self.refresh_line_cache(buffer, linenum);
             self.line_cache.push(cache);
             linenum += 1;
             if linenum > self.view.height + self.y_offset {
@@ -219,7 +215,6 @@ impl Component for Editor {
     fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
         let linenum_width = self.linenum_width();
         self.line_editor.set_linenum_width(linenum_width);
-        self.refresh_line_caches(workspace);
         let buffer = self.get_buffer(workspace)?;
         self.refresh_with_buffer(buffer)
     }
