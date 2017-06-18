@@ -1,3 +1,4 @@
+mod line_cache;
 mod scrollable;
 
 use buf;
@@ -7,7 +8,9 @@ use ui;
 use ui::comp::{Component, ViewT};
 use ui::line_editor::LineEditor;
 use util::ResultBox;
+
 use self::scrollable::Scrollable;
+use self::line_cache::LineCache;
 
 #[derive(Default, UiView)]
 pub struct Editor {
@@ -16,7 +19,7 @@ pub struct Editor {
     buffer_name: String,
     line_max: usize,
     y_offset: usize,
-    line_cache: Vec<term::Line>,
+    line_cache: LineCache,
 }
 
 impl Scrollable for Editor {
@@ -37,16 +40,21 @@ impl Scrollable for Editor {
     }
 
     fn refresh_with_buffer(&mut self, buffer: &mut buf::Buffer) -> ResultBox<ui::Response> {
-        self.refresh_line_caches(buffer);
-        let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
+        let linenum_width = self.linenum_width();
+        self.line_cache.refresh_all(
+            &self.view,
+            buffer,
+            linenum_width,
+            self.y_offset,
+        );
+        let rect = self.line_cache.render_to_rect(
+            buffer,
+            &self.view,
+            &mut self.line_editor,
+            self.y_offset,
+        );
         let cursor = buffer.cursor();
-        for (i, line) in self.line_cache.iter().enumerate() {
-            if i + self.y_offset == cursor.1 {
-                rect.append(&self.line_editor.render(buffer).unwrap());
-            } else {
-                rect.append(line);
-            }
-        }
+
         Ok(ui::Response::Term {
             refresh: Some(term::Refresh {
                 x: 0,
@@ -114,71 +122,32 @@ impl Editor {
         if cursor.1 < cursor_prev.1 {
             // Move upward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
+            let linenum_width = self.linenum_width();
             rect.append(&self.line_editor.render(buffer)?);
-            {
-                let line_cache = self.refresh_line_cache(buffer, cursor_prev.1);
-                let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
-                *prev_line_cache = line_cache;
-                rect.append(prev_line_cache);
-            }
+            rect.append(&self.line_cache.refresh_one(
+                &self.view,
+                buffer,
+                linenum_width,
+                cursor_prev.1,
+                self.y_offset,
+            ));
             return self.response_rect_with_cursor(rect, cursor.1 - self.y_offset, cursor);
         }
         if cursor.1 > cursor_prev.1 {
             // Move downward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            {
-                let line_cache = self.refresh_line_cache(buffer, cursor_prev.1);
-                let prev_line_cache = &mut self.line_cache[cursor_prev.1 - self.y_offset];
-                *prev_line_cache = line_cache;
-                rect.append(prev_line_cache);
-            }
+            let linenum_width = self.linenum_width();
+            rect.append(self.line_cache.refresh_one(
+                &self.view,
+                buffer,
+                linenum_width,
+                cursor_prev.1,
+                self.y_offset,
+            ));
             rect.append(&self.line_editor.render(buffer)?);
             return self.response_rect_with_cursor(rect, cursor_prev.1 - self.y_offset, cursor);
         }
         unreachable!();
-    }
-
-    /// Refresh the single line cache.
-    fn refresh_line_cache(&mut self, buf: &mut buf::Buffer, linenum: usize) -> term::Line {
-        // TODO: Merge with line_editor
-        let mut res = term::Line::new_splitted(
-            self.view.width,
-            self.view.theme.linenum,
-            self.view.theme.editor,
-            self.linenum_width(),
-        );
-        res.draw_str_ex(
-            &format!("{:width$}", linenum, width = self.linenum_width()),
-            0,
-            0,
-            self.view.theme.editor.fg,
-            self.view.theme.arrow_fg,
-        );
-        if let Some(s) = buf.get(linenum) {
-            res.draw_str_ex(
-                s,
-                self.linenum_width(),
-                0,
-                self.view.theme.editor.fg,
-                self.view.theme.arrow_fg,
-            );
-        }
-        res
-    }
-
-    /// Update the line_caches.
-    /// TODO: Reuse line_cache (expand, shrink).
-    fn refresh_line_caches(&mut self, buffer: &mut buf::Buffer) {
-        let mut linenum = self.y_offset;
-        self.line_cache.clear();
-        while let Some(_) = buffer.get(linenum) {
-            let cache = self.refresh_line_cache(buffer, linenum);
-            self.line_cache.push(cache);
-            linenum += 1;
-            if linenum > self.view.height + self.y_offset {
-                break;
-            }
-        }
     }
 
     /// Return the buffer of this editor.
