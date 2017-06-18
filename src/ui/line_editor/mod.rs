@@ -3,14 +3,14 @@ mod movable;
 use ui;
 use buf::Buffer;
 use term;
-use ui::comp::ViewT;
+use ui::comp::View;
 use util::ResultBox;
 use self::movable::{Movable, Direction};
 
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct LineEditor {
-    view: ViewT,
+    view: View,
     linenum_width: usize,
     x_offset: usize,
     more_right: bool,

@@ -3,7 +3,7 @@ use ui::{self, Theme};
 use util::ResultBox;
 use term;
 
-pub struct ViewT {
+pub struct View {
     pub x: usize,
     pub y: usize,
     pub width: usize,
@@ -12,9 +12,9 @@ pub struct ViewT {
     pub focus: bool,
 }
 
-impl Default for ViewT {
-    fn default() -> ViewT {
-        ViewT {
+impl Default for View {
+    fn default() -> View {
+        View {
             x: 0,
             y: 0,
             width: 0,
@@ -25,7 +25,7 @@ impl Default for ViewT {
     }
 }
 
-impl ViewT {
+impl View {
     fn update(&mut self, x: usize, y: usize, width: usize, height: usize) {
         self.x = x;
         self.y = y;
@@ -34,12 +34,12 @@ impl ViewT {
     }
 }
 
-pub trait View {
-    fn get_view(&self) -> &ViewT;
-    fn get_view_mut(&mut self) -> &mut ViewT;
+pub trait ViewT {
+    fn get_view(&self) -> &View;
+    fn get_view_mut(&mut self) -> &mut View;
 }
 
-pub trait Component: View {
+pub trait Component: ViewT {
     fn on_resize(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()>;
     fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response>;
 

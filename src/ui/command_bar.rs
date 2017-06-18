@@ -2,7 +2,7 @@ use hq;
 use term;
 use ui;
 use util::ResultBox;
-use ui::comp::{Component, ViewT};
+use ui::comp::{Component, View};
 
 #[derive(PartialEq)]
 pub enum Status {
@@ -14,7 +14,7 @@ pub enum Status {
 
 #[derive(UiView)]
 pub struct CommandBar {
-    view: ViewT,
+    view: View,
     status: Status,
     data: String,
     message: String,

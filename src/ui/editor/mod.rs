@@ -5,7 +5,7 @@ use buf;
 use hq;
 use term;
 use ui;
-use ui::comp::{Component, ViewT};
+use ui::comp::{Component, View};
 use ui::line_editor::LineEditor;
 use util::ResultBox;
 
@@ -14,7 +14,7 @@ use self::line_cache::LineCache;
 
 #[derive(Default, UiView)]
 pub struct Editor {
-    view: ViewT,
+    view: View,
     line_editor: LineEditor,
     buffer_name: String,
     line_max: usize,
@@ -124,7 +124,7 @@ impl Editor {
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
             let linenum_width = self.linenum_width();
             rect.append(&self.line_editor.render(buffer)?);
-            rect.append(&self.line_cache.refresh_one(
+            rect.append(self.line_cache.refresh_one(
                 &self.view,
                 buffer,
                 linenum_width,

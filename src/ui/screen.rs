@@ -12,7 +12,7 @@ def_error! {
 
 #[derive(Default, UiView)]
 pub struct Screen {
-    view: ViewT,
+    view: View,
     hsplit: UiChild,
     command_bar: UiChild,
 }

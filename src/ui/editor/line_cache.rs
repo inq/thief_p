@@ -1,6 +1,6 @@
 use buf;
 use term;
-use ui::comp::{Component, ViewT};
+use ui::comp::View;
 use ui::line_editor::LineEditor;
 
 #[derive(Default)]
@@ -13,7 +13,7 @@ impl LineCache {
     pub fn render_to_rect(
         &self,
         buffer: &mut buf::Buffer,
-        view: &ViewT,
+        view: &View,
         line_editor: &mut LineEditor,
         y_offset: usize,
     ) -> term::Rect {
@@ -33,7 +33,7 @@ impl LineCache {
     /// TODO: Reuse line_cache (expand, shrink).
     pub fn refresh_all(
         &mut self,
-        view: &ViewT,
+        view: &View,
         buffer: &mut buf::Buffer,
         linenum_width: usize,
         y_offset: usize,
@@ -51,7 +51,7 @@ impl LineCache {
 
     pub fn refresh_one(
         &mut self,
-        view: &ViewT,
+        view: &View,
         buffer: &mut buf::Buffer,
         linenum_width: usize,
         linenum: usize,
@@ -65,7 +65,7 @@ impl LineCache {
     /// Return true iff there is the correcsponding line.
     fn refresh(
         &mut self,
-        view: &ViewT,
+        view: &View,
         linenum_width: usize,
         buffer: &mut buf::Buffer,
         linenum: usize,

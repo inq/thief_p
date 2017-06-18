@@ -52,9 +52,9 @@ macro_rules! def_child {
 
         def_child!(@default $target, $($src),*);
 
-        impl ::ui::comp::View for $target {
-            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut ::ui::comp::ViewT);
-            def_child!(@child_imm $target, [$($src),*], get_view(): &::ui::comp::ViewT);
+        impl ::ui::comp::ViewT for $target {
+            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut ::ui::comp::View);
+            def_child!(@child_imm $target, [$($src),*], get_view(): &::ui::comp::View);
         }
 
         impl ::ui::comp::Component for $target {

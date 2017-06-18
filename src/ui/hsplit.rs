@@ -2,12 +2,12 @@ use hq;
 use util::ResultBox;
 use term;
 use ui;
-use ui::comp::{ViewT, Parent, Component};
+use ui::comp::{View, Parent, Component};
 use ui::editor::Editor;
 
 #[derive(Default, UiView)]
 pub struct HSplit {
-    view: ViewT,
+    view: View,
     editors: Vec<Editor>,
     focused: usize,
 }
