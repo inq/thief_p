@@ -3,7 +3,8 @@ mod enums;
 mod hsplit;
 mod screen;
 mod theme;
-mod window;
+mod editor;
+mod line_editor;
 mod command_bar;
 
 pub use ui::comp::Component;

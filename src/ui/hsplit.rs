@@ -3,23 +3,23 @@ use util::ResultBox;
 use term;
 use ui;
 use ui::comp::{ViewT, Parent, Component};
-use ui::window::Window;
+use ui::editor::Editor;
 
 #[derive(Default, UiView)]
 pub struct HSplit {
     view: ViewT,
-    windows: Vec<Window>,
+    editors: Vec<Editor>,
     focused: usize,
 }
 
 impl Component for HSplit {
-    /// Resize each child windows.
+    /// Resize each child editors.
     fn on_resize(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()> {
-        let windows = self.windows.len();
-        let borders = windows + 1;
+        let editors = self.editors.len();
+        let borders = editors + 1;
         let mut offset = 1;
-        for (i, &mut ref mut child) in self.windows.iter_mut().enumerate() {
-            let w = (self.view.width - borders + i) / windows;
+        for (i, &mut ref mut child) in self.editors.iter_mut().enumerate() {
+            let w = (self.view.width - borders + i) / editors;
             child.resize(workspace, offset, 1, w, self.view.height - 2)?;
             offset += w + 1;
         }
@@ -41,7 +41,7 @@ impl Component for HSplit {
         workspace: &mut hq::Workspace,
         e: ui::Request,
     ) -> ResultBox<ui::Response> {
-        self.windows[self.focused].propagate(e, workspace)
+        self.editors[self.focused].propagate(e, workspace)
     }
 
     /// Handle the keyboard event.
@@ -58,7 +58,7 @@ impl Component for HSplit {
 
 impl HSplit {
     fn toggle_split(&mut self, workspace: &mut hq::Workspace) -> ResultBox<()> {
-        let ws = self.windows.len() % 3 + 1;
+        let ws = self.editors.len() % 3 + 1;
         self.set_children(ws);
         let x = self.view.x;
         let y = self.view.y;
@@ -70,29 +70,29 @@ impl HSplit {
     pub fn set_children(&mut self, children: usize) {
         // TODO: Must be implemented
         self.focused = 0;
-        if children <= self.windows.len() {
-            self.windows.truncate(children)
+        if children <= self.editors.len() {
+            self.editors.truncate(children)
         } else {
-            for _ in 0..(children - self.windows.len()) {
-                self.windows.push(Window::new_editor())
+            for _ in 0..(children - self.editors.len()) {
+                self.editors.push(Editor::new())
             }
         }
     }
 
-    pub fn new(windows: usize) -> HSplit {
+    pub fn new(editors: usize) -> HSplit {
         let mut res: HSplit = Default::default();
-        res.set_children(windows);
+        res.set_children(editors);
         res
     }
 }
 
 impl Parent for HSplit {
-    type Child = Window;
-    fn children_mut(&mut self) -> Vec<&mut Window> {
-        self.windows.iter_mut().collect()
+    type Child = Editor;
+    fn children_mut(&mut self) -> Vec<&mut Editor> {
+        self.editors.iter_mut().collect()
     }
 
-    fn children(&self) -> Vec<&Window> {
-        self.windows.iter().collect()
+    fn children(&self) -> Vec<&Editor> {
+        self.editors.iter().collect()
     }
 }

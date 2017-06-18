@@ -1,11 +1,13 @@
+mod scrollable;
+
 use buf;
 use hq;
 use term;
 use ui;
 use ui::comp::{Component, ViewT};
-use ui::window::LineEditor;
-use ui::window::scrollable::Scrollable;
+use ui::line_editor::LineEditor;
 use util::ResultBox;
+use self::scrollable::Scrollable;
 
 #[derive(Default, UiView)]
 pub struct Editor {
@@ -57,8 +59,8 @@ impl Scrollable for Editor {
 }
 
 impl Editor {
-    #[inline]
     /// TODO: Cache this.
+    #[inline]
     fn linenum_width(&self) -> usize {
         let mut t = self.line_max;
         if t == 0 {
@@ -194,7 +196,7 @@ impl Component for Editor {
 
     /// Process keyboard event.
     fn on_key(&mut self, workspace: &mut hq::Workspace, k: term::Key) -> ResultBox<ui::Response> {
-        use ui::window::line_editor::LineEditorRes::*;
+        use ui::line_editor::LineEditorRes::*;
         let buffer = self.get_buffer(workspace)?;
         match self.line_editor.on_key(buffer, k)? {
             Ui(resp) => {

@@ -1,9 +1,11 @@
+mod movable;
+
 use ui;
 use buf::Buffer;
 use term;
-use util::ResultBox;
 use ui::comp::ViewT;
-use ui::window::movable::{Movable, Direction};
+use util::ResultBox;
+use self::movable::{Movable, Direction};
 
 #[allow(dead_code)]
 #[derive(Default)]

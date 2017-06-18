@@ -1,6 +1,6 @@
 use buf::Buffer;
 use util::ResultBox;
-use ui::window::line_editor::LineEditorRes;
+use ui::line_editor::LineEditorRes;
 
 pub enum Direction {
     Horizontal(i8),

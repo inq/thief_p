@@ -1,7 +1,7 @@
 use buf;
 use term;
 use ui;
-use ui::window::LineEditor;
+use ui::line_editor::LineEditor;
 use util::ResultBox;
 
 pub trait Scrollable {
