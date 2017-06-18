@@ -17,8 +17,6 @@ pub struct Editor {
     view: View,
     line_editor: LineEditor,
     buffer_name: String,
-    line_max: usize,
-    y_offset: usize,
     line_cache: LineCache,
 }
 
@@ -28,7 +26,7 @@ impl Scrollable for Editor {
     }
 
     fn y_offset(&self) -> usize {
-        self.y_offset
+        self.line_cache.y_offset()
     }
 
     fn height(&self) -> usize {
@@ -36,22 +34,15 @@ impl Scrollable for Editor {
     }
 
     fn set_y_offset(&mut self, value: usize) {
-        self.y_offset = value;
+        self.line_cache.set_y_offset(value);
     }
 
     fn refresh_with_buffer(&mut self, buffer: &mut buf::Buffer) -> ResultBox<ui::Response> {
-        let linenum_width = self.linenum_width();
-        self.line_cache.refresh_all(
-            &self.view,
-            buffer,
-            linenum_width,
-            self.y_offset,
-        );
+        self.line_cache.refresh_all(&self.view, buffer);
         let rect = self.line_cache.render_to_rect(
             buffer,
             &self.view,
             &mut self.line_editor,
-            self.y_offset,
         );
         let cursor = buffer.cursor();
 
@@ -67,20 +58,8 @@ impl Scrollable for Editor {
 }
 
 impl Editor {
-    /// TODO: Cache this.
-    #[inline]
-    fn linenum_width(&self) -> usize {
-        let mut t = self.line_max;
-        if t == 0 {
-            2
-        } else {
-            let mut c = 0;
-            while t > 0 {
-                t /= 10;
-                c += 1;
-            }
-            c + 1
-        }
+    fn set_linenum_max(&mut self, value: usize) {
+        self.line_cache.set_linenum_max(value);
     }
 
     /// Basic initializennr.
@@ -122,30 +101,32 @@ impl Editor {
         if cursor.1 < cursor_prev.1 {
             // Move upward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            let linenum_width = self.linenum_width();
             rect.append(&self.line_editor.render(buffer)?);
             rect.append(self.line_cache.refresh_one(
                 &self.view,
                 buffer,
-                linenum_width,
                 cursor_prev.1,
-                self.y_offset,
             ));
-            return self.response_rect_with_cursor(rect, cursor.1 - self.y_offset, cursor);
+            return self.response_rect_with_cursor(
+                rect,
+                cursor.1 - self.line_cache.y_offset(),
+                cursor,
+            );
         }
         if cursor.1 > cursor_prev.1 {
             // Move downward
             let mut rect = term::Rect::new(self.view.width, 0, self.view.theme.linenum);
-            let linenum_width = self.linenum_width();
             rect.append(self.line_cache.refresh_one(
                 &self.view,
                 buffer,
-                linenum_width,
                 cursor_prev.1,
-                self.y_offset,
             ));
             rect.append(&self.line_editor.render(buffer)?);
-            return self.response_rect_with_cursor(rect, cursor_prev.1 - self.y_offset, cursor);
+            return self.response_rect_with_cursor(
+                rect,
+                cursor_prev.1 - self.line_cache.y_offset(),
+                cursor,
+            );
         }
         unreachable!();
     }
@@ -174,18 +155,21 @@ impl Component for Editor {
                 Ok(resp.translate(0, y))
             }
             Move(p, c) => self.on_move(buffer, p, c),
-            PullUp | LineBreak(_) | Refresh => {
+            PullUp | LineBreak(_) => {
                 // TODO: Implement pull-up / pull-down instead of refresh
+                self.set_linenum_max(buffer.line_num());
                 Ok(self.refresh_with_buffer(buffer)?)
             }
+            Refresh => Ok(self.refresh_with_buffer(buffer)?),
             Unhandled => Ok(ui::Response::None),
         }
     }
 
     /// Refresh the editor.
     fn refresh(&mut self, workspace: &mut hq::Workspace) -> ResultBox<ui::Response> {
-        let linenum_width = self.linenum_width();
-        self.line_editor.set_linenum_width(linenum_width);
+        self.line_editor.set_linenum_width(
+            self.line_cache.linenum_width(),
+        );
         let buffer = self.get_buffer(workspace)?;
         self.refresh_with_buffer(buffer)
     }
@@ -199,8 +183,8 @@ impl Component for Editor {
         match e {
             ::ui::Request::OpenBuffer(s) => {
                 self.buffer_name = s;
-                let buf = self.get_buffer(workspace)?;
-                self.line_max = buf.line_num();
+                let buffer = self.get_buffer(workspace)?;
+                self.set_linenum_max(buffer.line_num());
                 Ok(ui::Response::None)
             }
             _ => Ok(ui::Response::Unhandled),
