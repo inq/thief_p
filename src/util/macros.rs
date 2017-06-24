@@ -1,7 +1,7 @@
 /// Merge elements into a enum. Default value is the first element.
 macro_rules! def_child {
     ( @default $target:ident, $first:ident) => {
-        // Default value implementation
+n        // Default value implementation
         impl Default for $target {
             fn default() -> $target {
                 $target::$first(Default::default())
@@ -52,20 +52,38 @@ macro_rules! def_child {
 
         def_child!(@default $target, $($src),*);
 
-        impl ::ui::comp::View for $target {
-            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut ::ui::comp::ViewT);
-            def_child!(@child_imm $target, [$($src),*], get_view(): &::ui::comp::ViewT);
+        impl ::ui::comp::ViewT for $target {
+            def_child!(@child_mut $target, [$($src),*], get_view_mut(): &mut ::ui::comp::View);
+            def_child!(@child_imm $target, [$($src),*], get_view(): &::ui::comp::View);
         }
 
         impl ::ui::comp::Component for $target {
-            def_child!(@child_mut $target, [$($src),*], on_resize(workspace: &mut ::hq::Workspace): ResultBox<()>);
-            def_child!(@child_mut $target, [$($src),*], refresh(workspace: &mut ::hq::Workspace): ResultBox<::ui::Response>);
-            def_child!(@child_mut $target, [$($src),*],
-                       unhandled(workspace: &mut ::hq::Workspace, e: ::ui::Request): ResultBox<::ui::Response>);
-            def_child!(@child_mut $target, [$($src),*],
-                       handle(workspace: &mut ::hq::Workspace, e: ::ui::Request): ResultBox<::ui::Response>);
-            def_child!(@child_mut $target, [$($src),*],
-                       on_key(workspace: &mut ::hq::Workspace, k: ::term::Key): ResultBox<::ui::Response>);
+            def_child!(
+                @child_mut $target,
+                [$($src),*],
+                on_resize(workspace: &mut ::hq::Workspace): ResultBox<()>);
+            def_child!(
+                @child_mut $target,
+                [$($src),*],
+                refresh(workspace: &mut ::hq::Workspace): ResultBox<::ui::Response>);
+            def_child!(
+                @child_mut $target,
+                [$($src),*],
+                unhandled(
+                    workspace: &mut ::hq::Workspace,
+                    e: ::ui::Request): ResultBox<::ui::Response>);
+            def_child!(
+                @child_mut $target,
+                [$($src),*],
+                handle(
+                    workspace: &mut ::hq::Workspace,
+                    e: ::ui::Request): ResultBox<::ui::Response>);
+            def_child!(
+                @child_mut $target,
+                [$($src),*],
+                on_key(
+                    workspace: &mut ::hq::Workspace,
+                    k: ::term::Key): ResultBox<::ui::Response>);
         }
     };
 }

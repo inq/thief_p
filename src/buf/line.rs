@@ -34,12 +34,12 @@ impl Line {
 
     /// Return the terminal x of the cursor.
     #[inline]
-    pub fn get_x(&self) -> usize {
+    pub fn x(&self) -> usize {
         self.x
     }
 
     /// Refresh the cache and get it.
-    pub fn get_str(&mut self) -> &String {
+    pub fn as_str(&mut self) -> &String {
         if self.dirty {
             self.cache.clear();
             self.cache.push_str(&self.prevs);
@@ -54,7 +54,7 @@ impl Line {
     /// Fill data from string.
     #[inline]
     pub fn replace(&mut self, src: String, x: usize) -> String {
-        let res = self.get_str().clone();
+        let res = self.as_str().clone();
         self.cache = src;
         self.prevs.clear();
         self.nexts.clear();

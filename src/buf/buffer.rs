@@ -40,7 +40,7 @@ impl Buffer {
     /// Return the ith element.
     pub fn get(&mut self, i: usize) -> Option<&String> {
         if i == self.prevs.len() {
-            Some(self.cur.get_str())
+            Some(self.cur.as_str())
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else if self.nexts.len() + self.prevs.len() >= i {
@@ -55,26 +55,26 @@ impl Buffer {
     }
 
     /// Return the total number of lines.
-    pub fn get_line_num(&self) -> usize {
+    pub fn line_num(&self) -> usize {
         1 + self.prevs.len() + self.nexts.len()
     }
 
     /// Get the x position of the cursor.
     #[inline]
-    pub fn get_x(&self) -> usize {
-        self.cur.get_x()
+    pub fn x(&self) -> usize {
+        self.cur.x()
     }
 
     /// Get the y position of the cursor.
     #[inline]
-    pub fn get_y(&self) -> usize {
+    pub fn y(&self) -> usize {
         self.prevs.len()
     }
 
     /// Get the position of the cursor.
     #[inline]
-    pub fn get_cursor(&self) -> hq::Pair {
-        (self.get_x(), self.get_y())
+    pub fn cursor(&self) -> hq::Pair {
+        (self.x(), self.y())
     }
 
     /// Construct a buffer from a file.
@@ -117,14 +117,14 @@ impl Buffer {
     #[inline]
     pub fn move_begin_of_line(&mut self) -> hq::Pair {
         self.cur.move_begin();
-        self.get_cursor()
+        self.cursor()
     }
 
     /// Move to the end of the line
     #[inline]
     pub fn move_end_of_line(&mut self) -> hq::Pair {
         self.cur.move_end();
-        self.get_cursor()
+        self.cursor()
     }
 
     /// Break the line at the location of the cursor.
@@ -132,7 +132,7 @@ impl Buffer {
     pub fn break_line(&mut self) -> hq::Pair {
         self.prevs.push(self.cur.break_line());
         self.x = 0;
-        self.get_cursor()
+        self.cursor()
     }
 
     /// Set the cursor by the given coordinate.
@@ -165,8 +165,8 @@ impl Buffer {
             BackspaceRes::Normal(self.after_cursor(limit))
         } else if let Some(line) = self.prevs.pop() {
             self.cur.prepend(line);
-            self.x = self.cur.get_x();
-            BackspaceRes::PrevLine(self.get_cursor())
+            self.x = self.cur.x();
+            BackspaceRes::PrevLine(self.cursor())
         } else {
             BackspaceRes::Unchanged
         }
@@ -182,7 +182,7 @@ impl Buffer {
             } else if !self.cur.move_left() {
                 self.move_up(usize::max_value());
             }
-            self.x = self.cur.get_x();
+            self.x = self.cur.x();
         }
         if dy != 0 {
             let x = self.x;
@@ -192,7 +192,7 @@ impl Buffer {
                 self.move_up(x);
             }
         }
-        (self.get_x(), self.get_y())
+        self.cursor()
     }
 
     /// Read characters after cursor.
@@ -204,7 +204,7 @@ impl Buffer {
     /// Insert a char at the location of the cursur.
     pub fn insert(&mut self, c: char, limit: usize) -> String {
         self.cur.insert(c);
-        self.x = self.get_x();
+        self.x = self.x();
         self.after_cursor(limit)
     }
 
