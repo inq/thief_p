@@ -65,12 +65,13 @@ impl LineCache {
     /// Update the line_caches.
     /// TODO: Reuse line_cache (expand, shrink).
     pub fn refresh_all(&mut self, view: &View, buffer: &mut buf::Buffer) {
-        let mut linenum = self.y_offset;
         self.lines.clear();
-        while let Some(_) = buffer.get(linenum) {
-            self.refresh(view, buffer, linenum);
-            linenum += 1;
-            if linenum > view.height + self.y_offset {
+
+        let mut line_idx = 0;
+        while let Some(_) = buffer.get(line_idx + self.y_offset) {
+            self.refresh(view, buffer, line_idx);
+            line_idx += 1;
+            if line_idx > view.height {
                 break;
             }
         }
@@ -83,15 +84,16 @@ impl LineCache {
         linenum: usize,
     ) -> &term::Line {
         let y_offset = self.y_offset;
-        self.refresh(view, buffer, linenum - y_offset);
-        &self.lines[linenum - self.y_offset]
+        let line_idx = linenum - y_offset;
+        self.refresh(view, buffer, line_idx);
+        &self.lines[line_idx]
     }
 
     /// Refresh from the buffer.
     /// Return true iff there is the correcsponding line.
-    fn refresh(&mut self, view: &View, buffer: &mut buf::Buffer, linenum: usize) -> bool {
+    fn refresh(&mut self, view: &View, buffer: &mut buf::Buffer, line_idx: usize) -> bool {
         // TODO: Reuse
-        while self.lines.len() <= linenum {
+        while self.lines.len() <= line_idx {
             self.lines.push(term::Line::new_splitted(
                 view.width,
                 view.theme.linenum,
@@ -99,7 +101,8 @@ impl LineCache {
                 self.linenum_width,
             ));
         }
-        self.lines[linenum].draw_str_ex(
+        let linenum = self.y_offset + line_idx;
+        self.lines[line_idx].draw_str_ex(
             &format!("{:width$}", linenum, width = self.linenum_width),
             0,
             0,
@@ -107,7 +110,7 @@ impl LineCache {
             view.theme.arrow_fg,
         );
         if let Some(s) = buffer.get(linenum) {
-            self.lines[linenum].draw_str_ex(
+            self.lines[line_idx].draw_str_ex(
                 s,
                 self.linenum_width,
                 0,

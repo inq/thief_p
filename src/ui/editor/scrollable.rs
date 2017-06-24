@@ -29,7 +29,7 @@ pub trait Scrollable {
             self.set_y_offset(cursor.1);
             return true;
         }
-        if cursor.1 >= self.y_offset() + self.height() {
+        if cursor.1 > self.y_offset() + self.height() {
             // Scroll downward
             let height = self.height();
             self.set_y_offset(cursor.1 - height);
