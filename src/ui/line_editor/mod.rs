@@ -64,9 +64,14 @@ impl LineEditor {
         self.linenum_width = linenum_width;
     }
 
+    /// TODO: Make clear.
+    fn arrow_str(&self) -> term::String {
+        let color_arrow = self.view.theme.arrow_fg;
+        term::String::from_std("<", term::Brush::new(color_arrow, term::Color::black()))
+    }
+
     /// Render to the Line object.
     pub fn render(&mut self, buf: &mut Buffer) -> ResultBox<term::Line> {
-        let color_editor = self.view.theme.editor.fg;
         let color_arrow = self.view.theme.arrow_fg;
 
         let mut cache = term::Line::new_splitted(
@@ -81,16 +86,18 @@ impl LineEditor {
             0,
         );
         let margin = if self.x_offset > 0 {
-            cache.draw_str_ex("<", self.linenum_width, 0, color_arrow, color_arrow);
+            // TODO: Remove me.
+            cache.draw_str_ex(&self.arrow_str(), self.linenum_width, 0, color_arrow);
             1
         } else {
             0
         };
         self.more_right = cache.draw_str_ex(
-            &buf.cur().to_string()[self.x_offset + margin..],
+            &buf.cur_mut().as_string().clone().skip_n(
+                self.x_offset + margin,
+            ),
             self.linenum_width + margin,
             0,
-            color_editor,
             color_arrow,
         );
         Ok(cache)
@@ -117,8 +124,9 @@ impl LineEditor {
         let cursor = buf.x();
         match buf.backspace(self.spaces_after_cursor(cursor)) {
             Normal(mut after_cursor) => {
-                after_cursor.push(' ');
-                let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+                // TODO: Attach color.
+                after_cursor.push(term::Char::new(' ', term::Brush::black_and_white()));
+                let line = term::Line::new_from_string(after_cursor);
                 self.response_cursor_with_line(buf.x(), line, true)
             }
             PrevLine(_cursor) => {
@@ -175,16 +183,17 @@ impl LineEditor {
         if self.view.width < buf.x() + 2 {
             //panic!("{} {}", self.view.width, buf.x());
             let cursor = buf.x();
-            let after_cursor = String::with_capacity(self.view.width);
-            let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+            // TODO: ??
+            let after_cursor = term::String::new();
+            let line = term::Line::new_from_string(after_cursor);
             self.response_cursor_with_line(cursor, line, false)
         } else {
-            let mut after_cursor = String::with_capacity(self.view.width);
-            after_cursor.push(c);
+            let mut after_cursor = term::String::new();
+            after_cursor.push(term::Char::new(c, term::Brush::black_and_white()));
             let cursor = buf.x();
-            after_cursor.push_str(&buf.insert(c, self.spaces_after_cursor(cursor)));
+            after_cursor.push_string(&mut buf.insert(c, self.spaces_after_cursor(cursor)));
             let cursor = buf.x();
-            let line = term::Line::new_from_str(&after_cursor, self.view.theme.editor_cur());
+            let line = term::Line::new_from_string(after_cursor);
             self.response_cursor_with_line(cursor, line, false)
         }
     }

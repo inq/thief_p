@@ -1,3 +1,5 @@
+use syntect;
+
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Color {
     r: u8,
@@ -6,8 +8,31 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn new(r: u8, g: u8, b: u8) -> Color {
-        Color { r: r, g: g, b: b }
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r: r, g: g, b: b }
+    }
+
+    /// Convert from syntect::highlighting::Color.
+    pub fn from_syntect(color: syntect::highlighting::Color) -> Self {
+        Self {
+            r: color.r,
+            g: color.g,
+            b: color.b,
+        }
+    }
+
+    /// Sample color: white
+    pub fn white() -> Self {
+        Self {
+            r: u8::max_value(),
+            g: u8::max_value(),
+            b: u8::max_value(),
+        }
+    }
+
+    /// Sample color: black
+    pub fn black() -> Self {
+        Self { r: 0, g: 0, b: 0 }
     }
 }
 
@@ -18,8 +43,24 @@ pub struct Brush {
 }
 
 impl Brush {
-    pub fn new(fg: Color, bg: Color) -> Brush {
-        Brush { fg: fg, bg: bg }
+    pub fn new(fg: Color, bg: Color) -> Self {
+        Self { fg: fg, bg: bg }
+    }
+
+    /// Convert from syntect::highlighting::Style
+    pub fn from_syntect(style: syntect::highlighting::Style) -> Self {
+        Self {
+            fg: Color::from_syntect(style.foreground),
+            bg: Color::from_syntect(style.background),
+        }
+    }
+
+    /// Black and white for testing purpose.
+    pub fn black_and_white() -> Self {
+        Self {
+            fg: Color::white(),
+            bg: Color::black(),
+        }
     }
 
     pub fn change(from: &Option<Brush>, to: &Option<Brush>) -> String {

@@ -20,9 +20,9 @@ impl fmt::Display for Line {
 }
 
 impl Line {
-    /// Construct a new line from str.
-    pub fn new_from_str(src: &str, brush: term::Brush) -> Line {
-        let res: Vec<term::Char> = src.chars().map(|c| term::Char::new(c, brush)).collect();
+    /// Construct a new line from string.
+    pub fn new_from_string(src: term::String) -> Line {
+        let res = src.take_vec();
         let w = res.iter().map(|c| c.width()).sum();
         Line {
             chars: res,
@@ -119,10 +119,9 @@ impl Line {
     /// TODO: Process full-width characters.
     pub fn draw_str_ex(
         &mut self,
-        src: &str,
+        src: &term::String,
         x: usize,
         limit: usize,
-        color_fg: term::Color,
         color_arrow: term::Color,
     ) -> bool {
         let mut limit_x = if limit == 0 { self.width - x } else { limit };
@@ -132,12 +131,13 @@ impl Line {
             let w = self.width;
             self.write_char(w - 1, '>', color_arrow);
         }
-        for (i, c) in src.chars().enumerate() {
+        for (i, c) in src.iter().enumerate() {
             if i >= limit_x {
                 break;
             };
-            self.chars[x + i].chr = c;
-            self.chars[x + i].brush.fg = color_fg
+            // TODO: Make clear.
+            self.chars[x + i].chr = c.chr;
+            self.chars[x + i].brush.fg = c.brush.fg
         }
         more_right
     }

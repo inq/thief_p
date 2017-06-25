@@ -1,24 +1,23 @@
 use std::mem;
+use term;
 use util;
 
 #[derive(Debug)]
 pub struct Line {
-    cache: String,
+    cache: term::String,
     dirty: bool,
-    prevs: String,
-    nexts: String,
+    prevs: term::String,
+    nexts: term::String,
     x: usize,
 }
-
-const BUFSIZE: usize = 80;
 
 impl Default for Line {
     fn default() -> Line {
         Line {
-            cache: String::new(),
+            cache: term::String::new(),
             dirty: false,
-            prevs: String::with_capacity(BUFSIZE),
-            nexts: String::with_capacity(BUFSIZE),
+            prevs: term::String::new(),
+            nexts: term::String::new(),
             x: Default::default(),
         }
     }
@@ -26,9 +25,9 @@ impl Default for Line {
 
 impl Line {
     /// Construct from a string.
-    pub fn new_from_str(str: &str) -> Line {
+    pub fn new_from_string(value: term::String) -> Line {
         let mut res: Line = Default::default();
-        res.push_before(str);
+        res.push_before(value);
         res
     }
 
@@ -39,37 +38,34 @@ impl Line {
     }
 
     /// Refresh the cache and get it.
-    pub fn as_str(&mut self) -> &String {
+    pub fn as_string(&mut self) -> &term::String {
         if self.dirty {
             self.cache.clear();
-            self.cache.push_str(&self.prevs);
-            self.cache.push_str(
-                &self.nexts.chars().rev().collect::<String>(),
-            );
+            self.cache.push_string(&mut self.prevs.clone());
+            self.cache.push_string(&mut self.nexts.reversed());
             self.dirty = false;
         }
         &self.cache
     }
 
     /// Fill data from string.
-    #[inline]
-    pub fn replace(&mut self, src: String, x: usize) -> String {
-        let res = self.as_str().clone();
+    pub fn replace(&mut self, src: term::String, x: usize) -> term::String {
+        let res = self.as_string().clone();
         self.cache = src;
         self.prevs.clear();
         self.nexts.clear();
         self.x = 0;
-        let mut iter = self.cache.chars();
+        let mut iter = self.cache.iter();
         while self.x < x {
             if let Some(c) = iter.next() {
-                self.prevs.push(c);
-                self.x += util::term_width(c);
+                self.prevs.push(c.clone());
+                self.x += c.width();
             } else {
                 break;
             }
         }
         for c in iter.rev() {
-            self.nexts.push(c);
+            self.nexts.push(c.clone());
         }
         self.dirty = false;
         res
@@ -77,10 +73,10 @@ impl Line {
 
     /// Break the line, and return the first line as string.
     /// The posterior one replaces self.
-    pub fn break_line(&mut self) -> String {
+    pub fn break_line(&mut self) -> term::String {
         self.dirty = true;
         self.x = 0;
-        mem::replace(&mut self.prevs, String::with_capacity(BUFSIZE))
+        mem::replace(&mut self.prevs, term::String::new())
     }
 
     /// Set the cursor position by the given x coordinate.
@@ -94,31 +90,29 @@ impl Line {
     }
 
     /// Get string after cursor
-    pub fn after_cursor(&self, limit: usize) -> String {
-        self.nexts.chars().rev().take(limit).collect()
+    pub fn after_cursor(&self, limit: usize) -> term::String {
+        self.nexts.reversed().take(limit)
     }
 
     /// Insert a char.
     pub fn insert(&mut self, c: char) {
         self.dirty = true;
         self.x += util::term_width(c);
-        self.prevs.push(c);
+        self.prevs.push(
+            term::Char::new(c, term::Brush::black_and_white()),
+        );
     }
 
     /// Append string before cursor.
-    pub fn push_before(&mut self, str: &str) {
-        self.x += str.chars()
-            .map({
-                |c| util::term_width(c)
-            })
-            .sum();
-        self.prevs.push_str(str);
+    pub fn push_before(&mut self, mut value: term::String) {
+        self.x += value.iter().map(|c| c.width()).sum();
+        self.prevs.push_string(&mut value);
     }
 
     /// Move cursor left by 1 character.
     pub fn move_left(&mut self) -> bool {
         if let Some(c) = self.prevs.pop() {
-            self.x -= util::term_width(c);
+            self.x -= c.width();
             self.nexts.push(c);
             true
         } else {
@@ -129,8 +123,7 @@ impl Line {
     /// Move cursor right by 1 character.
     pub fn move_right(&mut self) -> bool {
         if let Some(c) = self.nexts.pop() {
-            assert_ne!(c, '\n');
-            self.x += util::term_width(c);;
+            self.x += c.width();
             self.prevs.push(c);
             true
         } else {
@@ -139,23 +132,16 @@ impl Line {
     }
 
     /// Prepend a line to this.
-    pub fn prepend(&mut self, target: String) {
-        let target = mem::replace(&mut self.prevs, target);
-        self.prevs.push_str(&target);
+    pub fn prepend(&mut self, target: term::String) {
+        let mut target = mem::replace(&mut self.prevs, target);
+        self.prevs.push_string(&mut target);
         self.dirty = true;
-        self.x = self.prevs
-            .chars()
-            .map({
-                |c| util::term_width(c)
-            })
-            .sum();
+        self.x = self.prevs.iter().map(|c| c.width()).sum()
     }
 
     /// Append a line to this.
-    pub fn append(&mut self, target: String) {
-        self.nexts.push_str(
-            &target.chars().rev().collect::<String>(),
-        );
+    pub fn append(&mut self, target: term::String) {
+        self.nexts.push_string(&mut target.reversed());
     }
 
     /// Move to the begining of the line.
@@ -171,7 +157,7 @@ impl Line {
     #[inline]
     pub fn move_end(&mut self) {
         while let Some(c) = self.nexts.pop() {
-            self.x += util::term_width(c);
+            self.x += c.width();
             self.prevs.push(c);
         }
     }
@@ -191,18 +177,12 @@ impl Line {
         res
     }
 
-    /// Append string after cursor.
-    #[cfg(test)]
-    pub fn push_after(&mut self, str: &str) {
-        let reversed = str.chars().rev().collect::<String>();
-        self.nexts.push_str(&reversed);
-    }
-
     /// Convert to a string.
     /// This can be used for the debugging purpose.
+    #[cfg(test)]
     pub fn to_string(&self) -> String {
-        let mut res = self.prevs.to_owned();
-        res.push_str(&self.nexts.chars().rev().collect::<String>());
+        let mut res = String::from(self.prevs.as_str());
+        res.push_str(&self.nexts.reversed().as_str());
         res
     }
 }

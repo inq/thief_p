@@ -23,6 +23,12 @@ impl Char {
         }
     }
 
+    /// Discard color and return the char.
+    #[cfg(test)]
+    pub fn chr(&self) -> char {
+        self.chr
+    }
+
     pub fn width(&self) -> usize {
         util::term_width(self.chr)
     }
