@@ -79,12 +79,23 @@ impl Buffer {
 
     /// Construct a buffer from a file.
     pub fn from_file<S: AsRef<path::Path> + ?Sized>(s: &S) -> ResultBox<Buffer> {
-        let f = fs::File::open(s)?;
-        let br = BufReader::new(&f);
+        use syntect::easy::HighlightFile;
+        use syntect::parsing::SyntaxSet;
+        use syntect::highlighting::{ThemeSet, Style};
+
+        let ss = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+
+        let mut highlighter = HighlightFile::new(s, &ss, &ts.themes["base16-ocean.dark"])?;
+        //let f = fs::File::open(s)?;
+        //let br = BufReader::new(&f);
+        let mut line = String::new();
         let mut prevs = vec![];
-        for line in br.lines() {
+        for line in highlighter.reader.lines() {
             if let Ok(s) = line {
-                prevs.push(s);
+                let regions: Vec<(Style, &str)> = highlighter.highlight_lines.highlight(&s);
+                let s:Vec<_> = regions.iter().map(|f|f.1).collect();
+                prevs.push(String::from(s.join(",")));
             }
         }
         let cur = Line::new_from_str(&prevs.pop().unwrap_or_default());
