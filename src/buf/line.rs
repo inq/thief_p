@@ -180,61 +180,9 @@ impl Line {
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]
-    pub fn to_string(&self) -> String {
-        let mut res = String::from(self.prevs.as_str());
-        res.push_str(&self.nexts.reversed().as_str());
+    pub fn to_str(&self) -> String {
+        let mut res = String::from(self.prevs.to_str());
+        res.push_str(&self.nexts.reversed().to_str());
         res
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_basic_operations() {
-        let mut t: Line = Default::default();
-        t.push_before("hello");
-        assert_eq!(t.to_string(), "hello");
-        t.push_after("world");
-        assert_eq!(t.to_string(), "helloworld");
-    }
-
-    #[test]
-    fn test_move_cursor() {
-        let mut t: Line = Default::default();
-        t.push_before("hello");
-        t.push_after("world");
-        for _ in 0..5 {
-            assert_eq!(t.move_right(), true);
-        }
-        assert_eq!(t.move_right(), false);
-        assert_eq!(t.nexts, "");
-        for _ in 0..10 {
-            assert_eq!(t.move_left(), true);
-        }
-        assert_eq!(t.move_left(), false);
-        assert_eq!(t.prevs, "");
-    }
-
-    #[test]
-    fn test_insert() {
-        let mut t: Line = Default::default();
-        t.insert('h');
-        assert_eq!(t.to_string(), "h");
-        t.push_before("ell");
-        t.push_after("world");
-        t.insert('o');
-        assert_eq!(t.to_string(), "helloworld");
-    }
-
-    #[test]
-    fn test_break_line() {
-        let mut t: Line = Default::default();
-        t.push_before("hello");
-        t.push_after("world");
-        let u = t.break_line();
-        assert_eq!(t.to_string(), "world");
-        assert_eq!(u.to_string(), "hello");
     }
 }

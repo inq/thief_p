@@ -226,66 +226,18 @@ impl Buffer {
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]
-    pub fn to_string(&self) -> String {
-        let mut res = String::with_capacity(1024);
+    pub fn to_str(&self) -> String {
+        let mut res = String::new();
         for ref v in &self.prevs {
-            res.push_str(&v.to_string());
+            res.push_str(&v.to_str());
             res.push('\n');
         }
-        res.push_str(&self.cur.to_string());
+        res.push_str(&self.cur.to_str());
         res.push('\n');
         for v in self.nexts.iter().rev() {
-            res.push_str(&v.to_string());
+            res.push_str(&v.to_str());
             res.push('\n');
         }
         res
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fs;
-    use std::io::Read;
-    use buf::Line;
-    use super::*;
-
-    #[test]
-    fn test_buffer_from_file() {
-        let mut a = String::with_capacity(1024);
-        fs::File::open("Cargo.toml")
-            .unwrap()
-            .read_to_string(&mut a)
-            .unwrap();
-        let buf = Buffer::from_file("Cargo.toml").unwrap();
-        assert_eq!(a, buf.to_string());
-    }
-
-    #[test]
-    fn test_insert() {
-        let mut buf: Buffer = Default::default();
-        buf.insert('h', 10);
-        assert_eq!(buf.to_string(), "h\n");
-    }
-
-    #[test]
-    fn test_breakline() {
-        let mut buf: Buffer = Default::default();
-        buf.break_line();
-        assert_eq!(buf.to_string(), "\n\n");
-        let mut buf = Buffer {
-            cur: Line::new_from_str(&"Hello, world!"),
-            ..Default::default()
-        };
-        assert_eq!(buf.to_string(), "Hello, world!\n");
-        buf.cur.set_cursor(usize::max_value());
-        buf.break_line();
-        assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf = Buffer {
-            cur: Line::new_from_str(&"Hello, world!"),
-            ..Default::default()
-        };
-        buf.cur.set_cursor(5);
-        buf.break_line();
-        assert_eq!(buf.to_string(), "Hello\n, world!\n");
     }
 }

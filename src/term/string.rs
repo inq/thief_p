@@ -13,6 +13,7 @@ impl String {
         Self { vec: Vec::with_capacity(BUFSIZE) }
     }
 
+    /// Consume self and return the vec element.
     pub fn take_vec(self) -> Vec<term::Char> {
         self.vec
     }
@@ -53,10 +54,12 @@ impl String {
         self.vec.pop()
     }
 
+    /// Create a new reversed string.
     pub fn reversed(&self) -> Self {
         Self { vec: self.iter().rev().cloned().collect() }
     }
 
+    /// Take only n characters.
     pub fn take(self, n: usize) -> Self {
         Self { vec: self.vec.into_iter().take(n).collect() }
     }
@@ -69,5 +72,10 @@ impl String {
     /// Check if empty.
     pub fn is_empty(&self) -> bool {
         self.vec.is_empty()
+    }
+
+    #[cfg(test)]
+    pub fn to_str(&self) -> std::string::String {
+        self.iter().map(|c|c.chr).collect()
     }
 }
