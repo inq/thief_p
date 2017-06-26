@@ -102,21 +102,18 @@ impl LineCache {
             ));
         }
         let linenum = self.y_offset + line_idx;
+        // TODO: Coloring
         self.lines[line_idx].draw_str_ex(
-            &format!("{:width$}", linenum, width = self.linenum_width),
+            &term::String::from_std(
+                &format!("{:width$}", linenum, width = self.linenum_width),
+                view.theme.editor,
+            ),
             0,
             0,
-            view.theme.editor.fg,
             view.theme.arrow_fg,
         );
         if let Some(s) = buffer.get(linenum) {
-            self.lines[line_idx].draw_str_ex(
-                s,
-                self.linenum_width,
-                0,
-                view.theme.editor.fg,
-                view.theme.arrow_fg,
-            );
+            self.lines[line_idx].draw_str_ex(s, self.linenum_width, 0, view.theme.arrow_fg);
             true
         } else {
             false

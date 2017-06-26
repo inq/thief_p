@@ -1,8 +1,9 @@
-#![feature(proc_macro)]
+//#![feature(proc_macro)]
 
 extern crate libc;
 #[macro_use]
 extern crate proc_macros;
+extern crate syntect;
 
 #[macro_use]
 mod util;

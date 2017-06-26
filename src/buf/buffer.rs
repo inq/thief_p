@@ -1,14 +1,16 @@
+use std::io::BufRead;
+use std::path;
+
+use buf;
 use hq;
-use std::io::{BufReader, BufRead};
-use std::{fs, path};
 use util::ResultBox;
-use buf::Line;
+use term;
 
 pub struct Buffer {
-    cur: Line,
+    cur: buf::Line,
     x: usize,
-    prevs: Vec<String>,
-    nexts: Vec<String>,
+    prevs: Vec<term::String>,
+    nexts: Vec<term::String>,
 }
 
 const BUFSIZE: usize = 80;
@@ -25,7 +27,7 @@ impl Default for Buffer {
 }
 
 pub enum BackspaceRes {
-    Normal(String),
+    Normal(term::String),
     PrevLine(hq::Pair),
     Unchanged,
 }
@@ -38,9 +40,9 @@ pub enum KillLineRes {
 
 impl Buffer {
     /// Return the ith element.
-    pub fn get(&mut self, i: usize) -> Option<&String> {
+    pub fn get(&mut self, i: usize) -> Option<&term::String> {
         if i == self.prevs.len() {
-            Some(self.cur.as_str())
+            Some(self.cur.as_string())
         } else if i < self.prevs.len() {
             Some(&self.prevs[i])
         } else if self.nexts.len() + self.prevs.len() >= i {
@@ -50,8 +52,8 @@ impl Buffer {
         }
     }
 
-    pub fn cur(&self) -> &Line {
-        &self.cur
+    pub fn cur_mut(&mut self) -> &mut buf::Line {
+        &mut self.cur
     }
 
     /// Return the total number of lines.
@@ -79,15 +81,28 @@ impl Buffer {
 
     /// Construct a buffer from a file.
     pub fn from_file<S: AsRef<path::Path> + ?Sized>(s: &S) -> ResultBox<Buffer> {
-        let f = fs::File::open(s)?;
-        let br = BufReader::new(&f);
+        use syntect::easy::HighlightFile;
+        use syntect::parsing::SyntaxSet;
+        use syntect::highlighting::{ThemeSet, Style};
+
+        let ss = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+
+        let mut highlighter = HighlightFile::new(s, &ss, &ts.themes["base16-ocean.dark"])?;
         let mut prevs = vec![];
-        for line in br.lines() {
+        for line in highlighter.reader.lines() {
             if let Ok(s) = line {
-                prevs.push(s);
+                let regions: Vec<(Style, &str)> = highlighter.highlight_lines.highlight(&s);
+                let mut term_str = term::String::new();
+                for &(style, token) in regions.iter() {
+                    let mut colored =
+                        term::String::from_std(token, term::Brush::from_syntect(style));
+                    term_str.push_string(&mut colored);
+                }
+                prevs.push(term_str);
             }
         }
-        let cur = Line::new_from_str(&prevs.pop().unwrap_or_default());
+        let cur = buf::Line::new_from_string(prevs.pop().unwrap());
         let mut buf = Buffer {
             prevs: prevs,
             cur: cur,
@@ -197,12 +212,12 @@ impl Buffer {
 
     /// Read characters after cursor.
     #[inline]
-    fn after_cursor(&self, limit: usize) -> String {
+    fn after_cursor(&self, limit: usize) -> term::String {
         self.cur.after_cursor(limit)
     }
 
     /// Insert a char at the location of the cursur.
-    pub fn insert(&mut self, c: char, limit: usize) -> String {
+    pub fn insert(&mut self, c: char, limit: usize) -> term::String {
         self.cur.insert(c);
         self.x = self.x();
         self.after_cursor(limit)
@@ -211,66 +226,18 @@ impl Buffer {
     /// Convert to a string.
     /// This can be used for the debugging purpose.
     #[cfg(test)]
-    pub fn to_string(&self) -> String {
-        let mut res = String::with_capacity(1024);
+    pub fn to_str(&self) -> String {
+        let mut res = String::new();
         for ref v in &self.prevs {
-            res.push_str(&v.to_string());
+            res.push_str(&v.to_str());
             res.push('\n');
         }
-        res.push_str(&self.cur.to_string());
+        res.push_str(&self.cur.to_str());
         res.push('\n');
         for v in self.nexts.iter().rev() {
-            res.push_str(&v.to_string());
+            res.push_str(&v.to_str());
             res.push('\n');
         }
         res
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fs;
-    use std::io::Read;
-    use buf::Line;
-    use super::*;
-
-    #[test]
-    fn test_buffer_from_file() {
-        let mut a = String::with_capacity(1024);
-        fs::File::open("Cargo.toml")
-            .unwrap()
-            .read_to_string(&mut a)
-            .unwrap();
-        let buf = Buffer::from_file("Cargo.toml").unwrap();
-        assert_eq!(a, buf.to_string());
-    }
-
-    #[test]
-    fn test_insert() {
-        let mut buf: Buffer = Default::default();
-        buf.insert('h', 10);
-        assert_eq!(buf.to_string(), "h\n");
-    }
-
-    #[test]
-    fn test_breakline() {
-        let mut buf: Buffer = Default::default();
-        buf.break_line();
-        assert_eq!(buf.to_string(), "\n\n");
-        let mut buf = Buffer {
-            cur: Line::new_from_str(&"Hello, world!"),
-            ..Default::default()
-        };
-        assert_eq!(buf.to_string(), "Hello, world!\n");
-        buf.cur.set_cursor(usize::max_value());
-        buf.break_line();
-        assert_eq!(buf.to_string(), "Hello, world!\n\n");
-        let mut buf = Buffer {
-            cur: Line::new_from_str(&"Hello, world!"),
-            ..Default::default()
-        };
-        buf.cur.set_cursor(5);
-        buf.break_line();
-        assert_eq!(buf.to_string(), "Hello\n, world!\n");
     }
 }
